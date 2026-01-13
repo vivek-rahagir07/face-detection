@@ -915,11 +915,8 @@ function init3DFace(containerId) {
     let height = container.offsetHeight;
 
     if (width === 0 || height === 0) {
-        console.warn("Container has 0 dimension, using fallback size.");
         width = 300;
         height = 400;
-
-        // Force a resize re-check after layout likely stabilizes
         setTimeout(() => {
             try { window.dispatchEvent(new Event('resize')); } catch (e) { }
         }, 500);
@@ -929,114 +926,89 @@ function init3DFace(containerId) {
 
     const scene3D = new THREE.Scene();
     const camera3D = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+    camera3D.position.z = 6.0;
 
     const renderer3D = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer3D.setSize(width, height);
     renderer3D.setPixelRatio(window.devicePixelRatio);
     container.appendChild(renderer3D.domElement);
 
-    // --- Procedural Head Generation ---
-    // Start with a high-res sphere
-    const geometry = new THREE.SphereGeometry(2, 32, 32);
+    // --- Procedural Head Generation (Enhanced) ---
+    const geometry = new THREE.IcosahedronGeometry(2.2, 4); // Smoother, more tech-like
     const positionAttribute = geometry.attributes.position;
+    const vertex = new THREE.Vector3();
 
-    // Deform vertices to shape a head
     for (let i = 0; i < positionAttribute.count; i++) {
-        let x = positionAttribute.getX(i);
-        let y = positionAttribute.getY(i);
-        let z = positionAttribute.getZ(i);
-
-        // Elongate head vertically
-        y *= 1.4;
-
-        // Taper lower half for chin/jaw (y < 0)
-        if (y < 0) {
-            const taperFactor = 1 - (Math.abs(y) * 0.15); // Gentle taper
-            x *= taperFactor;
-            z *= taperFactor * 0.9; // Slightly flatter jaw
+        vertex.fromBufferAttribute(positionAttribute, i);
+        
+        // Shape into a head
+        vertex.y *= 1.3; // Elongate
+        if (vertex.y < 0) {
+            const taper = 1 - (Math.abs(vertex.y) * 0.2);
+            vertex.x *= taper;
+            vertex.z *= taper * 0.85;
         }
+        vertex.x *= 0.95; // Cheeks
 
-        // Flatten sides slightly for cheeks
-        x *= 0.95;
-
-        positionAttribute.setXYZ(i, x, y, z);
+        positionAttribute.setXYZ(i, vertex.x, vertex.y, vertex.z);
     }
-
-    positionAttribute.needsUpdate = true; // IMPORTANT: Signal update to GPU
+    positionAttribute.needsUpdate = true;
     geometry.computeVertexNormals();
 
-    const material = new THREE.MeshBasicMaterial({
-        color: 0x4f46e5, // Deep Indigo
+    // Material with high-end aesthetic
+    const material = new THREE.MeshPhongMaterial({
+        color: 0x6366f1, // Primary Indigo
         wireframe: true,
         transparent: true,
-        opacity: 0.5
+        opacity: 0.2,
+        emissive: 0x4f46e5,
+        emissiveIntensity: 0.5,
+        side: THREE.DoubleSide
     });
 
-    const head3D = new THREE.Mesh(geometry, material);
-    scene3D.add(head3D);
+    const headGroup = new THREE.Group();
+    const headMesh = new THREE.Mesh(geometry, material);
+    headGroup.add(headMesh);
+    scene3D.add(headGroup);
 
-    // --- Neural Dots (Skin) ---
-    const pointsGeometry = new THREE.BufferGeometry();
-    pointsGeometry.setAttribute('position', geometry.attributes.position); // Re-use deformed mesh positions
-
+    // --- Point Cloud (Skin Nodes) ---
     const pointsMaterial = new THREE.PointsMaterial({
-        color: 0x0ea5e9, // Sky Blue
-        size: 0.06,
+        color: 0x818cf8,
+        size: 0.04,
         transparent: true,
-        opacity: 0.7
-    });
-    const points = new THREE.Points(pointsGeometry, pointsMaterial);
-    head3D.add(points);
-
-    // --- Glowing Eyes ---
-    const eyeGeometry = new THREE.BufferGeometry();
-    const eyePositions = new Float32Array([
-        0.8, 0.2, 1.6, // Left Eye approx position
-        -0.8, 0.2, 1.6 // Right Eye approx position
-    ]);
-    eyeGeometry.setAttribute('position', new THREE.BufferAttribute(eyePositions, 3));
-
-    const eyeMaterial = new THREE.PointsMaterial({
-        color: 0x00ffff, // Cyan/Bright White
-        size: 0.25,
-        transparent: true,
-        opacity: 0.9,
+        opacity: 0.8,
         blending: THREE.AdditiveBlending
     });
-    const eyes = new THREE.Points(eyeGeometry, eyeMaterial);
-    head3D.add(eyes);
+    const pointCloud = new THREE.Points(geometry, pointsMaterial);
+    headGroup.add(pointCloud);
 
-    // --- Scanning Viewfinder Frame ---
-    const frameSize = 3.5;
-    const lineLen = 1.0;
-    const frameGeo = new THREE.BufferGeometry();
-    const frameVertices = new Float32Array([
-        // Top Left Corner
-        -frameSize, frameSize, 0, -frameSize + lineLen, frameSize, 0,
-        -frameSize, frameSize, 0, -frameSize, frameSize - lineLen, 0,
+    // --- Floating Particles (Environment) ---
+    const partCount = 200;
+    const partGeo = new THREE.BufferGeometry();
+    const partPos = new Float32Array(partCount * 3);
+    for (let i = 0; i < partCount * 3; i++) {
+        partPos[i] = (Math.random() - 0.5) * 10;
+    }
+    partGeo.setAttribute('position', new THREE.BufferAttribute(partPos, 3));
+    const partMat = new THREE.PointsMaterial({
+        color: 0x818cf8,
+        size: 0.02,
+        transparent: true,
+        opacity: 0.4
+    });
+    const particles = new THREE.Points(partGeo, partMat);
+    scene3D.add(particles);
 
-        // Top Right Corner
-        frameSize, frameSize, 0, frameSize - lineLen, frameSize, 0,
-        frameSize, frameSize, 0, frameSize, frameSize - lineLen, 0,
+    // --- Lights (For Phong Material) ---
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    scene3D.add(ambientLight);
+    const pointLight = new THREE.PointLight(0x818cf8, 1);
+    pointLight.position.set(5, 5, 5);
+    scene3D.add(pointLight);
 
-        // Bottom Left Corner
-        -frameSize, -frameSize, 0, -frameSize + lineLen, -frameSize, 0,
-        -frameSize, -frameSize, 0, -frameSize, -frameSize + lineLen, 0,
-
-        // Bottom Right Corner
-        frameSize, -frameSize, 0, frameSize - lineLen, -frameSize, 0,
-        frameSize, -frameSize, 0, frameSize, -frameSize + lineLen, 0
-    ]);
-    frameGeo.setAttribute('position', new THREE.BufferAttribute(frameVertices, 3));
-    const frameMat = new THREE.LineBasicMaterial({ color: 0x0ea5e9, transparent: true, opacity: 0.8 });
-    const frameBox = new THREE.LineSegments(frameGeo, frameMat);
-    scene3D.add(frameBox);
-
-    // Scale frame slightly to fit head
-    frameBox.scale.set(0.8, 1.0, 1.0);
-
-    // --- Scanning Laser Effect ---
-    const laserGeo = new THREE.PlaneGeometry(frameSize * 1.6, 0.05);
+    // --- Scanning Laser (Premium) ---
+    const laserGroup = new THREE.Group();
+    const laserGeo = new THREE.CylinderGeometry(3.5, 3.5, 0.05, 32, 1, true);
     const laserMat = new THREE.MeshBasicMaterial({
         color: 0x0ea5e9,
         transparent: true,
@@ -1044,50 +1016,77 @@ function init3DFace(containerId) {
         side: THREE.DoubleSide,
         blending: THREE.AdditiveBlending
     });
-    const laser = new THREE.Mesh(laserGeo, laserMat);
-    laser.position.z = 2.0; // In front of face
-    scene3D.add(laser);
+    const laserStrip = new THREE.Mesh(laserGeo, laserMat);
+    laserStrip.rotation.x = Math.PI / 2;
+    laserGroup.add(laserStrip);
 
-    camera3D.position.z = 6.0;
+    // Inner glow for laser
+    const laserGlowGeo = new THREE.CylinderGeometry(3.55, 3.55, 0.2, 32, 1, true);
+    const laserGlowMat = new THREE.MeshBasicMaterial({
+        color: 0x0ea5e9,
+        transparent: true,
+        opacity: 0.2,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending
+    });
+    const laserGlow = new THREE.Mesh(laserGlowGeo, laserGlowMat);
+    laserGlow.rotation.x = Math.PI / 2;
+    laserGroup.add(laserGlow);
+    
+    scene3D.add(laserGroup);
 
-    // --- Guide Status Logic ---
-    const isGuide = containerId === 'portal-guide-container';
-    if (isGuide) {
-        const statuses = ["POSITIONING FACE", "SCANNING FEATURES", "ALIGNING NODES", "SYSTEM READY"];
-        let statusIdx = 0;
-        const statusEl = document.getElementById('guide-status-text');
-        if (statusEl) {
-            setInterval(() => {
-                statusIdx = (statusIdx + 1) % statuses.length;
-                statusEl.style.opacity = 0;
-                setTimeout(() => {
-                    statusEl.innerText = statuses[statusIdx];
-                    statusEl.style.opacity = 1;
-                    statusEl.style.transition = 'opacity 0.3s ease';
-                }, 300);
-            }, 3000);
-        }
-    }
+    // --- Viewfinder Box ---
+    const boxGeo = new THREE.BoxGeometry(7, 9, 7);
+    const edges = new THREE.EdgesGeometry(boxGeo);
+    const boxMat = new THREE.LineBasicMaterial({ color: 0x818cf8, transparent: true, opacity: 0.1 });
+    const wireframeBox = new THREE.LineSegments(edges, boxMat);
+    scene3D.add(wireframeBox);
 
+    // --- Animation Loop ---
+    let frame = 0;
     function animate() {
         requestAnimationFrame(animate);
-        if (head3D) {
-            head3D.rotation.y += 0.005;
-            head3D.rotation.x += 0.002;
-        }
+        frame += 0.01;
+
+        // Rotate Head
+        headGroup.rotation.y = Math.sin(frame * 0.5) * 0.3;
+        headGroup.rotation.x = Math.cos(frame * 0.3) * 0.1;
 
         // Animate Laser
-        const laserTime = Date.now() * 0.002;
-        laser.position.y = Math.sin(laserTime) * 2.5;
-        laser.material.opacity = 0.3 + Math.sin(laserTime * 2) * 0.2;
+        const laserY = Math.sin(frame * 1.5) * 4.5;
+        laserGroup.position.y = laserY;
+        laserStrip.material.opacity = 0.4 + Math.sin(frame * 4) * 0.2;
+        
+        // Pulse effects
+        headMesh.material.opacity = 0.15 + Math.sin(frame * 2) * 0.05;
+        
+        // Rotate environment
+        particles.rotation.y += 0.001;
+        particles.rotation.z += 0.0005;
 
         renderer3D.render(scene3D, camera3D);
     }
     animate();
 
-    // Handle resize
+    // Reset logic if container is 'portal-guide-container'
+    if (containerId === 'portal-guide-container') {
+        const statuses = ["ANALYZING BIOMETRICS", "STRUCTURAL MAPPING", "NEURAL SYNCING", "PROTOCOL READY"];
+        let idx = 0;
+        const statusEl = document.getElementById('guide-status-text');
+        if (statusEl) {
+            setInterval(() => {
+                idx = (idx + 1) % statuses.length;
+                statusEl.style.opacity = '0';
+                setTimeout(() => {
+                    statusEl.innerText = statuses[idx];
+                    statusEl.style.opacity = '1';
+                }, 400);
+            }, 3500);
+        }
+    }
+
     window.addEventListener('resize', () => {
-        if (container.offsetWidth === 0) return;
+        if (!container.offsetWidth) return;
         camera3D.aspect = container.offsetWidth / container.offsetHeight;
         camera3D.updateProjectionMatrix();
         renderer3D.setSize(container.offsetWidth, container.offsetHeight);
