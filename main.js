@@ -915,174 +915,192 @@ function init3DFace(containerId) {
     let height = container.offsetHeight;
 
     if (width === 0 || height === 0) {
-        width = 300;
-        height = 400;
-        setTimeout(() => {
-            try { window.dispatchEvent(new Event('resize')); } catch (e) { }
-        }, 500);
+        width = 300; height = 400;
+        setTimeout(() => { try { window.dispatchEvent(new Event('resize')); } catch (e) { } }, 500);
     }
 
     container.dataset.initialized = "true";
 
     const scene3D = new THREE.Scene();
     const camera3D = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-    camera3D.position.z = 6.0;
+    camera3D.position.z = 7;
 
     const renderer3D = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer3D.setSize(width, height);
-    renderer3D.setPixelRatio(window.devicePixelRatio);
+    renderer3D.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     container.appendChild(renderer3D.domElement);
 
-    // --- Procedural Head Generation (Enhanced) ---
-    const geometry = new THREE.IcosahedronGeometry(2.2, 4); // Smoother, more tech-like
+    // --- Advanced Procedural Head (Plexus Base) ---
+    const geometry = new THREE.IcosahedronGeometry(2.5, 3); // Base density
     const positionAttribute = geometry.attributes.position;
     const vertex = new THREE.Vector3();
 
     for (let i = 0; i < positionAttribute.count; i++) {
         vertex.fromBufferAttribute(positionAttribute, i);
-        
-        // Shape into a head
-        vertex.y *= 1.3; // Elongate
-        if (vertex.y < 0) {
-            const taper = 1 - (Math.abs(vertex.y) * 0.2);
-            vertex.x *= taper;
-            vertex.z *= taper * 0.85;
-        }
-        vertex.x *= 0.95; // Cheeks
 
-        positionAttribute.setXYZ(i, vertex.x, vertex.y, vertex.z);
+        // Advanced Shaping
+        let x = vertex.x; let y = vertex.y; let z = vertex.z;
+
+        y *= 1.35; // Height
+
+        // Taper for jaw
+        if (y < 0) {
+            const taper = 1 - (Math.abs(y) * 0.25);
+            x *= taper;
+            z *= taper * 0.8;
+        }
+
+        // Eye Sockets (Simplified)
+        if (y > 0.3 && y < 0.8 && Math.abs(x) > 0.4 && z > 1.5) {
+            z -= 0.2;
+        }
+
+        // Nose Bridge
+        if (y > -0.2 && y < 0.6 && Math.abs(x) < 0.3 && z > 1.8) {
+            z += 0.25;
+        }
+
+        // Mouth area
+        if (y > -1.0 && y < -0.5 && Math.abs(x) < 0.6 && z > 1.7) {
+            z += 0.1;
+        }
+
+        positionAttribute.setXYZ(i, x, y, z);
     }
     positionAttribute.needsUpdate = true;
-    geometry.computeVertexNormals();
-
-    // Material with high-end aesthetic
-    const material = new THREE.MeshPhongMaterial({
-        color: 0x6366f1, // Primary Indigo
-        wireframe: true,
-        transparent: true,
-        opacity: 0.2,
-        emissive: 0x4f46e5,
-        emissiveIntensity: 0.5,
-        side: THREE.DoubleSide
-    });
 
     const headGroup = new THREE.Group();
-    const headMesh = new THREE.Mesh(geometry, material);
-    headGroup.add(headMesh);
     scene3D.add(headGroup);
 
-    // --- Point Cloud (Skin Nodes) ---
+    // --- The Plexus Effect (Lines) ---
+    const lineMaterial = new THREE.LineBasicMaterial({
+        color: 0x0ea5e9,
+        transparent: true,
+        opacity: 0.3,
+        blending: THREE.AdditiveBlending
+    });
+
+    const linesGeometry = new THREE.BufferGeometry();
+    const linePositions = [];
+    const pointsArray = [];
+
+    for (let i = 0; i < positionAttribute.count; i++) {
+        pointsArray.push(new THREE.Vector3().fromBufferAttribute(positionAttribute, i));
+    }
+
+    // Connect nearby vertices
+    for (let i = 0; i < pointsArray.length; i++) {
+        for (let j = i + 1; j < pointsArray.length; j++) {
+            const dist = pointsArray[i].distanceTo(pointsArray[j]);
+            if (dist < 0.9) {
+                linePositions.push(pointsArray[i].x, pointsArray[i].y, pointsArray[i].z);
+                linePositions.push(pointsArray[j].x, pointsArray[j].y, pointsArray[j].z);
+            }
+        }
+    }
+    linesGeometry.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+    const plexusLines = new THREE.LineSegments(linesGeometry, lineMaterial);
+    headGroup.add(plexusLines);
+
+    // --- Core Points ---
     const pointsMaterial = new THREE.PointsMaterial({
-        color: 0x818cf8,
-        size: 0.04,
+        color: 0x38bdf8,
+        size: 0.05,
         transparent: true,
         opacity: 0.8,
         blending: THREE.AdditiveBlending
     });
-    const pointCloud = new THREE.Points(geometry, pointsMaterial);
-    headGroup.add(pointCloud);
+    const corePoints = new THREE.Points(geometry, pointsMaterial);
+    headGroup.add(corePoints);
 
-    // --- Floating Particles (Environment) ---
-    const partCount = 200;
-    const partGeo = new THREE.BufferGeometry();
-    const partPos = new Float32Array(partCount * 3);
-    for (let i = 0; i < partCount * 3; i++) {
-        partPos[i] = (Math.random() - 0.5) * 10;
-    }
-    partGeo.setAttribute('position', new THREE.BufferAttribute(partPos, 3));
-    const partMat = new THREE.PointsMaterial({
-        color: 0x818cf8,
-        size: 0.02,
-        transparent: true,
-        opacity: 0.4
-    });
-    const particles = new THREE.Points(partGeo, partMat);
-    scene3D.add(particles);
+    // --- Orbital Network ---
+    const orbits = new THREE.Group();
+    scene3D.add(orbits);
 
-    // --- Lights (For Phong Material) ---
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-    scene3D.add(ambientLight);
-    const pointLight = new THREE.PointLight(0x818cf8, 1);
-    pointLight.position.set(5, 5, 5);
-    scene3D.add(pointLight);
+    const createOrbit = (radius, color, speed, axis) => {
+        const curve = new THREE.EllipseCurve(0, 0, radius, radius * 1.2, 0, 2 * Math.PI, false, 0);
+        const points = curve.getPoints(100);
+        const orbitGeo = new THREE.BufferGeometry().setFromPoints(points);
+        const orbitMat = new THREE.LineBasicMaterial({ color: color, transparent: true, opacity: 0.2 });
+        const orbitLine = new THREE.Line(orbitGeo, orbitMat);
 
-    // --- Scanning Laser (Premium) ---
-    const laserGroup = new THREE.Group();
-    const laserGeo = new THREE.CylinderGeometry(3.5, 3.5, 0.05, 32, 1, true);
-    const laserMat = new THREE.MeshBasicMaterial({
-        color: 0x0ea5e9,
-        transparent: true,
-        opacity: 0.6,
-        side: THREE.DoubleSide,
-        blending: THREE.AdditiveBlending
-    });
-    const laserStrip = new THREE.Mesh(laserGeo, laserMat);
-    laserStrip.rotation.x = Math.PI / 2;
-    laserGroup.add(laserStrip);
+        if (axis === 'x') orbitLine.rotation.x = Math.PI / 2;
+        if (axis === 'z') orbitLine.rotation.y = Math.PI / 2;
 
-    // Inner glow for laser
-    const laserGlowGeo = new THREE.CylinderGeometry(3.55, 3.55, 0.2, 32, 1, true);
-    const laserGlowMat = new THREE.MeshBasicMaterial({
-        color: 0x0ea5e9,
-        transparent: true,
-        opacity: 0.2,
-        side: THREE.DoubleSide,
-        blending: THREE.AdditiveBlending
-    });
-    const laserGlow = new THREE.Mesh(laserGlowGeo, laserGlowMat);
-    laserGlow.rotation.x = Math.PI / 2;
-    laserGroup.add(laserGlow);
-    
-    scene3D.add(laserGroup);
+        const orbitGroup = new THREE.Group();
+        orbitGroup.add(orbitLine);
 
-    // --- Viewfinder Box ---
-    const boxGeo = new THREE.BoxGeometry(7, 9, 7);
-    const edges = new THREE.EdgesGeometry(boxGeo);
-    const boxMat = new THREE.LineBasicMaterial({ color: 0x818cf8, transparent: true, opacity: 0.1 });
-    const wireframeBox = new THREE.LineSegments(edges, boxMat);
-    scene3D.add(wireframeBox);
+        // Add tiny nodes on orbit
+        const nodeGeo = new THREE.SphereGeometry(0.04, 8, 8);
+        const nodeMat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.6 });
+        const node = new THREE.Mesh(nodeGeo, nodeMat);
+        node.position.x = radius;
+        orbitGroup.add(node);
 
-    // --- Animation Loop ---
-    let frame = 0;
+        return { group: orbitGroup, speed: speed };
+    };
+
+    const orbitData = [
+        createOrbit(4.5, 0x0ea5e9, 0.005, 'x'),
+        createOrbit(5.0, 0x38bdf8, -0.007, 'y'),
+        createOrbit(4.2, 0x818cf8, 0.004, 'z')
+    ];
+    orbitData.forEach(o => orbits.add(o.group));
+
+    // --- Background Depth ---
+    const bgCount = 500;
+    const bgGeo = new THREE.BufferGeometry();
+    const bgPos = new Float32Array(bgCount * 3);
+    for (let i = 0; i < bgCount * 3; i++) bgPos[i] = (Math.random() - 0.5) * 25;
+    bgGeo.setAttribute('position', new THREE.BufferAttribute(bgPos, 3));
+    const bgPoints = new THREE.Points(bgGeo, new THREE.PointsMaterial({ color: 0x0ea5e9, size: 0.02, transparent: true, opacity: 0.2 }));
+    scene3D.add(bgPoints);
+
+    // --- Lighting (Subtle) ---
+    scene3D.add(new THREE.AmbientLight(0xffffff, 0.2));
+    const spotlight = new THREE.PointLight(0x0ea5e9, 1);
+    spotlight.position.set(10, 10, 10);
+    scene3D.add(spotlight);
+
+    // --- Animation ---
+    let time = 0;
     function animate() {
         requestAnimationFrame(animate);
-        frame += 0.01;
+        time += 0.01;
 
-        // Rotate Head
-        headGroup.rotation.y = Math.sin(frame * 0.5) * 0.3;
-        headGroup.rotation.x = Math.cos(frame * 0.3) * 0.1;
+        headGroup.rotation.y = Math.sin(time * 0.2) * 0.4;
+        headGroup.rotation.x = Math.cos(time * 0.15) * 0.1;
 
-        // Animate Laser
-        const laserY = Math.sin(frame * 1.5) * 4.5;
-        laserGroup.position.y = laserY;
-        laserStrip.material.opacity = 0.4 + Math.sin(frame * 4) * 0.2;
-        
-        // Pulse effects
-        headMesh.material.opacity = 0.15 + Math.sin(frame * 2) * 0.05;
-        
-        // Rotate environment
-        particles.rotation.y += 0.001;
-        particles.rotation.z += 0.0005;
+        // Pulse Plexus
+        plexusLines.material.opacity = 0.2 + Math.sin(time * 2) * 0.1;
+        corePoints.material.opacity = 0.6 + Math.sin(time * 3) * 0.2;
+
+        // Animate Orbits
+        orbitData.forEach(o => {
+            o.group.rotation.y += o.speed;
+            o.group.rotation.x += o.speed * 0.5;
+        });
+
+        // Rotate background
+        bgPoints.rotation.y += 0.0005;
 
         renderer3D.render(scene3D, camera3D);
     }
     animate();
 
-    // Reset logic if container is 'portal-guide-container'
-    if (containerId === 'portal-guide-container') {
-        const statuses = ["ANALYZING BIOMETRICS", "STRUCTURAL MAPPING", "NEURAL SYNCING", "PROTOCOL READY"];
-        let idx = 0;
-        const statusEl = document.getElementById('guide-status-text');
-        if (statusEl) {
-            setInterval(() => {
-                idx = (idx + 1) % statuses.length;
-                statusEl.style.opacity = '0';
-                setTimeout(() => {
-                    statusEl.innerText = statuses[idx];
-                    statusEl.style.opacity = '1';
-                }, 400);
-            }, 3500);
-        }
+    const statusEl = document.getElementById('guide-status-text');
+    if (statusEl && containerId === 'portal-guide-container') {
+        const logs = ["INITIALIZING SYNAPTIC LINK", "MAPPING FACIAL TOPOLOGY", "ENCRYPTING BIOMETRICS", "SYSTEM STABILIZED"];
+        let logIdx = 0;
+        setInterval(() => {
+            logIdx = (logIdx + 1) % logs.length;
+            statusEl.style.transition = 'opacity 0.4s';
+            statusEl.style.opacity = '0';
+            setTimeout(() => {
+                statusEl.innerText = logs[logIdx];
+                statusEl.style.opacity = '1';
+            }, 500);
+        }, 4000);
     }
 
     window.addEventListener('resize', () => {
