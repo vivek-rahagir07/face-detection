@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Attendance System</title>
+
+    <!-- Face API -->
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+
+    <!-- External CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- Portal -->
+    <div id="view-portal" class="portal-container">
+        <!-- 3D Guide Visualization (Left) -->
+        <div id="portal-guide-container">
+            <div class="guide-overlay">
+                <div class="guide-status" id="guide-status-text">INITIALIZING GUIDE...</div>
+                <div class="guide-hint">Align your face within the frame</div>
+            </div>
+        </div>
+
+        <div class="portal-card">
+            <h1>Face Attendance</h1>
+            <p>Select your workspace to continue</p>
+
+            <div class="portal-tabs">
+                <button id="tab-join" class="portal-tab active">Join Workspace</button>
+                <button id="tab-create" class="portal-tab">Create New</button>
+            </div>
+
+            <!-- Join Form -->
+            <div id="form-join" class="portal-form">
+                <div class="form-group">
+                    <input type="text" id="portal-join-name" placeholder="Workspace Name (e.g. Savera)">
+                    <input type="password" id="portal-join-pass" placeholder="Workspace Password">
+                    <button id="btn-portal-join" class="btn-primary">Enter Workspace</button>
+                </div>
+            </div>
+
+            <!-- Create Form -->
+            <div id="form-create" class="portal-form hidden">
+                <div class="form-group">
+                    <input type="text" id="portal-create-name" placeholder="New Workspace Name">
+                    <input type="password" id="portal-create-pass" placeholder="Set Workspace Password">
+                    <button id="btn-portal-create" class="btn-primary">Initialize & Enter</button>
+                </div>
+            </div>
+
+            <small id="portal-error"
+                style="color: var(--danger); text-align: center; display: block; margin-top: 10px;"></small>
+        </div>
+    </div>
+
+    <!-- Operation -->
+    <div id="view-operation" class="operation-container hidden">
+        <div class="operation-header">
+            <button id="btn-exit-workspace" class="btn-secondary btn-sm">🚪 Exit Workspace</button>
+            <h2 id="current-space-title">Workspace Name</h2>
+            <div id="system-status" class="status-badge status-loading">Initializing System...</div>
+        </div>
+
+        <div class="main-container">
+            <!-- Camera -->
+            <div class="camera-wrapper">
+                <div id="face-3d-container"></div>
+                <video id="video" autoplay muted playsinline></video>
+                <canvas id="overlay"></canvas>
+                <!-- Scanning Overlay Removed as per request -->
+                <div id="loading-overlay" class="loading-screen">
+                    <div class="spinner"></div>
+                    <h3 id="loading-text">Loading AI Models...</h3>
+                    <p>Please ensure camera access is granted</p>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="controls-panel">
+                <!-- Dashboard Stats -->
+                <div class="stats-container">
+                    <div class="stat-box">
+                        <div class="stat-label">Date</div>
+                        <div style="font-weight: 600;" id="display-date">--/--</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="today-count">0</div>
+                        <div class="stat-label">Present Today</div>
+                    </div>
+                </div>
+
+                <!-- Modes -->
+                <div class="mode-toggle">
+                    <button id="btn-mode-attend" class="btn-secondary active">Attendance</button>
+                    <button id="btn-mode-reg" class="btn-secondary">Registration</button>
+                    <button id="btn-mode-config" class="btn-secondary">Settings</button>
+                </div>
+
+                <!-- Config -->
+                <div id="config-form" class="form-group hidden">
+                    <h3>Configure Fields</h3>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">Choose what info to collect during
+                        registration</p>
+                    <div class="toggle-group">
+                        <label><input type="checkbox" class="field-toggle" data-field="regNo" checked> Registration
+                            Number</label>
+                        <label><input type="checkbox" class="field-toggle" data-field="course" checked> Course /
+                            Dept</label>
+                        <label><input type="checkbox" class="field-toggle" data-field="email"> Email ID</label>
+                        <label><input type="checkbox" class="field-toggle" data-field="bloodGroup"> Blood Group</label>
+                        <label><input type="checkbox" class="field-toggle" data-field="weight"> Weight</label>
+                        <label><input type="checkbox" class="field-toggle" data-field="phone"> Phone Number</label>
+                    </div>
+                    <button id="btn-save-config" class="btn-primary">Save Settings</button>
+                </div>
+
+                <!-- Registration -->
+                <div id="reg-form" class="form-group hidden">
+                    <h3>Register New Person</h3>
+                    <div id="dynamic-fields-container">
+                        <!-- Dynamic inputs will be injected here -->
+                    </div>
+                    <button id="btn-capture" class="btn-primary">Capture & Register</button>
+                    <small id="reg-feedback" style="text-align: center; color: var(--text-muted);">Look at the camera
+                        clearly</small>
+                </div>
+
+                <!-- Attendance -->
+                <div id="attend-info">
+                    <div style="margin-bottom: 15px;">
+                        <div class="list-header">
+                            <span>📋 Today's List</span>
+                            <div style="flex-shrink: 0; display: flex; gap: 8px; align-items: center;">
+                                <span id="scan-indicator"
+                                    style="width: 8px; height: 8px; background: var(--success); border-radius: 50%; display: none; animation: pulse 1s infinite;"></span>
+                                <button id="btn-export" class="btn-export" title="Export to CSV">📥 Export</button>
+                            </div>
+                        </div>
+                        <div class="scrollable-list" id="today-list">
+                            <div style="padding:10px; text-align:center; color:#888;">No attendance yet</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="list-header"><span>⚡ Live Activity</span></div>
+                        <div class="scrollable-list" id="live-logs" style="max-height: 120px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application Logic (External) -->
+    <script type="module" src="main.js"></script>
+</body>
+
+</html>
