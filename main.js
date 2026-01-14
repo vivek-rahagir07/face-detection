@@ -271,7 +271,7 @@ async function startQRRotation() {
                 if (qrEngine && qrEngine.toDataURL) {
                     qrEngine.toDataURL(attendanceUrl, {
                         width: 250,
-                        margin: 2,
+                        margin: 4,
                         errorCorrectionLevel: 'H', // High error correction to handle central logo
                         color: { dark: '#000000', light: '#ffffff' }
                     }, (err, url) => {
