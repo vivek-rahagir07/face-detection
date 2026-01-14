@@ -246,10 +246,10 @@ async function startQRRotation() {
         const spaceRef = doc(db, COLL_SPACES, currentSpace.id);
 
         try {
-            qrStatus.innerText = "Generating new code...";
-            // Clear old QR to avoid confusion during refresh
+            qrStatus.innerText = "Syncing with cloud...";
             qrImage.style.opacity = "0.5";
 
+            // Update Firebase first to ensure consistency
             await updateDoc(spaceRef, { qrNonce: currentNonce });
 
             // Robust base URL construction
@@ -257,30 +257,28 @@ async function startQRRotation() {
             if (!baseUrl.endsWith('/')) baseUrl += '/';
 
             const attendanceUrl = `${baseUrl}qr.html?s=${currentSpace.id}&n=${currentNonce}`;
-            const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(attendanceUrl)}`;
 
-            // Use a temporary image to verify load before updating UI
-            const img = new Image();
-            img.onload = () => {
-                qrImage.src = qrApiUrl;
+            // Generate QR Locally (eliminates external API failure)
+            QRCode.toDataURL(attendanceUrl, {
+                width: 250,
+                margin: 2,
+                color: {
+                    dark: '#000000',
+                    light: '#ffffff'
+                }
+            }, (err, url) => {
+                if (err) throw err;
+
+                qrImage.src = url;
                 qrImage.style.opacity = "1";
                 qrStatus.innerText = "Code is live. Scan now.";
                 resetTimer(30);
-            };
-            img.onerror = () => {
-                // Try fallback API if primary fails
-                const fallbackUrl = `https://chart.googleapis.com/chart?cht=qr&chs=250x250&chl=${encodeURIComponent(attendanceUrl)}`;
-                qrImage.src = fallbackUrl;
-                qrImage.style.opacity = "1";
-                qrStatus.innerText = "Using fallback generator...";
-                resetTimer(30);
-            };
-            img.src = qrApiUrl;
+            });
 
         } catch (e) {
             console.error("QR Sync Fail:", e);
             qrStatus.innerText = "Sync Error. Retrying in 5s...";
-            setTimeout(refreshQR, 5000); // Retry sooner than 30s on hard failure
+            setTimeout(refreshQR, 5000);
         }
     };
 
