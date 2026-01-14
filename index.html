@@ -145,9 +145,13 @@
                     <div id="dynamic-fields-container">
                         <!-- Dynamic inputs will be injected here -->
                     </div>
-                    <button id="btn-capture" class="btn-primary">Capture & Register</button>
+                    <div class="registration-actions">
+                        <button id="btn-capture" class="btn-primary">📸 Capture & Register</button>
+                        <button id="btn-upload-trigger" class="btn-secondary">🖼️ Upload from Gallery</button>
+                        <input type="file" id="input-upload-photo" accept="image/*" class="hidden">
+                    </div>
                     <small id="reg-feedback" style="text-align: center; color: var(--text-muted);">Look at the camera
-                        clearly</small>
+                        clearly or upload a photo</small>
                 </div>
 
                 <!-- Attendance -->

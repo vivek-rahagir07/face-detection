@@ -280,6 +280,25 @@ h1 {
     transform: scale(0.98);
 }
 
+/* Registration Actions */
+.registration-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Registration */
+#reg-form .btn-secondary {
+    border: 1px solid var(--border);
+    padding: 14px;
+    border-radius: 16px;
+}
+
+#reg-form .btn-secondary:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
 /* Forms */
 .form-group {
     display: flex;
@@ -395,8 +414,7 @@ input:focus {
     /* Increased size back up and kept it on the left */
     transform-origin: center center;
     pointer-events: none;
-    filter: saturate(1.2) contrast(1.1);
-    /* Subtle boost to neon colors */
+
 }
 
 .spline-watermark-cover {

@@ -37,6 +37,8 @@ const dateDisplay = document.getElementById('display-date');
 const loadingOverlay = document.getElementById('loading-overlay');
 const loadingText = document.getElementById('loading-text');
 const btnCapture = document.getElementById('btn-capture');
+const btnUploadTrigger = document.getElementById('btn-upload-trigger');
+const inputUploadPhoto = document.getElementById('input-upload-photo');
 const regFeedback = document.getElementById('reg-feedback');
 const btnExport = document.getElementById('btn-export');
 const scanIndicator = document.getElementById('scan-indicator');
@@ -720,30 +722,17 @@ video.addEventListener('play', () => {
 });
 
 
-async function registerUser() {
-    if (!currentUser || !currentSpace) {
-        alert("System not ready.");
-        return;
-    }
+// Refactored Registration Logic
+async function handleCameraRegistration() {
+    if (!currentUser || !currentSpace) return alert("System not ready.");
 
     const nameEl = document.getElementById('reg-name');
     const name = nameEl ? nameEl.value.trim() : '';
+    if (!name) return alert("Name is required.");
 
-    if (!name) {
-        alert("Name is required.");
-        return;
-    }
+    const metadata = collectRegistrationMetadata();
 
-    // Collect dynamic fields meta
-    const metadata = {};
-    if (document.getElementById('reg-regNo')) metadata.regNo = document.getElementById('reg-regNo').value.trim();
-    if (document.getElementById('reg-course')) metadata.course = document.getElementById('reg-course').value.trim();
-    if (document.getElementById('reg-email')) metadata.email = document.getElementById('reg-email').value.trim();
-    if (document.getElementById('reg-bloodGroup')) metadata.bloodGroup = document.getElementById('reg-bloodGroup').value.trim();
-    if (document.getElementById('reg-weight')) metadata.weight = document.getElementById('reg-weight').value.trim();
-    if (document.getElementById('reg-phone')) metadata.phone = document.getElementById('reg-phone').value.trim();
-
-    regFeedback.innerText = "Scanning...";
+    regFeedback.innerText = "Scanning Camera...";
     regFeedback.style.color = "var(--primary)";
 
     const detection = await faceapi.detectSingleFace(video)
@@ -751,45 +740,89 @@ async function registerUser() {
         .withFaceDescriptor();
 
     if (detection) {
-        // Check if name already exists in THIS SPACE
-        if (nameToDocId[name]) {
-            alert("A user with this name already exists in this workspace.");
-            regFeedback.innerText = "Name taken.";
-            return;
-        }
-
-        const descriptorArray = Array.from(detection.descriptor);
-
-        try {
-            await addDoc(collection(db, COLL_USERS), {
-                spaceId: currentSpace.id,
-                name: name,
-                ...metadata, // Save course/regNo/phone at top level for compatibility
-                descriptor: descriptorArray,
-                attendanceCount: 0,
-                lastAttendance: null,
-                createdAt: new Date()
-            });
-
-            alert(`Registered ${name} successfully!`);
-            nameEl.value = "";
-            if (document.getElementById('reg-regNo')) document.getElementById('reg-regNo').value = "";
-            if (document.getElementById('reg-course')) document.getElementById('reg-course').value = "";
-            if (document.getElementById('reg-email')) document.getElementById('reg-email').value = "";
-            if (document.getElementById('reg-bloodGroup')) document.getElementById('reg-bloodGroup').value = "";
-            if (document.getElementById('reg-weight')) document.getElementById('reg-weight').value = "";
-            if (document.getElementById('reg-phone')) document.getElementById('reg-phone').value = "";
-            regFeedback.innerText = "Success!";
-            regFeedback.style.color = "var(--success)";
-
-        } catch (error) {
-            console.error("Write Error:", error);
-            alert("Failed to save data: " + error.message);
-        }
+        await finalizeRegistration(name, metadata, Array.from(detection.descriptor));
     } else {
-        regFeedback.innerText = "No face detected. Look at camera.";
+        regFeedback.innerText = "No face detected in camera.";
         regFeedback.style.color = "var(--danger)";
     }
+}
+
+async function handlePhotoUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const nameEl = document.getElementById('reg-name');
+    const name = nameEl ? nameEl.value.trim() : '';
+    if (!name) {
+        alert("Please enter a name first.");
+        e.target.value = '';
+        return;
+    }
+
+    const metadata = collectRegistrationMetadata();
+    regFeedback.innerText = "Processing Photo...";
+    regFeedback.style.color = "var(--primary)";
+
+    try {
+        const img = await faceapi.bufferToImage(file);
+        const detection = await faceapi.detectSingleFace(img)
+            .withFaceLandmarks()
+            .withFaceDescriptor();
+
+        if (detection) {
+            await finalizeRegistration(name, metadata, Array.from(detection.descriptor));
+        } else {
+            regFeedback.innerText = "No face detected in uploaded photo.";
+            regFeedback.style.color = "var(--danger)";
+        }
+    } catch (err) {
+        console.error("Upload Error:", err);
+        regFeedback.innerText = "Error processing image.";
+    }
+    e.target.value = ''; // Reset input
+}
+
+function collectRegistrationMetadata() {
+    const metadata = {};
+    const fields = ['regNo', 'course', 'email', 'bloodGroup', 'weight', 'phone'];
+    fields.forEach(f => {
+        const el = document.getElementById(`reg-${f}`);
+        if (el) metadata[f] = el.value.trim();
+    });
+    return metadata;
+}
+
+async function finalizeRegistration(name, metadata, descriptorArray) {
+    if (nameToDocId[name]) {
+        alert("A user with this name already exists.");
+        regFeedback.innerText = "Name taken.";
+        return;
+    }
+
+    try {
+        await addDoc(collection(db, COLL_USERS), {
+            spaceId: currentSpace.id,
+            name: name,
+            ...metadata,
+            descriptor: descriptorArray,
+            attendanceCount: 0,
+            lastAttendance: null,
+            createdAt: new Date()
+        });
+
+        alert(`Registered ${name} successfully!`);
+        resetRegistrationForm();
+        regFeedback.innerText = "Success!";
+        regFeedback.style.color = "var(--success)";
+    } catch (error) {
+        console.error("Write Error:", error);
+        alert("Failed to save: " + error.message);
+    }
+}
+
+function resetRegistrationForm() {
+    const inputs = regForm.querySelectorAll('input');
+    inputs.forEach(i => i.value = "");
 }
 
 async function markAttendance(name) {
@@ -834,7 +867,9 @@ document.getElementById('btn-mode-attend').addEventListener('click', () => setMo
 document.getElementById('btn-mode-reg').addEventListener('click', () => setMode('registration'));
 document.getElementById('btn-mode-config').addEventListener('click', () => setMode('config'));
 
-if (btnCapture) btnCapture.addEventListener('click', registerUser);
+if (btnCapture) btnCapture.addEventListener('click', handleCameraRegistration);
+if (btnUploadTrigger) btnUploadTrigger.addEventListener('click', () => inputUploadPhoto.click());
+if (inputUploadPhoto) inputUploadPhoto.addEventListener('change', handlePhotoUpload);
 if (btnExport) btnExport.addEventListener('click', exportToCSV);
 
 function setMode(mode) {
@@ -1101,5 +1136,4 @@ function init3DFace(containerId) {
     });
 }
 
-// Initial portal guide removed
-// init3DFace('portal-guide-container');
+
