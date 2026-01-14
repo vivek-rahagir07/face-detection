@@ -391,8 +391,8 @@ input:focus {
 .portal-spline spline-viewer {
     width: 100%;
     height: 100%;
-    transform: scale(0.85) translateY(-5%);
-    /* Shifted up and scaled slightly for better framing */
+    transform: scale(1.1) translateY(-5%);
+    /* Increased size back up and kept it on the left */
     transform-origin: center center;
     pointer-events: none;
     filter: saturate(1.2) contrast(1.1);
