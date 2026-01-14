@@ -96,7 +96,6 @@ let hudScanCycle = 0; // 0 to 1
 let hudScanDir = 1;
 const lastSpoken = {};
 
-let dailyChart = null;
 let hourlyChart = null;
 
 // Advanced Detection State
@@ -1341,11 +1340,12 @@ function setMode(mode) {
     currentMode = mode;
 
     // UI elements update
-    [regForm, attendInfo, configForm].forEach(el => el.classList.add('hidden'));
+    [regForm, attendInfo, configForm, analyticsPanel].forEach(el => el.classList.add('hidden'));
     [
         document.getElementById('btn-mode-attend'),
         document.getElementById('btn-mode-reg'),
-        document.getElementById('btn-mode-config')
+        document.getElementById('btn-mode-config'),
+        document.getElementById('btn-mode-analytics')
     ].forEach(btn => btn.classList.remove('active'));
 
     if (mode === 'registration') {
@@ -1378,47 +1378,14 @@ async function renderAnalytics() {
         const snap = await getDocs(q);
         const records = snap.docs.map(d => d.data());
 
-        // Process Daily Data
-        const dailyCounts = {};
+        // Process Analytics Data
         const hourlyCounts = Array(24).fill(0);
 
         records.forEach(r => {
-            const date = r.date; // YYYY-MM-DD
-            dailyCounts[date] = (dailyCounts[date] || 0) + 1;
-
             if (r.timestamp) {
                 const ts = r.timestamp.toDate ? r.timestamp.toDate() : new Date(r.timestamp);
                 const hour = ts.getHours();
                 hourlyCounts[hour]++;
-            }
-        });
-
-        const sortedDates = Object.keys(dailyCounts).sort();
-        const dailyValues = sortedDates.map(d => dailyCounts[d]);
-
-        // Draw Daily Chart
-        const ctxDaily = document.getElementById('chart-daily').getContext('2d');
-        if (dailyChart) dailyChart.destroy();
-        dailyChart = new Chart(ctxDaily, {
-            type: 'bar',
-            data: {
-                labels: sortedDates.map(d => d.split('-').slice(1).join('/')),
-                datasets: [{
-                    label: 'Attendance',
-                    data: dailyValues,
-                    backgroundColor: 'rgba(0, 242, 255, 0.5)',
-                    borderColor: '#00f2ff',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                scales: {
-                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } },
-                    x: { grid: { display: false }, ticks: { color: '#888' } }
-                },
-                plugins: { legend: { display: false } }
             }
         });
 
