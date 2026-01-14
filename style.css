@@ -72,6 +72,7 @@ h1 {
     }
 }
 
+
 .main-container {
     display: grid;
     grid-template-columns: 1fr;
@@ -140,7 +141,6 @@ h1 {
     display: flex;
     align-items: center;
     justify-content: center;
-    animation: multi-glow 12s linear infinite;
 }
 
 .camera-wrapper::after {
@@ -159,7 +159,7 @@ h1 {
     -webkit-mask-composite: source-out;
     mask-composite: exclude;
     pointer-events: none;
-    animation: rotate-border 6s linear infinite, hue-flow 10s linear infinite;
+    animation: rotate-border 6s linear infinite;
 }
 
 #video {
@@ -212,8 +212,8 @@ h1 {
     width: 150%;
     max-width: 500px;
     position: relative;
+    position: relative;
     will-change: filter, transform;
-    animation: multi-glow 10s linear infinite;
 }
 
 .controls-panel:hover {
@@ -518,30 +518,20 @@ input:focus {
 .shining-logo {
     width: 55px;
     height: auto;
-    animation: logo-blink 2s ease-in-out infinite;
     filter: drop-shadow(0 0 10px rgba(0, 242, 255, 0.5));
 }
 
-.nav-logo-container::after {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -150%;
-    width: 50%;
-    height: 200%;
-    background: linear-gradient(to right,
-            transparent,
-            rgba(255, 255, 255, 0.4),
-            transparent);
-    transform: rotate(30deg);
-    animation: light-sweep 4s infinite;
-    pointer-events: none;
-}
-
-/* We need a wrapper for the shining effect because img tags don't support ::after well */
 .nav-logo-container {
     position: relative;
     overflow: hidden;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 10px 30px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 100px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
 }
 
 .nav-brand {
@@ -554,21 +544,6 @@ input:focus {
     text-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
 }
 
-@keyframes logo-blink {
-
-    0%,
-    100% {
-        opacity: 1;
-        filter: drop-shadow(0 0 10px rgba(0, 242, 255, 0.8)) brightness(1.2);
-        transform: scale(1);
-    }
-
-    50% {
-        opacity: 0.6;
-        filter: drop-shadow(0 0 5px rgba(0, 242, 255, 0.3)) brightness(0.8);
-        transform: scale(0.95);
-    }
-}
 
 @keyframes light-sweep {
     0% {
@@ -648,6 +623,25 @@ input:focus {
         multi-glow 10s linear infinite;
 }
 
+@keyframes multi-glow {
+
+    0%,
+    100% {
+        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.9), 0 0 80px rgba(0, 242, 255, 0.2), 0 0 160px rgba(0, 242, 255, 0.1);
+        border-color: rgba(0, 242, 255, 0.2);
+    }
+
+    33% {
+        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.9), 0 0 100px rgba(255, 0, 242, 0.2), 0 0 200px rgba(255, 0, 242, 0.1);
+        border-color: rgba(255, 0, 242, 0.2);
+    }
+
+    66% {
+        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.9), 0 0 100px rgba(112, 0, 255, 0.2), 0 0 200px rgba(112, 0, 255, 0.1);
+        border-color: rgba(112, 0, 255, 0.2);
+    }
+}
+
 .logo-wrapper {
     position: absolute;
     top: -40px;
@@ -669,8 +663,23 @@ input:focus {
     height: 120%;
     background: radial-gradient(circle, rgba(255, 0, 242, 0.5) 0%, transparent 70%);
     border-radius: 50%;
-    animation: aura-pulse 4s ease-in-out infinite;
     filter: blur(15px);
+    animation: aura-pulse 4s ease-in-out infinite;
+}
+
+@keyframes aura-pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.4;
+    }
+
+    50% {
+        transform: scale(1.3);
+        opacity: 0.8;
+        background: radial-gradient(circle, rgba(0, 242, 255, 0.5) 0%, transparent 70%);
+    }
 }
 
 .card-logo {
@@ -682,21 +691,6 @@ input:focus {
     z-index: 2;
 }
 
-@keyframes aura-pulse {
-
-    0%,
-    100% {
-        transform: scale(1);
-        opacity: 0.4;
-        background: radial-gradient(circle, rgba(255, 0, 242, 0.5) 0%, transparent 70%);
-    }
-
-    50% {
-        transform: scale(1.3);
-        opacity: 0.8;
-        background: radial-gradient(circle, rgba(0, 242, 255, 0.5) 0%, transparent 70%);
-    }
-}
 
 .portal-card::after {
     content: '';
@@ -716,7 +710,7 @@ input:focus {
     opacity: 1;
     pointer-events: none;
     will-change: filter, transform;
-    animation: rotate-border 4s linear infinite, hue-flow 8s linear infinite;
+    animation: rotate-border 4s linear infinite;
 }
 
 @property --border-angle {
@@ -731,46 +725,6 @@ input:focus {
     }
 }
 
-@keyframes multi-glow {
-
-    0%,
-    100% {
-        box-shadow:
-            0 30px 60px rgba(0, 0, 0, 0.9),
-            0 0 80px rgba(0, 242, 255, 0.2),
-            0 0 160px rgba(0, 242, 255, 0.1);
-        border-color: rgba(0, 242, 255, 0.2);
-        filter: hue-rotate(0deg) saturate(1.2);
-    }
-
-    33% {
-        box-shadow:
-            0 30px 60px rgba(0, 0, 0, 0.9),
-            0 0 100px rgba(255, 0, 242, 0.2),
-            0 0 200px rgba(255, 0, 242, 0.1);
-        border-color: rgba(255, 0, 242, 0.2);
-        filter: hue-rotate(20deg) saturate(1.5);
-    }
-
-    66% {
-        box-shadow:
-            0 30px 60px rgba(0, 0, 0, 0.9),
-            0 0 100px rgba(112, 0, 255, 0.2),
-            0 0 200px rgba(112, 0, 255, 0.1);
-        border-color: rgba(112, 0, 255, 0.2);
-        filter: hue-rotate(-20deg) saturate(1.5);
-    }
-}
-
-@keyframes hue-flow {
-    from {
-        filter: hue-rotate(0deg) saturate(1.5);
-    }
-
-    to {
-        filter: hue-rotate(360deg) saturate(1.8);
-    }
-}
 
 @keyframes logo-float {
 
@@ -872,24 +826,8 @@ input:focus {
     background: #fff;
     color: #000;
     box-shadow: 0 0 20px rgba(0, 242, 255, 0.4);
-    animation: tab-glow 4s linear infinite;
 }
 
-@keyframes tab-glow {
-
-    0%,
-    100% {
-        box-shadow: 0 0 20px rgba(0, 242, 255, 0.4);
-    }
-
-    33% {
-        box-shadow: 0 0 20px rgba(255, 0, 242, 0.4);
-    }
-
-    66% {
-        box-shadow: 0 0 20px rgba(112, 0, 255, 0.4);
-    }
-}
 
 .portal-form {
     display: block;
@@ -918,22 +856,8 @@ input:focus {
     text-shadow:
         0 0 10px rgba(0, 242, 255, 0.5),
         0 0 20px rgba(255, 0, 242, 0.3);
-    animation: title-pulse 8s ease-in-out infinite;
 }
 
-@keyframes title-pulse {
-
-    0%,
-    100% {
-        transform: scale(1);
-        text-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
-    }
-
-    50% {
-        transform: scale(1.02);
-        text-shadow: 0 0 20px rgba(255, 0, 242, 0.6);
-    }
-}
 
 .btn-sm {
     padding: 8px 16px;
@@ -1052,22 +976,8 @@ input:focus {
     height: 60px;
     border: 3px solid var(--accent);
     filter: drop-shadow(0 0 15px var(--accent));
-    animation: corner-pulse 3s infinite;
 }
 
-@keyframes corner-pulse {
-
-    0%,
-    100% {
-        opacity: 0.8;
-        filter: drop-shadow(0 0 10px var(--accent));
-    }
-
-    50% {
-        opacity: 1;
-        filter: drop-shadow(0 0 25px var(--accent)) brightness(1.3);
-    }
-}
 
 .top-left {
     top: 30px;
@@ -1120,20 +1030,8 @@ input:focus {
     height: 10px;
     background: #ff0000;
     border-radius: 50%;
-    animation: blink 1s infinite;
 }
 
-@keyframes blink {
-
-    0%,
-    100% {
-        opacity: 1;
-    }
-
-    50% {
-        opacity: 0.3;
-    }
-}
 
 .battery-box {
     display: flex;
