@@ -8,7 +8,7 @@
     --accent: #00f2ff;
     --danger: #ff4444;
     --warning: #cbd5e1;
-    --bg: #0a0a0a;
+    --bg: #000000;
     --card-bg: rgba(20, 20, 20, 0.95);
     --text: #f8fafc;
     --text-muted: #94a3b8;
@@ -121,20 +121,23 @@ h1 {
 
 .controls-panel {
     background: var(--card-bg);
-    padding: 40px;
+    padding: 32px;
     border-radius: 36px;
-    box-shadow: var(--shadow-xl);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(32px);
     -webkit-backdrop-filter: blur(32px);
-    border: 1px solid var(--border);
+    border: 1px solid rgba(255, 255, 255, 0.05);
     display: flex;
     flex-direction: column;
-    gap: 32px;
-    transition: var(--transition);
+    gap: 28px;
+    width: 100%;
+    max-width: 400px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .controls-panel:hover {
-    border-color: #444;
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 35px 60px -15px rgba(0, 0, 0, 0.9);
 }
 
 .status-badge {
@@ -395,26 +398,43 @@ input:focus {
     align-items: center;
     justify-content: space-between;
     padding: 0;
-    min-height: 80vh;
-    background: radial-gradient(circle at center, #111 0%, #000 100%);
+    min-height: 100vh;
+    background: #000;
+    position: relative;
+    overflow: hidden;
+}
+
+.portal-container {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0;
+    min-height: 100vh;
+    background: #000;
+    position: relative;
     overflow: hidden;
 }
 
 .portal-spline {
-    flex: 1;
+    flex: 1.5;
+    /* Give more space to characters */
     height: 100vh;
     position: relative;
     z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .portal-spline spline-viewer {
     width: 100%;
     height: 100%;
-    transform: scale(1.1) translateY(-5%);
-    /* Increased size back up and kept it on the left */
+    transform: scale(1.1);
     transform-origin: center center;
     pointer-events: none;
-
+    filter: brightness(1.2) contrast(1.1) drop-shadow(0 0 40px rgba(0, 242, 255, 0.4));
 }
 
 .spline-watermark-cover {
@@ -427,29 +447,52 @@ input:focus {
     z-index: 100;
 }
 
-
-
-
-
-
-
 .portal-card {
-    background: rgba(10, 10, 10, 0.7);
-    padding: 60px 48px;
+    background: rgba(0, 0, 0, 0.9);
+    padding: 48px 40px;
     border-radius: 40px;
-    box-shadow:
-        0 20px 50px rgba(0, 0, 0, 0.5),
-        inset 0 0 0 1px rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(40px) saturate(180%);
-    -webkit-backdrop-filter: blur(40px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    max-width: 450px;
     width: 100%;
-    text-align: center;
+    max-width: 400px;
     position: relative;
-    z-index: 3;
-    margin-right: 120px;
+    z-index: 10;
+    margin-right: 8%;
+    text-align: center;
+    backdrop-filter: blur(40px);
+    border: 1px solid rgba(0, 242, 255, 0.2);
+    box-shadow:
+        0 30px 60px rgba(0, 0, 0, 0.9),
+        inset 0 0 80px rgba(0, 242, 255, 0.05);
     animation: fadeInPortal 1s ease-out forwards;
+}
+
+.portal-card::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 43px;
+    padding: 3px;
+    background: #00f2ff;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 1;
+    box-shadow: 0 0 30px rgba(0, 242, 255, 0.6);
+    pointer-events: none;
+}
+
+@keyframes glow-rotate {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
 }
 
 @keyframes fadeInPortal {
@@ -575,27 +618,6 @@ input:focus {
         transform: translateX(0);
     }
 }
-
-
-
-@keyframes pulse {
-    0% {
-        transform: scale(1);
-        opacity: 1;
-    }
-
-    50% {
-        transform: scale(1.1);
-        opacity: 0.7;
-    }
-
-    100% {
-        transform: scale(1);
-        opacity: 1;
-    }
-}
-
-/* Unused scan-status styles removed */
 
 .loading-screen {
     position: absolute;
@@ -777,7 +799,7 @@ input:focus {
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 60px;
+    height: 70px;
     background: #000;
     z-index: 1000;
     border-top: 1px solid rgba(255, 255, 255, 0.05);
