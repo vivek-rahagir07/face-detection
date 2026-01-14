@@ -82,6 +82,17 @@ const qrImage = document.getElementById('qr-image');
 const qrTimerDisplay = document.getElementById('qr-timer');
 const qrStatus = document.getElementById('qr-status');
 
+// New Analytics & Geo Elements
+const analyticsPanel = document.getElementById('analytics-panel');
+const btnModeAnalytics = document.getElementById('btn-mode-analytics');
+const configGeoEnabled = document.getElementById('config-geo-enabled');
+const configGeoRadius = document.getElementById('config-geo-radius');
+const btnSetLocation = document.getElementById('btn-set-location');
+const geoStatus = document.getElementById('geo-status');
+
+let dailyChart = null;
+let hourlyChart = null;
+
 // Advanced Detection State
 const VALIDATION_THRESHOLD = 5;
 const detectionHistory = {};
@@ -462,8 +473,20 @@ function renderHistoryTable(records) {
         return;
     }
 
-    historyTableBody.innerHTML = '';
+    // Deduplicate for UI display: one person once
+    const uniqueRecords = [];
+    const seenNames = new Set();
+
+    // records are already sorted alphabetically by name
     records.forEach(r => {
+        if (!seenNames.has(r.name)) {
+            uniqueRecords.push(r);
+            seenNames.add(r.name);
+        }
+    });
+
+    historyTableBody.innerHTML = '';
+    uniqueRecords.forEach(r => {
         const time = r.timestamp ? (r.timestamp.toDate ? r.timestamp.toDate() : new Date(r.timestamp)).toLocaleTimeString() : 'N/A';
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -475,7 +498,7 @@ function renderHistoryTable(records) {
         historyTableBody.appendChild(tr);
     });
 
-    historyStatus.innerText = `Showing ${records.length} records.`;
+    historyStatus.innerText = `Showing ${uniqueRecords.length} unique people.`;
 }
 
 // History Search
@@ -497,6 +520,7 @@ if (btnExportHistory) {
         if (currentHistoryRecords.length === 0) return;
 
         let csv = "Name,Registration Number,Course,Time\n";
+        // Export ALL activities as requested
         currentHistoryRecords.forEach(r => {
             const time = r.timestamp ? (r.timestamp.toDate ? r.timestamp.toDate() : new Date(r.timestamp)).toLocaleTimeString() : 'N/A';
             csv += `"${r.name}","${r.regNo || ''}","${r.course || ''}","${time}"\n`;
@@ -715,12 +739,32 @@ async function saveSpaceConfig() {
     if (!currentSpace) return;
     const newConfig = {};
     document.querySelectorAll('.field-toggle').forEach(el => {
-        newConfig[el.dataset.field] = el.checked;
+        if (!el.id.includes('geofence')) {
+            newConfig[el.dataset.field] = el.checked;
+        }
     });
 
+    const geofenceEnabled = document.getElementById('geofence-enabled').checked;
+    const geofenceRadius = parseFloat(document.getElementById('geofence-radius').value) || 100;
+    const locText = document.getElementById('geofence-loc-status').innerText;
+    let lat = null, lng = null;
+    if (locText.includes('Lat:')) {
+        const parts = locText.split(',');
+        lat = parseFloat(parts[0].split(':')[1]);
+        lng = parseFloat(parts[1].split(':')[1]);
+    }
+
     try {
-        await updateDoc(doc(db, COLL_SPACES, currentSpace.id), { config: newConfig });
-        currentSpace.config = newConfig; // Update local state
+        await updateDoc(doc(db, COLL_SPACES, currentSpace.id), {
+            config: newConfig,
+            geofencing: {
+                enabled: geofenceEnabled,
+                radius: geofenceRadius,
+                center: lat && lng ? { lat, lng } : null
+            }
+        });
+        currentSpace.config = newConfig;
+        currentSpace.geofencing = { enabled: geofenceEnabled, radius: geofenceRadius, center: lat && lng ? { lat, lng } : null };
         alert("Settings saved!");
         setMode('attendance');
     } catch (err) {
@@ -735,8 +779,19 @@ function syncConfigToggles() {
     if (!currentSpace) return;
     const config = currentSpace.config || {};
     document.querySelectorAll('.field-toggle').forEach(el => {
-        el.checked = !!config[el.dataset.field];
+        if (!el.id.includes('geofence')) {
+            el.checked = !!config[el.dataset.field];
+        }
     });
+
+    const gf = currentSpace.geofencing || {};
+    document.getElementById('geofence-enabled').checked = !!gf.enabled;
+    document.getElementById('geofence-radius').value = gf.radius || 100;
+    if (gf.center) {
+        document.getElementById('geofence-loc-status').innerText = `Lat: ${gf.center.lat.toFixed(6)}, Lng: ${gf.center.lng.toFixed(6)}`;
+    } else {
+        document.getElementById('geofence-loc-status').innerText = "Location not set";
+    }
 }
 
 // Database Listener
@@ -1166,10 +1221,34 @@ async function markAttendance(name) {
     }
 }
 
+// Geofencing: Get Current Location
+if (btnSetLocation) {
+    btnSetLocation.addEventListener('click', () => {
+        if (!navigator.geolocation) {
+            alert("Geolocation is not supported by your browser.");
+            return;
+        }
+
+        geoStatus.innerText = "Finding you...";
+        navigator.geolocation.getCurrentPosition((pos) => {
+            const { latitude, longitude } = pos.coords;
+            btnSetLocation.dataset.lat = latitude;
+            btnSetLocation.dataset.lng = longitude;
+            geoStatus.innerText = `Local Set: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+            geoStatus.style.color = "var(--success)";
+        }, (err) => {
+            console.error("Geo Error:", err);
+            geoStatus.innerText = "Error: Permission denied / signal weak.";
+            geoStatus.style.color = "var(--danger)";
+        }, { enableHighAccuracy: true });
+    });
+}
+
 // UI Handlers
 
 document.getElementById('btn-mode-attend').addEventListener('click', () => setMode('attendance'));
 document.getElementById('btn-mode-reg').addEventListener('click', () => setMode('registration'));
+document.getElementById('btn-mode-analytics').addEventListener('click', () => setMode('analytics'));
 document.getElementById('btn-mode-config').addEventListener('click', () => setMode('config'));
 
 if (btnCapture) btnCapture.addEventListener('click', handleCameraRegistration);
@@ -1198,10 +1277,100 @@ function setMode(mode) {
         document.getElementById('btn-mode-config').classList.add('active');
         statusBadge.innerText = "Configuration Mode";
         syncConfigToggles();
+    } else if (mode === 'analytics') {
+        analyticsPanel.classList.remove('hidden');
+        document.getElementById('btn-mode-analytics').classList.add('active');
+        statusBadge.innerText = "Analytics Mode";
+        renderAnalytics();
     } else {
         attendInfo.classList.remove('hidden');
         document.getElementById('btn-mode-attend').classList.add('active');
         statusBadge.innerText = "Attendance Mode";
+    }
+}
+
+async function renderAnalytics() {
+    if (!currentSpace) return;
+
+    try {
+        const q = query(collection(db, COLL_ATTENDANCE), where("spaceId", "==", currentSpace.id));
+        const snap = await getDocs(q);
+        const records = snap.docs.map(d => d.data());
+
+        // Process Daily Data
+        const dailyCounts = {};
+        const hourlyCounts = Array(24).fill(0);
+
+        records.forEach(r => {
+            const date = r.date; // YYYY-MM-DD
+            dailyCounts[date] = (dailyCounts[date] || 0) + 1;
+
+            if (r.timestamp) {
+                const ts = r.timestamp.toDate ? r.timestamp.toDate() : new Date(r.timestamp);
+                const hour = ts.getHours();
+                hourlyCounts[hour]++;
+            }
+        });
+
+        const sortedDates = Object.keys(dailyCounts).sort();
+        const dailyValues = sortedDates.map(d => dailyCounts[d]);
+
+        // Draw Daily Chart
+        const ctxDaily = document.getElementById('chart-daily').getContext('2d');
+        if (dailyChart) dailyChart.destroy();
+        dailyChart = new Chart(ctxDaily, {
+            type: 'bar',
+            data: {
+                labels: sortedDates.map(d => d.split('-').slice(1).join('/')),
+                datasets: [{
+                    label: 'Attendance',
+                    data: dailyValues,
+                    backgroundColor: 'rgba(0, 242, 255, 0.5)',
+                    borderColor: '#00f2ff',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } },
+                    x: { grid: { display: false }, ticks: { color: '#888' } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // Draw Hourly Chart
+        const ctxHourly = document.getElementById('chart-hourly').getContext('2d');
+        if (hourlyChart) hourlyChart.destroy();
+        hourlyChart = new Chart(ctxHourly, {
+            type: 'line',
+            data: {
+                labels: Array.from({ length: 24 }, (_, i) => `${i}:00`),
+                datasets: [{
+                    label: 'Activity',
+                    data: hourlyCounts,
+                    borderColor: '#ff00f2',
+                    backgroundColor: 'rgba(255, 0, 242, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 2,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } },
+                    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888', maxRotation: 0 } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    } catch (err) {
+        console.error("Analytics Fail:", err);
     }
 }
 

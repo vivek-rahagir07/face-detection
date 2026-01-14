@@ -18,6 +18,9 @@
     <!-- External CSS -->
     <link rel="stylesheet" href="style.css">
     <script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.34/build/spline-viewer.js"></script>
+
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -129,10 +132,10 @@
                 <div class="mode-toggle">
                     <button id="btn-mode-attend" class="btn-secondary active">Attendance</button>
                     <button id="btn-mode-reg" class="btn-secondary">Registration</button>
+                    <button id="btn-mode-analytics" class="btn-secondary">Analytics</button>
                     <button id="btn-mode-config" class="btn-secondary">Settings</button>
                 </div>
 
-                <!-- Config -->
                 <div id="config-form" class="form-group hidden">
                     <h3>Configure Fields</h3>
                     <p style="font-size: 0.8rem; color: var(--text-muted);">Choose what info to collect during
@@ -143,11 +146,28 @@
                         <label><input type="checkbox" class="field-toggle" data-field="course" checked> Course /
                             Dept</label>
                         <label><input type="checkbox" class="field-toggle" data-field="email"> Email ID</label>
-                        <label><input type="checkbox" class="field-toggle" data-field="bloodGroup"> Blood Group</label>
-                        <label><input type="checkbox" class="field-toggle" data-field="weight"> Weight</label>
                         <label><input type="checkbox" class="field-toggle" data-field="phone"> Phone Number</label>
                     </div>
-                    <button id="btn-save-config" class="btn-primary">Save Settings</button>
+
+                    <h3 style="margin-top: 15px;">Geofencing Settings</h3>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">Restrict QR attendance to your location</p>
+                    <div class="form-group"
+                        style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 12px; border: 1px solid var(--border);">
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="config-geo-enabled"> Enable Geofencing
+                        </label>
+                        <div style="display: flex; gap: 8px; margin-top: 10px;">
+                            <input type="number" id="config-geo-radius" placeholder="Radius (meters)" style="flex: 1;"
+                                value="100">
+                            <button id="btn-set-location" class="btn-secondary btn-sm" style="white-space: nowrap;">📍
+                                Set Current Loc</button>
+                        </div>
+                        <small id="geo-status"
+                            style="display: block; margin-top: 8px; font-size: 0.7rem; color: var(--text-muted);">Local:
+                            Not set</small>
+                    </div>
+
+                    <button id="btn-save-config" class="btn-primary" style="margin-top: 10px;">Save Settings</button>
                 </div>
 
                 <!-- Registration -->
@@ -184,6 +204,26 @@
                     <div>
                         <div class="list-header"><span>⚡ Live Activity</span></div>
                         <div class="scrollable-list" id="live-logs" style="max-height: 120px;"></div>
+                    </div>
+                </div>
+
+                <!-- Analytics -->
+                <div id="analytics-panel" class="hidden">
+                    <div class="list-header"><span>📊 Attendance Analytics</span></div>
+                    <div class="scrollable-list"
+                        style="max-height: 400px; padding: 15px; display: flex; flex-direction: column; gap: 20px;">
+                        <div>
+                            <p
+                                style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px;">
+                                Daily Attendance Trend</p>
+                            <canvas id="chart-daily"></canvas>
+                        </div>
+                        <div style="border-top: 1px solid var(--border); padding-top: 20px;">
+                            <p
+                                style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px;">
+                                Peak Activity Hours</p>
+                            <canvas id="chart-hourly"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>

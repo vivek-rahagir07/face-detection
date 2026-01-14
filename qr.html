@@ -343,6 +343,19 @@
         const formView = document.getElementById('form-view');
         const successView = document.getElementById('success-view');
 
+        function getDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3;
+            const φ1 = lat1 * Math.PI / 180;
+            const φ2 = lat2 * Math.PI / 180;
+            const Δφ = (lat2 - lat1) * Math.PI / 180;
+            const Δλ = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
         async function markPresence() {
             const name = inputName.value.trim();
             if (!name) return showStatus("Please enter your name.", "error");
@@ -357,7 +370,27 @@
                 const spaceSnap = await getDoc(spaceRef);
 
                 if (!spaceSnap.exists()) throw new Error("Workspace not found.");
-                if (spaceSnap.data().qrNonce !== nonce) throw new Error("QR code expired. Please scan again.");
+                const spaceData = spaceSnap.data();
+                if (spaceData.qrNonce !== nonce) throw new Error("QR code expired. Please scan again.");
+
+                // Geofencing Check
+                if (spaceData.geofencing && spaceData.geofencing.enabled && spaceData.geofencing.center) {
+                    showStatus("Checking location...", "");
+                    const pos = await new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 5000 });
+                    }).catch(err => {
+                        throw new Error("Location access required for this workspace.");
+                    });
+
+                    const dist = getDistance(
+                        pos.coords.latitude, pos.coords.longitude,
+                        spaceData.geofencing.center.lat, spaceData.geofencing.center.lng
+                    );
+
+                    if (dist > (spaceData.geofencing.radius || 100)) {
+                        throw new Error(`Out of range. You are ${(dist / 1000).toFixed(2)}km away.`);
+                    }
+                }
 
                 // 2. Find or Create User Record
                 const q = query(collection(db, 'users'), where("spaceId", "==", spaceId), where("name", "==", name));
