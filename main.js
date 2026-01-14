@@ -54,6 +54,12 @@ const btnCloseHistory = document.getElementById('btn-close-history');
 const historyDateSelector = document.getElementById('history-date-selector');
 const historyTableBody = document.getElementById('history-table-body');
 const historyStatus = document.getElementById('history-status');
+const historySearchInput = document.getElementById('history-search');
+const btnExportHistory = document.getElementById('btn-export-history');
+
+// State
+let currentHistoryRecords = [];
+let currentHistoryDate = '';
 // scanStatusOverlay and related elements removed as per request
 
 // State
@@ -377,6 +383,9 @@ async function openHistoryModal() {
     historyDateSelector.innerHTML = '<div style="color:var(--accent)">Loading dates...</div>';
     historyTableBody.innerHTML = '';
     historyStatus.innerText = 'Select a date to view attendance';
+    btnExportHistory.style.display = 'none';
+    currentHistoryRecords = [];
+    currentHistoryDate = '';
 
     try {
         const spaceSnap = await getDoc(doc(db, COLL_SPACES, currentSpace.id));
@@ -392,12 +401,18 @@ async function openHistoryModal() {
         dates.forEach(date => {
             const btn = document.createElement('button');
             btn.className = 'btn-date';
-            btn.innerText = date;
+
+            // Format date for display: "14 Jan 2026"
+            const d = new Date(date);
+            const displayDate = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+            btn.innerText = displayDate;
             btn.onclick = () => loadHistoryForDate(date, btn);
             historyDateSelector.appendChild(btn);
         });
 
-        // Load most recent date by default
+        // Load most recent date by default as requested "dates first then list"
+        // But the user might want to see buttons first. I'll load the first one anyway for UX.
         if (dates.length > 0) {
             loadHistoryForDate(dates[0], historyDateSelector.firstChild);
         }
@@ -408,12 +423,14 @@ async function openHistoryModal() {
 }
 
 async function loadHistoryForDate(date, btnElement) {
+    currentHistoryDate = date;
     // UI Update
     document.querySelectorAll('.btn-date').forEach(b => b.classList.remove('active'));
     if (btnElement) btnElement.classList.add('active');
 
-    historyTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">Loading data...</td></tr>';
+    historyTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">Fetching records...</td></tr>';
     historyStatus.innerText = `Loading attendance for ${date}...`;
+    btnExportHistory.style.display = 'none';
 
     try {
         const q = query(collection(db, COLL_ATTENDANCE),
@@ -425,32 +442,71 @@ async function loadHistoryForDate(date, btnElement) {
 
         // Sort Alphabetically
         records.sort((a, b) => a.name.localeCompare(b.name));
+        currentHistoryRecords = records;
 
-        if (records.length === 0) {
-            historyTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#888;">No records found for this date.</td></tr>';
-            historyStatus.innerText = `No records for ${date}`;
-            return;
-        }
-
-        historyTableBody.innerHTML = '';
-        records.forEach(r => {
-            const time = r.timestamp ? (r.timestamp.toDate ? r.timestamp.toDate() : new Date(r.timestamp)).toLocaleTimeString() : 'N/A';
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><strong>${r.name}</strong></td>
-                <td>${r.regNo || '-'}</td>
-                <td>${r.course || '-'}</td>
-                <td>${time}</td>
-            `;
-            historyTableBody.appendChild(tr);
-        });
-
-        historyStatus.innerText = `Showing ${records.length} records for ${date}`;
+        renderHistoryTable(records);
+        btnExportHistory.style.display = records.length > 0 ? 'block' : 'none';
 
     } catch (err) {
         console.error("History Data Load Fail:", err);
         historyTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--danger);">Error loading data.</td></tr>';
     }
+}
+
+function renderHistoryTable(records) {
+    if (records.length === 0) {
+        historyTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#888;">No records found.</td></tr>';
+        historyStatus.innerText = `No data for this date.`;
+        return;
+    }
+
+    historyTableBody.innerHTML = '';
+    records.forEach(r => {
+        const time = r.timestamp ? (r.timestamp.toDate ? r.timestamp.toDate() : new Date(r.timestamp)).toLocaleTimeString() : 'N/A';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><strong>${r.name}</strong></td>
+            <td>${r.regNo || '-'}</td>
+            <td>${r.course || '-'}</td>
+            <td>${time}</td>
+        `;
+        historyTableBody.appendChild(tr);
+    });
+
+    historyStatus.innerText = `Showing ${records.length} records.`;
+}
+
+// History Search
+if (historySearchInput) {
+    historySearchInput.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        const filtered = currentHistoryRecords.filter(r =>
+            r.name.toLowerCase().includes(term) ||
+            (r.regNo && r.regNo.toLowerCase().includes(term)) ||
+            (r.course && r.course.toLowerCase().includes(term))
+        );
+        renderHistoryTable(filtered);
+    });
+}
+
+// History Export
+if (btnExportHistory) {
+    btnExportHistory.addEventListener('click', () => {
+        if (currentHistoryRecords.length === 0) return;
+
+        let csv = "Name,Registration Number,Course,Time\n";
+        currentHistoryRecords.forEach(r => {
+            const time = r.timestamp ? (r.timestamp.toDate ? r.timestamp.toDate() : new Date(r.timestamp)).toLocaleTimeString() : 'N/A';
+            csv += `"${r.name}","${r.regNo || ''}","${r.course || ''}","${time}"\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `attendance_${currentSpace.name.replace(/\s+/g, '_')}_${currentHistoryDate}.csv`;
+        link.click();
+    });
 }
 
 // ==========================================
