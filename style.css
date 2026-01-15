@@ -83,6 +83,13 @@ h1 {
     padding: 24px;
 }
 
+@media (max-width: 600px) {
+    .main-container {
+        padding: 12px;
+        gap: 16px;
+    }
+}
+
 @media (min-width: 1024px) {
     .main-container {
         grid-template-columns: 1.6fr 1fr;
@@ -141,6 +148,13 @@ h1 {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+@media (max-width: 600px) {
+    .camera-wrapper {
+        aspect-ratio: 4/3;
+        border-radius: 20px;
+    }
 }
 
 .camera-wrapper::after {
@@ -209,9 +223,8 @@ h1 {
     display: flex;
     flex-direction: column;
     gap: 28px;
-    width: 150%;
+    width: 100%;
     max-width: 500px;
-    position: relative;
     position: relative;
     will-change: filter, transform;
 }
@@ -429,10 +442,12 @@ input:focus {
 .scrollable-list {
     max-height: 250px;
     overflow-y: auto;
+    overflow-x: auto;
     background: #111;
     border: 1px solid var(--border);
     border-radius: 20px;
     box-shadow: var(--shadow-sm);
+    -webkit-overflow-scrolling: touch;
 }
 
 .attendance-tab {
@@ -804,7 +819,7 @@ input:focus {
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        padding: 20px;
+        padding: 40px 20px;
     }
 
     .portal-spline {
@@ -813,11 +828,25 @@ input:focus {
         left: 0;
         width: 100%;
         height: 100%;
-        opacity: 0.5;
+        opacity: 0.4;
     }
 
     .portal-card {
         margin-right: 0;
+        padding: 30px 24px;
+        width: 95%;
+    }
+
+    .logo-wrapper {
+        top: -30px;
+        left: 50%;
+        transform: translateX(-50%) rotate(-5deg);
+        width: 80px;
+        height: 80px;
+    }
+
+    .card-logo {
+        width: 70px;
     }
 }
 
@@ -861,13 +890,34 @@ input:focus {
     align-items: center;
     width: 100%;
     max-width: 1300px;
-    margin-bottom: 32px;
-    padding: 16px 32px;
+    margin-bottom: 24px;
+    padding: 12px 20px;
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-radius: 20px;
     border: 1px solid rgba(255, 255, 255, 0.05);
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+@media (max-width: 600px) {
+    .operation-header {
+        flex-direction: column;
+        text-align: center;
+        padding: 20px;
+    }
+
+    #current-space-title {
+        order: -1;
+        width: 100%;
+        font-size: 1.2rem;
+    }
+
+    .operation-header>div {
+        width: 100%;
+        justify-content: center;
+    }
 }
 
 #current-space-title {
@@ -1099,11 +1149,28 @@ input:focus {
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 70px;
-    background: #000;
+    height: 50px;
+    background: rgba(0, 0, 0, 0.95);
     z-index: 1000;
     border-top: 1px solid rgba(255, 255, 255, 0.05);
-    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 480px) {
+    .bottom-strip {
+        height: 45px;
+    }
+
+    .shining-logo {
+        width: 35px;
+    }
+
+    .nav-brand {
+        font-size: 0.9rem;
+    }
 }
 
 /* QR Attendance Modal */
@@ -1139,6 +1206,20 @@ input:focus {
     text-align: center;
     position: relative;
     animation: fadeInPortal 0.6s ease-out;
+}
+
+@media (max-width: 480px) {
+    .qr-modal-content {
+        padding: 24px;
+        border-radius: 32px;
+        width: 95%;
+    }
+
+    .qr-wrapper {
+        width: 200px;
+        height: 200px;
+        margin: 20px auto;
+    }
 }
 
 .qr-wrapper {
@@ -1242,6 +1323,15 @@ input:focus {
     padding: 12px 15px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     font-size: 0.9rem;
+}
+
+@media (max-width: 600px) {
+
+    .history-table th,
+    .history-table td {
+        padding: 8px 10px;
+        font-size: 0.75rem;
+    }
 }
 
 .history-table tr:hover {
