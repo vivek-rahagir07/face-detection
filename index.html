@@ -254,13 +254,15 @@
                                 Peak Activity Hours</p>
                             <canvas id="chart-hourly"></canvas>
                         </div>
-                        <div id="people-management-section">
-                            <p
-                                style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px;">
-                                People Management & Stats</p>
-                            <div id="people-list-container" class="scrollable-list" style="max-height: none;">
-                                <!-- People list with stats will be injected here -->
-                            </div>
+                        <p
+                            style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px;">
+                            People Management & Stats</p>
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <input type="text" id="people-search" placeholder="Search people..."
+                                style="margin: 0; padding: 12px 15px; font-size: 0.9rem;">
+                        </div>
+                        <div id="people-list-container" class="scrollable-list" style="max-height: none;">
+                            <!-- People list with stats will be injected here -->
                         </div>
                     </div>
                 </div>
@@ -349,6 +351,25 @@
                     style="color: var(--danger); border-color: var(--danger);">Delete Record</button>
             </div>
         </div>
+    </div>
+
+    <!-- Custom Confirmation Modal -->
+    <div id="confirm-modal" class="qr-modal-container hidden" style="z-index: 10001;">
+        <div class="qr-modal-content" style="max-width: 350px;">
+            <div style="font-size: 2.5rem; color: var(--danger); margin-bottom: 15px;">⚠</div>
+            <h3>Critical Action</h3>
+            <p id="confirm-message">Are you sure you want to proceed?</p>
+            <div style="display: flex; gap: 10px; margin-top: 25px;">
+                <button id="btn-confirm-yes" class="btn-primary" style="background: var(--danger); flex: 1;">Yes,
+                    Delete</button>
+                <button id="btn-confirm-no" class="btn-secondary" style="flex: 1;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container"
+        style="position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 10002; display: flex; flex-direction: column; gap: 10px; pointer-events: none;">
     </div>
 
     <!-- Main Application Logic (External) -->

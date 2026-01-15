@@ -138,6 +138,16 @@ const editPersonNameTitle = document.getElementById('edit-person-name-title');
 
 let editingPersonId = null;
 
+// New UX Refinement Elements
+const peopleSearchInput = document.getElementById('people-search');
+const confirmModal = document.getElementById('confirm-modal');
+const confirmMessage = document.getElementById('confirm-message');
+const btnConfirmYes = document.getElementById('btn-confirm-yes');
+const btnConfirmNo = document.getElementById('btn-confirm-no');
+const toastContainer = document.getElementById('toast-container');
+
+let confirmCallback = null;
+
 // HUD Animation State
 let hudScanCycle = 0; // 0 to 1
 let hudScanDir = 1;
@@ -1039,29 +1049,70 @@ function renderAttendanceList() {
     }
 }
 
+function showToast(message, type = 'success') {
+    if (!toastContainer) return;
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerText = message;
+    toastContainer.appendChild(toast);
+    setTimeout(() => toast.remove(), 3100);
+}
+
+function showConfirm(message, callback) {
+    if (!confirmModal) return;
+    confirmMessage.innerText = message;
+    confirmCallback = callback;
+    confirmModal.classList.remove('hidden');
+}
+
+if (btnConfirmNo) {
+    btnConfirmNo.onclick = () => {
+        confirmModal.classList.add('hidden');
+        confirmCallback = null;
+    };
+}
+
+if (btnConfirmYes) {
+    btnConfirmYes.onclick = () => {
+        if (confirmCallback) confirmCallback();
+        confirmModal.classList.add('hidden');
+        confirmCallback = null;
+    };
+}
+
+let peopleSearchQuery = '';
+if (peopleSearchInput) {
+    peopleSearchInput.addEventListener('input', (e) => {
+        peopleSearchQuery = e.target.value.toLowerCase();
+        renderPeopleManagement();
+    });
+}
+
 async function renderPeopleManagement() {
     if (!peopleListContainer) return;
-    if (allUsersData.length === 0) {
-        peopleListContainer.innerHTML = '<div style="padding:20px; text-align:center; color:#888;">No registered users yet.</div>';
+
+    // Filter by search query
+    const filteredUsers = allUsersData.filter(user =>
+        user.name.toLowerCase().includes(peopleSearchQuery) ||
+        (user.regNo && user.regNo.toLowerCase().includes(peopleSearchQuery))
+    );
+
+    if (filteredUsers.length === 0) {
+        peopleListContainer.innerHTML = `<div style="padding:20px; text-align:center; color:#888;">${allUsersData.length === 0 ? 'No registered users yet.' : 'No matches found.'}</div>`;
         return;
     }
 
-    // Sort by name
-    allUsersData.sort((a, b) => a.name.localeCompare(b.name));
+    peopleListContainer.innerHTML = '';
+
+    filteredUsers.sort((a, b) => a.name.localeCompare(b.name));
 
     // Get total days of attendance recorded for this space to calculate percentage
     const spaceRef = doc(db, COLL_SPACES, currentSpace.id);
     const spaceSnap = await getDoc(spaceRef);
     const historyDates = spaceSnap.data().historyDates || {};
-    const totalDays = Object.keys(historyDates).length || 1; // Fallback to 1 to avoid div by zero
+    const totalDays = Object.keys(historyDates).length || 1;
 
-    peopleListContainer.innerHTML = '';
-
-    // We need to fetch individual attendance counts. This can be heavy, but for small groups it's fine.
-    // Optimisation: We'll use a local count from the users doc if available, otherwise just use dummy/stored data.
-    // Actually, let's just use the 'attendanceCount' field which we should be incrementing.
-
-    allUsersData.forEach(user => {
+    filteredUsers.forEach(user => {
         const attendanceCount = user.attendanceCount || 0;
         const percentage = Math.round((attendanceCount / totalDays) * 100);
 
@@ -1117,9 +1168,9 @@ if (btnSaveEdit) {
                 course: newCourse
             });
             editModal.classList.add('hidden');
-            alert("Updated successfully!");
+            showToast("Record updated successfully!");
         } catch (e) {
-            alert("Update fail: " + e.message);
+            showToast("Update fail: " + e.message, "error");
         } finally {
             btnSaveEdit.innerText = "Save Changes";
             btnSaveEdit.disabled = false;
@@ -1128,23 +1179,24 @@ if (btnSaveEdit) {
 }
 
 if (btnDeletePerson) {
-    btnDeletePerson.onclick = async () => {
+    btnDeletePerson.onclick = () => {
         if (!editingPersonId) return;
-        if (!confirm("Are you sure you want to PERMANENTLY delete this person and all their biometric data? This cannot be undone.")) return;
 
-        btnDeletePerson.innerText = "Deleting...";
-        btnDeletePerson.disabled = true;
+        showConfirm(`Are you sure you want to permanently delete ${editPersonNameTitle.innerText}? All biometric data will be lost.`, async () => {
+            btnDeletePerson.innerText = "Deleting...";
+            btnDeletePerson.disabled = true;
 
-        try {
-            await deleteDoc(doc(db, COLL_USERS, editingPersonId));
-            editModal.classList.add('hidden');
-            alert("Person deleted.");
-        } catch (e) {
-            alert("Delete fail: " + e.message);
-        } finally {
-            btnDeletePerson.innerText = "Delete Record";
-            btnDeletePerson.disabled = false;
-        }
+            try {
+                await deleteDoc(doc(db, COLL_USERS, editingPersonId));
+                editModal.classList.add('hidden');
+                showToast("Person deleted successfully.");
+            } catch (e) {
+                showToast("Delete fail: " + e.message, "error");
+            } finally {
+                btnDeletePerson.innerText = "Delete Record";
+                btnDeletePerson.disabled = false;
+            }
+        });
     };
 }
 
