@@ -1541,6 +1541,64 @@ input:focus {
     }
 }
 
+/* People Management Styles */
+.management-person-card {
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: var(--transition);
+}
+
+.management-person-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.person-primary-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-align: left;
+}
+
+.person-stats-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.percentage-badge {
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: rgba(0, 242, 255, 0.1);
+    color: var(--accent);
+    border: 1px solid rgba(0, 242, 255, 0.2);
+}
+
+.btn-icon {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: color 0.2s;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-icon:hover {
+    color: var(--accent);
+}
+
+.btn-icon.delete:hover {
+    color: var(--danger);
+}
+
 /* Data Stream Effect */
 .data-stream {
     position: absolute;

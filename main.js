@@ -20,6 +20,15 @@ window.addEventListener('load', () => {
     }, remaining);
 });
 
+// --- PWA Service Worker Registration ---
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('SW Registered', reg))
+            .catch(err => console.error('SW Registration Fail', err));
+    });
+}
+
 // Configuration & Setup
 
 let db, auth, currentUser;
@@ -115,6 +124,19 @@ const configGeoRadius = document.getElementById('config-geo-radius');
 const btnSetLocation = document.getElementById('btn-set-location');
 const geoStatus = document.getElementById('geo-status');
 const configVoiceEnabled = document.getElementById('config-voice-enabled');
+
+// Individual Analytics & Management Elements
+const peopleListContainer = document.getElementById('people-list-container');
+const editModal = document.getElementById('edit-modal');
+const btnCloseEdit = document.getElementById('btn-close-edit');
+const editNameInput = document.getElementById('edit-name');
+const editRegNoInput = document.getElementById('edit-regNo');
+const editCourseInput = document.getElementById('edit-course');
+const btnSaveEdit = document.getElementById('btn-save-edit');
+const btnDeletePerson = document.getElementById('btn-delete-person');
+const editPersonNameTitle = document.getElementById('edit-person-name-title');
+
+let editingPersonId = null;
 
 // HUD Animation State
 let hudScanCycle = 0; // 0 to 1
@@ -1003,6 +1025,7 @@ function startDbListener() {
 
         // Render based on active tab
         renderAttendanceList();
+        renderPeopleManagement();
     });
 }
 
@@ -1014,6 +1037,115 @@ function renderAttendanceList() {
     } else {
         todayListContainer.innerHTML = lastAbsentHTML || '<div style="padding:10px; text-align:center; color:#888;">All registered users are present!</div>';
     }
+}
+
+async function renderPeopleManagement() {
+    if (!peopleListContainer) return;
+    if (allUsersData.length === 0) {
+        peopleListContainer.innerHTML = '<div style="padding:20px; text-align:center; color:#888;">No registered users yet.</div>';
+        return;
+    }
+
+    // Sort by name
+    allUsersData.sort((a, b) => a.name.localeCompare(b.name));
+
+    // Get total days of attendance recorded for this space to calculate percentage
+    const spaceRef = doc(db, COLL_SPACES, currentSpace.id);
+    const spaceSnap = await getDoc(spaceRef);
+    const historyDates = spaceSnap.data().historyDates || {};
+    const totalDays = Object.keys(historyDates).length || 1; // Fallback to 1 to avoid div by zero
+
+    peopleListContainer.innerHTML = '';
+
+    // We need to fetch individual attendance counts. This can be heavy, but for small groups it's fine.
+    // Optimisation: We'll use a local count from the users doc if available, otherwise just use dummy/stored data.
+    // Actually, let's just use the 'attendanceCount' field which we should be incrementing.
+
+    allUsersData.forEach(user => {
+        const attendanceCount = user.attendanceCount || 0;
+        const percentage = Math.round((attendanceCount / totalDays) * 100);
+
+        const card = document.createElement('div');
+        card.className = 'management-person-card';
+        card.innerHTML = `
+            <div class="person-primary-info">
+                <strong>${user.name}</strong>
+                <small style="color:var(--text-muted)">${user.regNo || 'No Reg No'}</small>
+            </div>
+            <div class="person-stats-row">
+                <div class="percentage-badge">${percentage}%</div>
+                <button class="btn-icon edit-btn" data-id="${nameToDocId[user.name]}">✏️</button>
+            </div>
+        `;
+
+        card.querySelector('.edit-btn').onclick = (e) => {
+            const uid = e.target.closest('.edit-btn').dataset.id;
+            openEditModal(uid, user);
+        };
+
+        peopleListContainer.appendChild(card);
+    });
+}
+
+function openEditModal(uid, userData) {
+    editingPersonId = uid;
+    editPersonNameTitle.innerText = userData.name;
+    editNameInput.value = userData.name;
+    editRegNoInput.value = userData.regNo || '';
+    editCourseInput.value = userData.course || '';
+    editModal.classList.remove('hidden');
+}
+
+if (btnCloseEdit) btnCloseEdit.onclick = () => editModal.classList.add('hidden');
+
+if (btnSaveEdit) {
+    btnSaveEdit.onclick = async () => {
+        if (!editingPersonId) return;
+        const newName = editNameInput.value.trim();
+        const newReg = editRegNoInput.value.trim();
+        const newCourse = editCourseInput.value.trim();
+
+        if (!newName) return alert("Name cannot be empty");
+
+        btnSaveEdit.innerText = "Saving...";
+        btnSaveEdit.disabled = true;
+
+        try {
+            await updateDoc(doc(db, COLL_USERS, editingPersonId), {
+                name: newName,
+                regNo: newReg,
+                course: newCourse
+            });
+            editModal.classList.add('hidden');
+            alert("Updated successfully!");
+        } catch (e) {
+            alert("Update fail: " + e.message);
+        } finally {
+            btnSaveEdit.innerText = "Save Changes";
+            btnSaveEdit.disabled = false;
+        }
+    };
+}
+
+if (btnDeletePerson) {
+    btnDeletePerson.onclick = async () => {
+        if (!editingPersonId) return;
+        if (!confirm("Are you sure you want to PERMANENTLY delete this person and all their biometric data? This cannot be undone.")) return;
+
+        btnDeletePerson.innerText = "Deleting...";
+        btnDeletePerson.disabled = true;
+
+        try {
+            await deleteDoc(doc(db, COLL_USERS, editingPersonId));
+            editModal.classList.add('hidden');
+            alert("Person deleted.");
+        } catch (e) {
+            alert("Delete fail: " + e.message);
+        } finally {
+            btnDeletePerson.innerText = "Delete Record";
+            btnDeletePerson.disabled = false;
+        }
+    };
 }
 
 // Drawing Utils

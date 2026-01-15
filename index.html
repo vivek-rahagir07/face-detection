@@ -5,6 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CognitoAttend</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="folder/cognito attend.png">
 
     <!-- Face API -->
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
@@ -44,7 +49,7 @@
 
         <div class="portal-card mobile-hidden">
             <div class="logo-wrapper">
-                <img src="folder/hacker2.png" alt="Hacker Logo" class="card-logo">
+                <img src="folder/cognito attend.png" alt="Hacker Logo" class="card-logo">
             </div>
             <h1>CognitoAttend</h1>
             <p>Select your workspace to continue</p>
@@ -249,6 +254,14 @@
                                 Peak Activity Hours</p>
                             <canvas id="chart-hourly"></canvas>
                         </div>
+                        <div id="people-management-section">
+                            <p
+                                style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px;">
+                                People Management & Stats</p>
+                            <div id="people-list-container" class="scrollable-list" style="max-height: none;">
+                                <!-- People list with stats will be injected here -->
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -318,6 +331,23 @@
                 </table>
             </div>
             <div id="history-status" class="qr-status">Select a date to view attendance</div>
+        </div>
+    </div>
+
+    <!-- Edit Person Modal -->
+    <div id="edit-modal" class="qr-modal-container hidden">
+        <div class="qr-modal-content">
+            <button id="btn-close-edit" class="btn-close">&times;</button>
+            <h3>Edit Discovery</h3>
+            <p>Update information for <span id="edit-person-name-title">Person</span></p>
+            <div class="form-group" style="margin-top: 20px;">
+                <input type="text" id="edit-name" placeholder="Full Name">
+                <input type="text" id="edit-regNo" placeholder="Registration Number">
+                <input type="text" id="edit-course" placeholder="Course / Department">
+                <button id="btn-save-edit" class="btn-primary">Save Changes</button>
+                <button id="btn-delete-person" class="btn-secondary"
+                    style="color: var(--danger); border-color: var(--danger);">Delete Record</button>
+            </div>
         </div>
     </div>
 
