@@ -148,61 +148,6 @@ const toastContainer = document.getElementById('toast-container');
 
 let confirmCallback = null;
 
-// Sidebar Elements
-const btnHamburger = document.getElementById('btn-hamburger');
-const mobileSidebar = document.getElementById('mobile-sidebar');
-const mobileSidebarOverlay = document.getElementById('mobile-sidebar-overlay');
-const btnCloseSidebar = document.getElementById('btn-close-sidebar');
-const sidebarLinks = document.querySelectorAll('.sidebar-link');
-const btnSidebarHistory = document.getElementById('btn-sidebar-history');
-const btnSidebarExit = document.getElementById('btn-sidebar-exit');
-
-// Sidebar Logic
-function toggleSidebar(show) {
-    if (show) {
-        mobileSidebar.classList.add('open');
-        mobileSidebarOverlay.classList.remove('hidden');
-        setTimeout(() => mobileSidebarOverlay.classList.add('open'), 10); // Fade in
-    } else {
-        mobileSidebar.classList.remove('open');
-        mobileSidebarOverlay.classList.remove('open');
-        setTimeout(() => mobileSidebarOverlay.classList.add('hidden'), 300); // Wait for fade out
-    }
-}
-
-if (btnHamburger) btnHamburger.onclick = () => toggleSidebar(true);
-if (btnCloseSidebar) btnCloseSidebar.onclick = () => toggleSidebar(false);
-if (mobileSidebarOverlay) mobileSidebarOverlay.onclick = () => toggleSidebar(false);
-
-sidebarLinks.forEach(link => {
-    link.addEventListener('click', () => {
-        const mode = link.dataset.mode;
-        if (mode) {
-            changeMode(mode);
-            toggleSidebar(false);
-
-            // Update active state in sidebar
-            sidebarLinks.forEach(l => l.classList.remove('active'));
-            link.classList.add('active');
-        }
-    });
-});
-
-if (btnSidebarHistory) {
-    btnSidebarHistory.onclick = () => {
-        toggleSidebar(false);
-        openHistoryModal();
-    };
-}
-
-if (btnSidebarExit) {
-    btnSidebarExit.onclick = () => {
-        toggleSidebar(false);
-        location.reload();
-    };
-}
-
-
 // HUD Animation State
 let hudScanCycle = 0; // 0 to 1
 let hudScanDir = 1;
@@ -210,7 +155,7 @@ const lastSpoken = {};
 
 // Device Detection for Performance
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-const DETECTION_INTERVAL = isMobile ? 400 : 100;
+const DETECTION_INTERVAL = isMobile ? 250 : 100;
 
 let hourlyChart = null;
 

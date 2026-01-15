@@ -808,66 +808,15 @@ input:focus {
 
 .operation-container {
     width: 100%;
-    height: 100dvh;
-    /* Dynamic viewport height */
+    min-height: 100vh;
     background: #000;
-    overflow: hidden;
-    /* Lock the main screen */
-    position: relative;
     display: flex;
     flex-direction: column;
-}
-
-.operation-screen-wrapper {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 15px;
-    height: 100%;
-    overflow: hidden;
-}
-
-.operation-header {
-    flex-shrink: 0;
-    margin-bottom: 10px;
-    padding: 10px 15px;
-    display: flex;
-    justify-content: space-between;
     align-items: center;
-    background: rgba(15, 15, 15, 0.8);
-    border-radius: 15px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-/* Desktop Only Utility */
-.desktop-only {
-    display: flex;
-}
-
-@media (max-width: 768px) {
-    .desktop-only {
-        display: none !important;
-    }
-}
-
-
-.camera-wrapper {
-    flex: 1;
-    /* Camera takes available space */
-    min-height: 40vh;
+    padding: 40px 20px;
     position: relative;
-    border-radius: 24px;
-    overflow: hidden;
+    overflow-x: hidden;
 }
-
-.controls-panel {
-    flex-shrink: 0;
-    max-height: 50%;
-    overflow-y: auto;
-    padding-bottom: 60px;
-    /* Space for bottom strip */
-}
-
 
 @media (max-width: 1024px) {
     .portal-container {
@@ -1799,14 +1748,12 @@ input:focus {
     .glass-panel,
     .portal-card,
     .qr-modal-content {
-        backdrop-filter: none !important;
-        /* Remove expensive blur on mobile */
-        -webkit-backdrop-filter: none !important;
-        background: rgba(10, 10, 10, 0.98);
-        /* Fully opaque for speed */
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        /* Reduced blur for performance */
+        -webkit-backdrop-filter: blur(10px);
+        background: rgba(15, 15, 15, 0.9);
+        /* More opaque */
     }
-
 
     .scanning-line {
         will-change: top;
@@ -1837,7 +1784,6 @@ input:focus {
 #overlay {
     animation: mesh-pulse 4s infinite ease-in-out;
 }
-
 /* Final Mobile Polish */
 @media (max-width: 600px) {
     :root {
@@ -1851,171 +1797,67 @@ input:focus {
 
     .operation-header {
         padding: 12px;
-
-        /* Mobile Sidebar Styles */
-        .mobile-sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 280px;
-            height: 100%;
-            background: rgba(10, 10, 10, 0.98);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            z-index: 3000;
-            transform: translateX(-100%);
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border-right: 1px solid rgba(255, 255, 255, 0.1);
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-            box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
-        }
-
-        .mobile-sidebar.open {
-            transform: translateX(0);
-        }
-
-        .mobile-sidebar-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            z-index: 2999;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-
-        .mobile-sidebar-overlay.open {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .sidebar-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .sidebar-header h3 {
-            margin: 0;
-            font-size: 1.2rem;
-            color: #fff;
-            letter-spacing: 0.05em;
-        }
-
-        .sidebar-nav {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .sidebar-link {
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            font-size: 1rem;
-            padding: 15px;
-            text-align: left;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .sidebar-link.active {
-            background: rgba(0, 242, 255, 0.1);
-            color: var(--accent);
-            box-shadow: 0 0 15px rgba(0, 242, 255, 0.05);
-        }
-
-        .sidebar-link:active {
-            transform: scale(0.98);
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .sidebar-divider {
-            height: 1px;
-            background: rgba(255, 255, 255, 0.1);
-            margin: 10px 0;
-        }
-
-        /* Operation Header Mobile Tweak */
-        .operation-header {
-            min-height: 60px;
-        }
-
-
-        .operation-header h2 {
-            width: 100%;
-            text-align: center;
-            font-size: 1.1rem;
-            order: -1;
-        }
-
-        .operation-header .btn-sm {
-            padding: 8px 12px;
-            font-size: 0.75rem;
-        }
-
-        .status-badge {
-            font-size: 0.7rem;
-            padding: 8px 12px;
-        }
-
-        /* Full width modals on mobile */
-        .qr-modal-content {
-            width: 95% !important;
-            max-width: none !important;
-            margin: 10px;
-            padding: 24px 16px;
-        }
-
-        /* Typography Polish */
-        h1 {
-            font-size: 2.2rem;
-        }
-
-        h2 {
-            font-size: 1.6rem;
-        }
-
-        .mobile-welcome-text h1 {
-            font-size: 2.8rem;
-        }
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
     }
 
-    /* Enhanced Tap Feedback */
-    button:active,
-    .list-item:active,
-    .management-person-card:active {
-        transform: scale(0.96);
-        filter: brightness(0.9);
-        transition: transform 0.1s ease;
+    .operation-header h2 {
+        width: 100%;
+        text-align: center;
+        font-size: 1.1rem;
+        order: -1;
     }
 
-    /* Smooth scrolling for modal content */
+    .operation-header .btn-sm {
+        padding: 8px 12px;
+        font-size: 0.75rem;
+    }
+
+    .status-badge {
+        font-size: 0.7rem;
+        padding: 8px 12px;
+    }
+
+    /* Full width modals on mobile */
     .qr-modal-content {
-        max-height: 90vh;
-        overflow-y: auto;
+        width: 95% !important;
+        max-width: none !important;
+        margin: 10px;
+        padding: 24px 16px;
     }
 
-    /* Touch-friendly Scrollbars */
-    ::-webkit-scrollbar {
-        width: 4px;
-        height: 4px;
+    /* Typography Polish */
+    h1 { font-size: 2.2rem; }
+    h2 { font-size: 1.6rem; }
+    
+    .mobile-welcome-text h1 {
+        font-size: 2.8rem;
     }
+}
 
-    ::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 10px;
-    }
+/* Enhanced Tap Feedback */
+button:active, 
+.list-item:active, 
+.management-person-card:active {
+    transform: scale(0.96);
+    filter: brightness(0.9);
+    transition: transform 0.1s ease;
+}
+
+/* Smooth scrolling for modal content */
+.qr-modal-content {
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* Touch-friendly Scrollbars */
+::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
 }

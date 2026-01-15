@@ -3,8 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CognitoAttend</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
@@ -93,302 +92,281 @@
         </div>
     </div>
 
-    <!-- Operation View -->
+    <!-- Operation -->
     <div id="view-operation" class="operation-container hidden">
-        <div class="operation-screen-wrapper">
-            <div class="operation-header">
-                <button id="btn-hamburger" class="btn-icon mobile-only">☰</button>
+        <div class="operation-header">
+            <button id="btn-exit-workspace" class="btn-secondary btn-sm">🚪 Exit Workspace</button>
+            <button id="btn-qr-presence" class="btn-primary btn-sm" style="background: var(--accent); color: #000;">📱
+                QR Presence</button>
+            <h2 id="current-space-title">Workspace Name</h2>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <button id="btn-history" class="btn-secondary btn-sm">📜 History</button>
                 <div id="system-status" class="status-badge status-loading">Initializing System...</div>
-                <button id="btn-history" class="btn-secondary btn-sm desktop-only">📜 History</button>
             </div>
+        </div>
 
+        <div class="main-container">
+            <!-- Camera -->
+            <div class="camera-wrapper">
+                <div id="face-3d-container"></div>
+                <video id="video" autoplay muted playsinline></video>
+                <div class="camera-viewfinder">
+                    <div class="viewfinder-corner top-left"></div>
+                    <div class="viewfinder-corner top-right"></div>
+                    <div class="viewfinder-corner bottom-left"></div>
+                    <div class="viewfinder-corner bottom-right"></div>
 
-            <div class="main-container">
-                <!-- Camera -->
-                <div class="camera-wrapper">
-                    <div id="face-3d-container"></div>
-                    <video id="video" autoplay muted playsinline></video>
-                    <div class="camera-viewfinder">
-                        <div class="viewfinder-corner top-left"></div>
-                        <div class="viewfinder-corner top-right"></div>
-                        <div class="viewfinder-corner bottom-left"></div>
-                        <div class="viewfinder-corner bottom-right"></div>
-
-                        <div class="viewfinder-ui top-row">
-                            <div class="rec-box">
-                                <span class="rec-dot"></span>
-                                <span>REC</span>
-                            </div>
-                            <div class="viewfinder-timer">00:00:00</div>
-                            <div class="battery-box">
-                                <div class="battery-icon">
-                                    <div class="battery-level"></div>
-                                </div>
-                            </div>
+                    <div class="viewfinder-ui top-row">
+                        <div class="rec-box">
+                            <span class="rec-dot"></span>
+                            <span>REC</span>
                         </div>
-                    </div>
-                    <canvas id="overlay"></canvas>
-                    <!-- Scanning Overlay Removed as per request -->
-                    <div id="loading-overlay" class="loading-screen">
-                        <div class="spinner"></div>
-                        <h3 id="loading-text">Loading AI Models...</h3>
-                        <p>Please ensure camera access is granted</p>
-                    </div>
-                </div>
-
-                <!-- Controls -->
-                <div class="controls-panel">
-                    <!-- Dashboard Stats -->
-                    <div class="stats-container">
-                        <div class="stat-box">
-                            <div class="stat-label">Date</div>
-                            <div style="font-weight: 600;" id="display-date">--/--</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-value" id="today-count">0</div>
-                            <div class="stat-label">Present Today</div>
-                        </div>
-                    </div>
-
-                    <!-- Modes (Desktop) -->
-                    <div class="mode-toggle desktop-only">
-                        <button id="btn-mode-attend" class="btn-secondary active">🕒 Attendance</button>
-                        <button id="btn-mode-reg" class="btn-secondary">👤 Registration</button>
-                        <button id="btn-mode-analytics" class="btn-secondary">👥 People Stats</button>
-                        <button id="btn-mode-config" class="btn-secondary">⚙️ Settings</button>
-                    </div>
-
-                    <div id="config-form" class="form-group hidden">
-                        <h3>Configure Fields</h3>
-                        <p style="font-size: 0.8rem; color: var(--text-muted);">Choose what info to collect during
-                            registration</p>
-                        <div class="toggle-group">
-                            <label><input type="checkbox" class="field-toggle" data-field="regNo" checked> Registration
-                                Number</label>
-                            <label><input type="checkbox" class="field-toggle" data-field="course" checked> Course /
-                                Dept</label>
-                            <label><input type="checkbox" class="field-toggle" data-field="email"> Email ID</label>
-                            <label><input type="checkbox" class="field-toggle" data-field="phone"> Phone Number</label>
-                        </div>
-
-                        <h3 style="margin-top: 15px;">Geofencing Settings</h3>
-                        <p style="font-size: 0.8rem; color: var(--text-muted);">Restrict QR attendance to your location
-                        </p>
-                        <div class="form-group"
-                            style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 12px; border: 1px solid var(--border);">
-                            <label style="display: flex; align-items: center; gap: 8px;">
-                                <input type="checkbox" id="config-geo-enabled"> Enable Geofencing
-                            </label>
-                            <div style="display: flex; gap: 8px; margin-top: 10px;">
-                                <input type="number" id="config-geo-radius" placeholder="Radius (meters)"
-                                    style="flex: 1;" value="100">
-                                <button id="btn-set-location" class="btn-secondary btn-sm"
-                                    style="white-space: nowrap;">📍
-                                    Set Current Loc</button>
-                            </div>
-                            <small id="geo-status"
-                                style="display: block; margin-top: 8px; font-size: 0.7rem; color: var(--text-muted);">Local:
-                                Not set</small>
-                        </div>
-
-                        <h3 style="margin-top: 15px;">Experience Settings</h3>
-                        <p style="font-size: 0.8rem; color: var(--text-muted);">Customize the interactions</p>
-                        <div class="form-group"
-                            style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 12px; border: 1px solid var(--border);">
-                            <label style="display: flex; align-items: center; gap: 8px;">
-                                <input type="checkbox" id="config-voice-enabled"> Voice Feedback (AI Announcements)
-                            </label>
-                        </div>
-
-                        <button id="btn-save-config" class="btn-primary" style="margin-top: 10px;">Save
-                            Settings</button>
-                    </div>
-
-                    <!-- Registration -->
-                    <div id="reg-form" class="form-group hidden">
-                        <h3>Register New Person</h3>
-                        <div id="dynamic-fields-container">
-                            <!-- Dynamic inputs will be injected here -->
-                        </div>
-                        <div class="registration-actions">
-                            <button id="btn-capture" class="btn-primary">📸 Capture & Register</button>
-                            <button id="btn-upload-trigger" class="btn-secondary">🖼️ Upload from Gallery</button>
-                            <input type="file" id="input-upload-photo" accept="image/*" class="hidden">
-                        </div>
-                        <small id="reg-feedback" style="text-align: center; color: var(--text-muted);">Look at the
-                            camera
-                            clearly or upload a photo</small>
-                    </div>
-
-                    <!-- Attendance -->
-                    <div id="attend-info">
-                        <div style="margin-bottom: 15px;">
-                            <div class="list-header">
-                                <div style="display: flex; gap: 10px;">
-                                    <span id="tab-present" class="attendance-tab active">Present</span>
-                                    <span id="tab-absent" class="attendance-tab">Absent</span>
-                                </div>
-                                <div style="flex-shrink: 0; display: flex; gap: 8px; align-items: center;">
-                                    <span id="scan-indicator"
-                                        style="width: 8px; height: 8px; background: #fff; border-radius: 50%; display: none;"></span>
-                                    <button id="btn-export" class="btn-export" title="Export to CSV">📥 Export</button>
-                                </div>
-                            </div>
-                            <div class="scrollable-list" id="today-list">
-                                <div style="padding:10px; text-align:center; color:#888;">No attendance yet</div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <div class="list-header"><span>⚡ Live Activity</span></div>
-                            <div class="scrollable-list" id="live-logs" style="max-height: 120px;"></div>
-                        </div>
-                    </div>
-
-                    <!-- People Stats -->
-                    <div id="analytics-panel" class="hidden">
-                        <div class="list-header"><span>👥 People Stats & Management</span></div>
-                        <div class="scrollable-list"
-                            style="max-height: 400px; padding: 15px; display: flex; flex-direction: column; gap: 15px;">
-                            <div class="form-group" style="margin-bottom: 5px;">
-                                <input type="text" id="people-search" placeholder="Search people..."
-                                    style="margin: 0; padding: 12px 15px; font-size: 0.9rem;">
-                            </div>
-                            <div id="people-list-container" class="scrollable-list" style="max-height: none;">
-                                <!-- People list with stats will be injected here -->
+                        <div class="viewfinder-timer">00:00:00</div>
+                        <div class="battery-box">
+                            <div class="battery-icon">
+                                <div class="battery-level"></div>
                             </div>
                         </div>
                     </div>
                 </div>
+                <canvas id="overlay"></canvas>
+                <!-- Scanning Overlay Removed as per request -->
+                <div id="loading-overlay" class="loading-screen">
+                    <div class="spinner"></div>
+                    <h3 id="loading-text">Loading AI Models...</h3>
+                    <p>Please ensure camera access is granted</p>
+                </div>
             </div>
-        </div>
 
-        <!-- Mobile Sidebar -->
-        <div id="mobile-sidebar-overlay" class="mobile-sidebar-overlay hidden"></div>
-        <div id="mobile-sidebar" class="mobile-sidebar">
-            <div class="sidebar-header">
-                <h3>Menu</h3>
-                <button id="btn-close-sidebar" class="btn-icon">✕</button>
-            </div>
-            <nav class="sidebar-nav">
-                <button class="sidebar-link active" data-mode="attendance">🕒 Attendance</button>
-                <button class="sidebar-link" data-mode="registration">👤 Registration</button>
-                <button class="sidebar-link" data-mode="analytics">👥 People Stats</button>
-                <button class="sidebar-link" data-mode="config">⚙️ Settings</button>
-                <div class="sidebar-divider"></div>
-                <button id="btn-sidebar-history" class="sidebar-link">📜 History</button>
-                <button id="btn-sidebar-exit" class="sidebar-link" style="color: var(--danger);">🚪 Exit
-                    Workspace</button>
-            </nav>
-        </div>
-
-        <!-- Bottom Aesthetic Strip -->
-        <div class="bottom-strip">
-            <div class="nav-logo-container">
-                <img src="folder/cognito attend.png" alt="CognitoAttend Logo" class="shining-logo">
-                <span class="nav-brand">CognitoAttend</span>
-            </div>
-        </div>
-
-        <!-- Bottom Overlay Elements -->
-        <div id="qr-modal" class="qr-modal-container hidden">
-            <div class="qr-modal-content">
-                <button id="btn-close-qr" class="btn-close">&times;</button>
-                <h3>QR Presence</h3>
-                <p>Scan to mark attendance. Refreshes in <span id="qr-timer">30</span>s</p>
-                <div class="qr-wrapper">
-                    <img id="qr-image" src="" alt="QR Code">
-                    <div class="qr-logo-overlay">
-                        <img src="folder/cognito attend.png" alt="Logo">
+            <!-- Controls -->
+            <div class="controls-panel">
+                <!-- Dashboard Stats -->
+                <div class="stats-container">
+                    <div class="stat-box">
+                        <div class="stat-label">Date</div>
+                        <div style="font-weight: 600;" id="display-date">--/--</div>
                     </div>
-                    <div class="qr-scanner-line"></div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="today-count">0</div>
+                        <div class="stat-label">Present Today</div>
+                    </div>
                 </div>
-                <div id="qr-status" class="qr-status">Generating code...</div>
-                <button id="btn-copy-qr-link" class="btn-secondary btn-sm"
-                    style="margin-top: 15px; width: 100%; border: 1px solid rgba(255,255,255,0.1);">🔗 Copy Attendance
-                    Link</button>
+
+                <!-- Modes -->
+                <div class="mode-toggle">
+                    <button id="btn-mode-attend" class="btn-secondary active">🕒 Attendance</button>
+                    <button id="btn-mode-reg" class="btn-secondary">👤 Registration</button>
+                    <button id="btn-mode-analytics" class="btn-secondary">👥 People Stats</button>
+                    <button id="btn-mode-config" class="btn-secondary">⚙️ Settings</button>
+                </div>
+
+                <div id="config-form" class="form-group hidden">
+                    <h3>Configure Fields</h3>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">Choose what info to collect during
+                        registration</p>
+                    <div class="toggle-group">
+                        <label><input type="checkbox" class="field-toggle" data-field="regNo" checked> Registration
+                            Number</label>
+                        <label><input type="checkbox" class="field-toggle" data-field="course" checked> Course /
+                            Dept</label>
+                        <label><input type="checkbox" class="field-toggle" data-field="email"> Email ID</label>
+                        <label><input type="checkbox" class="field-toggle" data-field="phone"> Phone Number</label>
+                    </div>
+
+                    <h3 style="margin-top: 15px;">Geofencing Settings</h3>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">Restrict QR attendance to your location</p>
+                    <div class="form-group"
+                        style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 12px; border: 1px solid var(--border);">
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="config-geo-enabled"> Enable Geofencing
+                        </label>
+                        <div style="display: flex; gap: 8px; margin-top: 10px;">
+                            <input type="number" id="config-geo-radius" placeholder="Radius (meters)" style="flex: 1;"
+                                value="100">
+                            <button id="btn-set-location" class="btn-secondary btn-sm" style="white-space: nowrap;">📍
+                                Set Current Loc</button>
+                        </div>
+                        <small id="geo-status"
+                            style="display: block; margin-top: 8px; font-size: 0.7rem; color: var(--text-muted);">Local:
+                            Not set</small>
+                    </div>
+
+                    <h3 style="margin-top: 15px;">Experience Settings</h3>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">Customize the interactions</p>
+                    <div class="form-group"
+                        style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 12px; border: 1px solid var(--border);">
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="config-voice-enabled"> Voice Feedback (AI Announcements)
+                        </label>
+                    </div>
+
+                    <button id="btn-save-config" class="btn-primary" style="margin-top: 10px;">Save Settings</button>
+                </div>
+
+                <!-- Registration -->
+                <div id="reg-form" class="form-group hidden">
+                    <h3>Register New Person</h3>
+                    <div id="dynamic-fields-container">
+                        <!-- Dynamic inputs will be injected here -->
+                    </div>
+                    <div class="registration-actions">
+                        <button id="btn-capture" class="btn-primary">📸 Capture & Register</button>
+                        <button id="btn-upload-trigger" class="btn-secondary">🖼️ Upload from Gallery</button>
+                        <input type="file" id="input-upload-photo" accept="image/*" class="hidden">
+                    </div>
+                    <small id="reg-feedback" style="text-align: center; color: var(--text-muted);">Look at the camera
+                        clearly or upload a photo</small>
+                </div>
+
+                <!-- Attendance -->
+                <div id="attend-info">
+                    <div style="margin-bottom: 15px;">
+                        <div class="list-header">
+                            <div style="display: flex; gap: 10px;">
+                                <span id="tab-present" class="attendance-tab active">Present</span>
+                                <span id="tab-absent" class="attendance-tab">Absent</span>
+                            </div>
+                            <div style="flex-shrink: 0; display: flex; gap: 8px; align-items: center;">
+                                <span id="scan-indicator"
+                                    style="width: 8px; height: 8px; background: #fff; border-radius: 50%; display: none;"></span>
+                                <button id="btn-export" class="btn-export" title="Export to CSV">📥 Export</button>
+                            </div>
+                        </div>
+                        <div class="scrollable-list" id="today-list">
+                            <div style="padding:10px; text-align:center; color:#888;">No attendance yet</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="list-header"><span>⚡ Live Activity</span></div>
+                        <div class="scrollable-list" id="live-logs" style="max-height: 120px;"></div>
+                    </div>
+                </div>
+
+                <!-- People Stats -->
+                <div id="analytics-panel" class="hidden">
+                    <div class="list-header"><span>👥 People Stats & Management</span></div>
+                    <div class="scrollable-list"
+                        style="max-height: 400px; padding: 15px; display: flex; flex-direction: column; gap: 15px;">
+                        <div class="form-group" style="margin-bottom: 5px;">
+                            <input type="text" id="people-search" placeholder="Search people..."
+                                style="margin: 0; padding: 12px 15px; font-size: 0.9rem;">
+                        </div>
+                        <div id="people-list-container" class="scrollable-list" style="max-height: none;">
+                            <!-- People list with stats will be injected here -->
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+    </div>
 
-        <!-- History Modal -->
-        <div id="history-modal" class="qr-modal-container hidden">
-            <div class="qr-modal-content" style="max-width: 800px; width: 95%;">
-                <button id="btn-close-history" class="btn-close">&times;</button>
-                <h3 id="history-modal-title">Attendance History</h3>
+    <!-- Bottom Aesthetic Strip -->
+    <div class="bottom-strip">
+        <div class="nav-logo-container">
+            <img src="folder/cognito attend.png" alt="CognitoAttend Logo" class="shining-logo">
+            <span class="nav-brand">CognitoAttend</span>
+        </div>
+    </div>
 
-                <div id="history-date-selector"
-                    style="margin: 20px 0; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
-                    <!-- Dates will be injected here -->
+    <!-- Bottom Overlay Elements -->
+    <div id="qr-modal" class="qr-modal-container hidden">
+        <div class="qr-modal-content">
+            <button id="btn-close-qr" class="btn-close">&times;</button>
+            <h3>QR Presence</h3>
+            <p>Scan to mark attendance. Refreshes in <span id="qr-timer">30</span>s</p>
+            <div class="qr-wrapper">
+                <img id="qr-image" src="" alt="QR Code">
+                <div class="qr-logo-overlay">
+                    <img src="folder/cognito attend.png" alt="Logo">
                 </div>
+                <div class="qr-scanner-line"></div>
+            </div>
+            <div id="qr-status" class="qr-status">Generating code...</div>
+            <button id="btn-copy-qr-link" class="btn-secondary btn-sm"
+                style="margin-top: 15px; width: 100%; border: 1px solid rgba(255,255,255,0.1);">🔗 Copy Attendance
+                Link</button>
+        </div>
+    </div>
 
-                <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center;">
-                    <input type="text" id="history-search" placeholder="Search by name, reg no..."
-                        style="flex: 1; margin: 0;">
-                    <button id="btn-export-history" class="btn-export" style="height: 45px; display: none;">📥 Export
-                        CSV</button>
-                </div>
+    <!-- History Modal -->
+    <div id="history-modal" class="qr-modal-container hidden">
+        <div class="qr-modal-content" style="max-width: 800px; width: 95%;">
+            <button id="btn-close-history" class="btn-close">&times;</button>
+            <h3 id="history-modal-title">Attendance History</h3>
 
-                <div id="history-table-container" class="scrollable-list"
-                    style="max-height: 400px; border: 1px solid rgba(0, 242, 255, 0.2);">
-                    <table class="history-table">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Reg No</th>
-                                <th>Course</th>
-                                <th>Time</th>
-                            </tr>
-                        </thead>
-                        <tbody id="history-table-body">
-                            <!-- Data will be injected here -->
-                        </tbody>
-                    </table>
-                </div>
-                <div id="history-status" class="qr-status">Select a date to view attendance</div>
+            <div id="history-date-selector"
+                style="margin: 20px 0; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+                <!-- Dates will be injected here -->
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center;">
+                <input type="text" id="history-search" placeholder="Search by name, reg no..."
+                    style="flex: 1; margin: 0;">
+                <button id="btn-export-history" class="btn-export" style="height: 45px; display: none;">📥 Export
+                    CSV</button>
+            </div>
+
+            <div id="history-table-container" class="scrollable-list"
+                style="max-height: 400px; border: 1px solid rgba(0, 242, 255, 0.2);">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Reg No</th>
+                            <th>Course</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body">
+                        <!-- Data will be injected here -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="history-status" class="qr-status">Select a date to view attendance</div>
+        </div>
+    </div>
+
+    <!-- Edit Person Modal -->
+    <div id="edit-modal" class="qr-modal-container hidden">
+        <div class="qr-modal-content">
+            <button id="btn-close-edit" class="btn-close">&times;</button>
+            <h3>Edit Discovery</h3>
+            <p>Update information for <span id="edit-person-name-title">Person</span></p>
+            <div class="form-group" style="margin-top: 20px;">
+                <input type="text" id="edit-name" placeholder="Full Name">
+                <input type="text" id="edit-regNo" placeholder="Registration Number">
+                <input type="text" id="edit-course" placeholder="Course / Department">
+                <button id="btn-save-edit" class="btn-primary">Save Changes</button>
+                <button id="btn-delete-person" class="btn-secondary"
+                    style="color: var(--danger); border-color: var(--danger);">Delete Record</button>
             </div>
         </div>
+    </div>
 
-        <!-- Edit Person Modal -->
-        <div id="edit-modal" class="qr-modal-container hidden">
-            <div class="qr-modal-content">
-                <button id="btn-close-edit" class="btn-close">&times;</button>
-                <h3>Edit Discovery</h3>
-                <p>Update information for <span id="edit-person-name-title">Person</span></p>
-                <div class="form-group" style="margin-top: 20px;">
-                    <input type="text" id="edit-name" placeholder="Full Name">
-                    <input type="text" id="edit-regNo" placeholder="Registration Number">
-                    <input type="text" id="edit-course" placeholder="Course / Department">
-                    <button id="btn-save-edit" class="btn-primary">Save Changes</button>
-                    <button id="btn-delete-person" class="btn-secondary"
-                        style="color: var(--danger); border-color: var(--danger);">Delete Record</button>
-                </div>
+    <!-- Custom Confirmation Modal -->
+    <div id="confirm-modal" class="qr-modal-container hidden" style="z-index: 10001;">
+        <div class="qr-modal-content" style="max-width: 350px;">
+            <div style="font-size: 2.5rem; color: var(--danger); margin-bottom: 15px;">⚠</div>
+            <h3>Critical Action</h3>
+            <p id="confirm-message">Are you sure you want to proceed?</p>
+            <div style="display: flex; gap: 10px; margin-top: 25px;">
+                <button id="btn-confirm-yes" class="btn-primary" style="background: var(--danger); flex: 1;">Yes,
+                    Delete</button>
+                <button id="btn-confirm-no" class="btn-secondary" style="flex: 1;">Cancel</button>
             </div>
         </div>
+    </div>
 
-        <!-- Custom Confirmation Modal -->
-        <div id="confirm-modal" class="qr-modal-container hidden" style="z-index: 10001;">
-            <div class="qr-modal-content" style="max-width: 350px;">
-                <div style="font-size: 2.5rem; color: var(--danger); margin-bottom: 15px;">⚠</div>
-                <h3>Critical Action</h3>
-                <p id="confirm-message">Are you sure you want to proceed?</p>
-                <div style="display: flex; gap: 10px; margin-top: 25px;">
-                    <button id="btn-confirm-yes" class="btn-primary" style="background: var(--danger); flex: 1;">Yes,
-                        Delete</button>
-                    <button id="btn-confirm-no" class="btn-secondary" style="flex: 1;">Cancel</button>
-                </div>
-            </div>
-        </div>
+    <!-- Toast Notifications -->
+    <div id="toast-container"
+        style="position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 10002; display: flex; flex-direction: column; gap: 10px; pointer-events: none;">
+    </div>
 
-        <!-- Toast Notifications -->
-        <div id="toast-container"
-            style="position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 10002; display: flex; flex-direction: column; gap: 10px; pointer-events: none;">
-        </div>
-
-        <!-- Main Application Logic (External) -->
-        <script type="module" src="main.js?v=1736862938"></script>
-        <div style="position: fixed; bottom: 5px; right: 5px; font-size: 10px; color: #333; pointer-events: none;">
-            v.1925
-        </div>
+    <!-- Main Application Logic (External) -->
+    <script type="module" src="main.js?v=1736862938"></script>
+    <div style="position: fixed; bottom: 5px; right: 5px; font-size: 10px; color: #333; pointer-events: none;">v.1925
+    </div>
 </body>
 
 </html>
