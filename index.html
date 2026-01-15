@@ -35,14 +35,14 @@
     </div>
 
     <!-- Portal -->
-    <div id="view-portal" class="portal-container">
+    <div id="view-portal" class="portal-container splash-active">
         <div class="portal-spline">
             <spline-viewer url="https://prod.spline.design/DMDhURqSqdDj2ohd/scene.splinecode"></spline-viewer>
             <div class="spline-watermark-cover"></div>
         </div>
 
 
-        <div class="portal-card">
+        <div class="portal-card mobile-hidden">
             <div class="logo-wrapper">
                 <img src="folder/hacker2.png" alt="Hacker Logo" class="card-logo">
             </div>
@@ -74,6 +74,16 @@
 
             <small id="portal-error"
                 style="color: var(--danger); text-align: center; display: block; margin-top: 10px;"></small>
+        </div>
+
+        <!-- Mobile Splash View -->
+        <div id="portal-mobile-start" class="mobile-only">
+            <div class="mobile-welcome-text">
+                <h2>Welcome to</h2>
+                <h1>CognitoAttend</h1>
+                <p>Advanced AI Attendance System</p>
+            </div>
+            <button id="btn-portal-continue" class="btn-primary">Continue to Portal</button>
         </div>
     </div>
 

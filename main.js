@@ -40,6 +40,9 @@ const portalCreatePass = document.getElementById('portal-create-pass');
 const btnPortalJoin = document.getElementById('btn-portal-join');
 const btnPortalCreate = document.getElementById('btn-portal-create');
 const portalError = document.getElementById('portal-error');
+const btnPortalContinue = document.getElementById('btn-portal-continue');
+const portalMobileStart = document.getElementById('portal-mobile-start');
+const portalCard = document.querySelector('.portal-card');
 
 // DOM Elements: Operation
 const viewOperation = document.getElementById('view-operation');
@@ -413,7 +416,24 @@ btnExitWorkspace.addEventListener('click', () => {
     stopQRRotation();
     currentSpace = null;
     showView('view-portal');
+
+    // Reset mobile state if needed
+    if (window.innerWidth <= 1024) {
+        portalCard.classList.add('mobile-hidden');
+        portalMobileStart.classList.remove('hidden');
+        viewPortal.classList.add('splash-active');
+    }
 });
+
+// Mobile Splash Transition
+if (btnPortalContinue) {
+    btnPortalContinue.addEventListener('click', () => {
+        portalMobileStart.classList.add('hidden');
+        viewPortal.classList.remove('splash-active');
+        portalCard.classList.remove('mobile-hidden');
+        portalCard.style.animation = 'fadeInPortal 0.6s ease-out forwards';
+    });
+}
 
 // QR Modal Controls
 if (btnQrPresence) {

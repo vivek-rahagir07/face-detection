@@ -828,13 +828,66 @@ input:focus {
         left: 0;
         width: 100%;
         height: 100%;
-        opacity: 0.4;
+        opacity: 0.8;
+        transition: opacity 1s ease;
+    }
+
+    /* Dim spline when portal card is active */
+    .portal-container:not(.splash-active) .portal-spline {
+        opacity: 0.3;
     }
 
     .portal-card {
         margin-right: 0;
         padding: 30px 24px;
         width: 95%;
+    }
+
+    /* Mobile Splash State */
+    .portal-card.mobile-hidden {
+        display: none;
+    }
+
+    .mobile-only {
+        display: block;
+    }
+
+    #portal-mobile-start {
+        position: relative;
+        z-index: 100;
+        width: 100%;
+        max-width: 400px;
+        text-align: center;
+        animation: fadeIn 0.8s ease-out;
+    }
+
+    .mobile-welcome-text {
+        margin-bottom: 40px;
+    }
+
+    .mobile-welcome-text h2 {
+        font-size: 1.2rem;
+        color: var(--accent);
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        margin-bottom: 10px;
+    }
+
+    .mobile-welcome-text h1 {
+        font-size: 3rem;
+        margin-bottom: 10px;
+    }
+
+    .mobile-welcome-text p {
+        font-size: 1rem;
+        color: var(--text-muted);
+    }
+
+    #btn-portal-continue {
+        width: 80%;
+        padding: 20px;
+        font-size: 1.1rem;
+        box-shadow: 0 0 30px rgba(0, 242, 255, 0.4);
     }
 
     .logo-wrapper {
@@ -1141,6 +1194,10 @@ input:focus {
 
 .hidden {
     display: none !important;
+}
+
+.mobile-only {
+    display: none;
 }
 
 /* Bottom Cinematic Strip */
