@@ -289,6 +289,14 @@
                 <label for="name">Your Name</label>
                 <input type="text" id="name" placeholder="Enter your full name" autocomplete="off">
             </div>
+            <div class="input-group">
+                <label for="gender">Gender</label>
+                <select id="gender"
+                    style="width: 100%; background: #111; border: 1px solid rgba(255, 255, 255, 0.1); padding: 16px 20px; border-radius: 16px; color: #fff; font-size: 1rem; outline: none; transition: all 0.3s; appearance: none; cursor: pointer;">
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                </select>
+            </div>
             <button id="btn-submit">Mark Presence</button>
             <div id="status"></div>
         </div>
@@ -342,6 +350,37 @@
         const statusDiv = document.getElementById('status');
         const formView = document.getElementById('form-view');
         const successView = document.getElementById('success-view');
+        const inputGender = document.getElementById('gender');
+
+        function speak(text, gender = 'male', voiceEnabled = false) {
+            if (!voiceEnabled) return;
+
+            const synth = window.speechSynthesis;
+            const utterance = new SpeechSynthesisUtterance(text);
+
+            const performSpeak = () => {
+                if (synth.speaking) return;
+                const voices = synth.getVoices();
+
+                let selectedVoice = null;
+                if (gender === 'female') {
+                    selectedVoice = voices.find(v => v.name.includes('Samantha') || v.name.includes('Google US English') || v.name.includes('Victoria') || v.name.includes('Female'));
+                    utterance.pitch = 1.1;
+                } else {
+                    selectedVoice = voices.find(v => v.name.includes('Alex') || v.name.includes('Google UK English Male') || v.name.includes('Daniel') || v.name.includes('Male'));
+                    utterance.pitch = 0.9;
+                }
+
+                if (selectedVoice) utterance.voice = selectedVoice;
+                synth.speak(utterance);
+            };
+
+            if (synth.getVoices().length === 0) {
+                synth.onvoiceschanged = performSpeak;
+            } else {
+                performSpeak();
+            }
+        }
 
         function getDistance(lat1, lon1, lat2, lon2) {
             const R = 6371e3;
@@ -393,6 +432,7 @@
                 }
 
                 // 2. Find or Create User Record
+                const gender = inputGender.value;
                 const q = query(collection(db, 'users'), where("spaceId", "==", spaceId), where("name", "==", name));
                 const userSnap = await getDocs(q);
                 const todayStr = new Date().toDateString();
@@ -407,7 +447,8 @@
 
                     await updateDoc(doc(db, 'users', userDoc.id), {
                         lastAttendance: todayStr,
-                        attendanceCount: increment(1)
+                        attendanceCount: increment(1),
+                        gender: gender // Update gender in case it was changed
                     });
 
                     // Save to History
@@ -418,6 +459,7 @@
                         name: name,
                         regNo: userData.regNo || '',
                         course: userData.course || '',
+                        gender: gender,
                         date: dateId,
                         timestamp: new Date()
                     });
@@ -431,6 +473,7 @@
                         spaceId: spaceId,
                         lastAttendance: todayStr,
                         attendanceCount: 1,
+                        gender: gender,
                         createdAt: new Date().toISOString(),
                         type: 'qr-lite'
                     });
@@ -441,12 +484,17 @@
                         spaceId: spaceId,
                         userId: newUserDoc.id,
                         name: name,
+                        gender: gender,
                         date: dateId,
                         timestamp: new Date()
                     });
                     await updateDoc(doc(db, 'spaces', spaceId), {
                         [`historyDates.${dateId}`]: true
                     });
+                }
+
+                if (spaceData.config && spaceData.config.voiceEnabled) {
+                    speak(`Welcome ${name}`, gender, true);
                 }
 
                 formView.style.display = 'none';

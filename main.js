@@ -113,28 +113,40 @@ updateLiveDateTime();
 
 function speak(text, gender = 'male') {
     if (!currentSpace || !currentSpace.config || !currentSpace.config.voiceEnabled) return;
-    if (window.speechSynthesis.speaking) return;
 
+    const synth = window.speechSynthesis;
+
+    // Create a new utterance
     const utterance = new SpeechSynthesisUtterance(text);
-    const voices = window.speechSynthesis.getVoices();
 
-    // Attempt to find cool/premium voices
-    let selectedVoice = null;
-    if (gender === 'female') {
-        // Look for premium female voices
-        selectedVoice = voices.find(v => v.name.includes('Samantha') || v.name.includes('Google US English') || v.name.includes('Victoria'));
-        utterance.pitch = 1.1; // Slightly higher for punchiness
-        utterance.rate = 1.0;
+    const performSpeak = () => {
+        if (synth.speaking) return;
+        const voices = synth.getVoices();
+
+        // Attempt to find cool/premium voices
+        let selectedVoice = null;
+        if (gender === 'female') {
+            // Look for premium female voices
+            selectedVoice = voices.find(v => v.name.includes('Samantha') || v.name.includes('Google US English') || v.name.includes('Victoria') || v.name.includes('Female'));
+            utterance.pitch = 1.1; // Slightly higher for punchiness
+            utterance.rate = 1.0;
+        } else {
+            // Look for premium male voices
+            selectedVoice = voices.find(v => v.name.includes('Alex') || v.name.includes('Google UK English Male') || v.name.includes('Daniel') || v.name.includes('Male'));
+            utterance.pitch = 0.9; // Deeper for male "cool" effect
+            utterance.rate = 1.0;
+        }
+
+        if (selectedVoice) utterance.voice = selectedVoice;
+        synth.speak(utterance);
+    };
+
+    // If voices aren't loaded yet, wait for them
+    if (synth.getVoices().length === 0) {
+        synth.onvoiceschanged = performSpeak;
     } else {
-        // Look for premium male voices
-        selectedVoice = voices.find(v => v.name.includes('Alex') || v.name.includes('Google UK English Male') || v.name.includes('Daniel'));
-        utterance.pitch = 0.9; // Deeper for male "cool" effect
-        utterance.rate = 1.0;
+        performSpeak();
     }
-
-    if (selectedVoice) utterance.voice = selectedVoice;
-
-    window.speechSynthesis.speak(utterance);
 }
 
 // Firebase Initialization
