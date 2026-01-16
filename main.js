@@ -118,6 +118,15 @@ const qrStatus = document.getElementById('qr-status');
 
 // New Analytics & Geo Elements
 const analyticsPanel = document.getElementById('analytics-panel');
+const peopleListContainer = document.getElementById('people-list-container');
+const peopleSearchInput = document.getElementById('people-search');
+
+// State for magic link session
+let isMagicLinkSession = false;
+
+// Voice Commands State
+let recognition = null;
+let isListening = false;
 const btnModeAnalytics = document.getElementById('btn-mode-analytics');
 const configGeoEnabled = document.getElementById('config-geo-enabled');
 const configGeoRadius = document.getElementById('config-geo-radius');
@@ -126,7 +135,6 @@ const geoStatus = document.getElementById('geo-status');
 const configVoiceEnabled = document.getElementById('config-voice-enabled');
 
 // Individual Analytics & Management Elements
-const peopleListContainer = document.getElementById('people-list-container');
 const editModal = document.getElementById('edit-modal');
 const btnCloseEdit = document.getElementById('btn-close-edit');
 const editNameInput = document.getElementById('edit-name');
@@ -139,7 +147,6 @@ const editPersonNameTitle = document.getElementById('edit-person-name-title');
 let editingPersonId = null;
 
 // New UX Refinement Elements
-const peopleSearchInput = document.getElementById('people-search');
 const confirmModal = document.getElementById('confirm-modal');
 const confirmMessage = document.getElementById('confirm-message');
 const btnConfirmYes = document.getElementById('btn-confirm-yes');
@@ -1066,13 +1073,15 @@ function startDbListener() {
 
         snapshot.forEach(doc => {
             const data = doc.data();
-            tempAllData.push(data);
+            const uid = doc.id;
+            tempAllData.push({ id: uid, ...data });
 
-            if (data.name && data.descriptor) {
+            // Only load approved users for face matching
+            if (data.name && data.descriptor && data.approved !== false) {
                 try {
                     const descFloat32 = new Float32Array(data.descriptor);
                     descriptors.push(new faceapi.LabeledFaceDescriptors(data.name, [descFloat32]));
-                    tempMap[data.name] = doc.id;
+                    tempMap[data.name] = uid;
                 } catch (e) {
                     console.warn("Skipping corrupt face data", data.name);
                 }
@@ -1203,24 +1212,42 @@ async function renderPeopleManagement() {
     filteredUsers.forEach(user => {
         const attendanceCount = user.attendanceCount || 0;
         const percentage = Math.round((attendanceCount / totalDays) * 100);
+        const isPending = user.approved === false;
 
         const card = document.createElement('div');
         card.className = 'management-person-card';
         card.innerHTML = `
             <div class="person-primary-info">
-                <strong>${user.name}</strong>
+                <strong>${user.name} ${isPending ? '<span class="badge-pending">Pending Approval</span>' : ''}</strong>
                 <small style="color:var(--text-muted)">${user.regNo || 'No Reg No'}</small>
             </div>
             <div class="person-stats-row">
-                <div class="percentage-badge">${percentage}%</div>
-                <button class="btn-icon edit-btn" data-id="${nameToDocId[user.name]}">✏️</button>
+                ${isPending ? `
+                    <div class="approval-actions">
+                        <button class="btn-approve" data-id="${user.id}">Approve</button>
+                        <button class="btn-reject" data-id="${user.id}">Reject</button>
+                    </div>
+                ` : `
+                    <div class="percentage-badge">${percentage}%</div>
+                    <button class="btn-icon edit-btn" data-id="${user.id}">✏️</button>
+                `}
             </div>
         `;
 
-        card.querySelector('.edit-btn').onclick = (e) => {
-            const uid = e.target.closest('.edit-btn').dataset.id;
-            openEditModal(uid, user);
-        };
+        if (isPending) {
+            card.querySelector('.btn-approve').onclick = async () => {
+                await updateDoc(doc(db, COLL_USERS, user.id), { approved: true });
+                showToast(`Approved ${user.name}`);
+            };
+            card.querySelector('.btn-reject').onclick = () => {
+                showConfirm(`Reject and delete ${user.name}?`, async () => {
+                    await deleteDoc(doc(db, COLL_USERS, user.id));
+                    showToast(`${user.name} rejected.`);
+                });
+            };
+        } else {
+            card.querySelector('.edit-btn').onclick = () => openEditModal(user.id, user);
+        }
         fragment.appendChild(card);
     });
 
@@ -1294,74 +1321,18 @@ if (btnDeletePerson) {
 function drawCustomFaceBox(ctx, box, label, isMatch, confidence) {
     const { x, y, width, height } = box;
     const color = isMatch ? '#fbbf24' : '#ef4444';
-    const cornerSize = 25;
 
     ctx.strokeStyle = color;
-    ctx.lineWidth = 3;
-    ctx.lineCap = 'round';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.rect(x, y, width, height);
+    ctx.stroke();
 
-    // 1. Dynamic Corner Brackets
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = color;
-
-    // TL
-    ctx.beginPath(); ctx.moveTo(x, y + cornerSize); ctx.lineTo(x, y); ctx.lineTo(x + cornerSize, y); ctx.stroke();
-    // TR
-    ctx.beginPath(); ctx.moveTo(x + width - cornerSize, y); ctx.lineTo(x + width, y); ctx.lineTo(x + width, y + cornerSize); ctx.stroke();
-    // BL
-    ctx.beginPath(); ctx.moveTo(x, y + height - cornerSize); ctx.lineTo(x, y + height); ctx.lineTo(x + cornerSize, y + height); ctx.stroke();
-    // BR
-    ctx.beginPath(); ctx.moveTo(x + width - cornerSize, y + height); ctx.lineTo(x + width, y + height); ctx.lineTo(x + width, y + height - cornerSize); ctx.stroke();
-
-    ctx.shadowBlur = 0;
-
-    // 2. Animated Scanning Line (Digital Spike)
-    const scanLineY = y + (height * hudScanCycle);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1;
-    ctx.setLineDash([5, 5]);
-    ctx.beginPath(); ctx.moveTo(x, scanLineY); ctx.lineTo(x + width, scanLineY); ctx.stroke();
-    ctx.setLineDash([]);
-
-    const gradient = ctx.createLinearGradient(x, scanLineY, x, scanLineY + 2);
-    gradient.addColorStop(0, 'transparent');
-    gradient.addColorStop(0.5, color);
-    gradient.addColorStop(1, 'transparent');
-
-    ctx.fillStyle = gradient;
-    ctx.fillRect(x + 2, scanLineY, width - 4, 3);
-
-    // 3. Biometric Data Overlays (HUD)
-    ctx.font = '700 9px monospace';
-    ctx.fillStyle = color;
-
-    // Top-Left Info
-    ctx.fillText(`ID_SCAN: ${isMatch ? label.toUpperCase() : 'SEARCHING...'}`, x + 5, y - 10);
-    // Bottom-Left Info
-    ctx.fillText(`CONF: ${confidence}%`, x + 5, y + height + 15);
-    // Bottom-Right Info
-    ctx.fillText(`STATUS: ${isMatch ? 'VERIFIED' : 'PENDING'}`, x + width - 80, y + height + 15);
-
-    // 4. Label Box (Floating)
+    // Label
     if (isMatch) {
-        const labelText = label.toUpperCase();
-        ctx.font = '900 12px Inter';
-        const textWidth = ctx.measureText(labelText).width;
-        const padding = 8;
-        const labelX = x + (width / 2) - (textWidth / 2) - padding;
-        const labelY = y + height + 25;
-
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-        ctx.beginPath();
-        ctx.roundRect(labelX, labelY, textWidth + padding * 2, 22, 4);
-        ctx.fill();
-
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 1;
-        ctx.stroke();
-
+        ctx.font = '700 14px Inter';
         ctx.fillStyle = color;
-        ctx.fillText(labelText, labelX + padding, labelY + 15);
+        ctx.fillText(label.toUpperCase(), x, y - 10);
     }
 }
 
@@ -1582,10 +1553,15 @@ async function finalizeRegistration(name, metadata, descriptorArray) {
             descriptor: descriptorArray,
             attendanceCount: 0,
             lastAttendance: null,
+            approved: !isMagicLinkSession, // Self-registered users need approval
             createdAt: new Date()
         });
 
-        alert(`Registered ${name} successfully!`);
+        if (isMagicLinkSession) {
+            alert(`Registration submitted! An admin will review your profile soon.`);
+        } else {
+            alert(`Registered ${name} successfully!`);
+        }
         resetRegistrationForm();
         regFeedback.innerText = "Success!";
         regFeedback.style.color = "var(--success)";
@@ -1734,9 +1710,11 @@ if (btnCopyMagic) {
 
 // Check for Magic Link on load
 window.addEventListener('load', async () => {
+    initVoiceCommands();
     const urlParams = new URLSearchParams(window.location.search);
     const magicId = urlParams.get('magic');
     if (magicId) {
+        isMagicLinkSession = true;
         try {
             const spaceSnap = await getDoc(doc(db, COLL_SPACES, magicId));
             if (spaceSnap.exists()) {
@@ -1745,15 +1723,89 @@ window.addEventListener('load', async () => {
                 setMode('registration');
                 showView('view-operation');
                 initSystem();
-                // Hide other tabs for self-registration mode if desired, 
-                // but let's keep it simple for now and just land on registration.
-                showToast("Magic Link Active: Register yourself now.");
+                showToast("Magic Link Active: Admin approval required after registration.");
             }
         } catch (e) {
             console.error("Magic Link Fail:", e);
         }
     }
 });
+
+// Voice Commands Logic
+function initVoiceCommands() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return console.warn("Speech Recognition not supported in this browser.");
+
+    recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+        console.log("Voice Engine Active");
+        const logo = document.querySelector('.shining-logo');
+        if (logo) logo.classList.add('listening');
+    };
+
+    recognition.onresult = (event) => {
+        const last = event.results.length - 1;
+        const text = event.results[last][0].transcript.toLowerCase();
+        handleVoiceCommand(text);
+    };
+
+    recognition.onend = () => {
+        if (isListening) recognition.start(); // Auto-restart if we want persistent listen
+    };
+
+    // Toggle voice listening
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && e.ctrlKey) {
+            toggleVoice();
+        }
+    });
+}
+
+function toggleVoice() {
+    if (isListening) {
+        recognition.stop();
+        isListening = false;
+        showToast("Voice Control Off");
+        document.querySelector('.shining-logo')?.classList.remove('listening');
+    } else {
+        recognition.start();
+        isListening = true;
+        showToast("Cognito is listening...");
+    }
+}
+
+function handleVoiceCommand(cmd) {
+    console.log("Command:", cmd);
+    const feedback = document.createElement('div');
+    feedback.className = 'voice-toast';
+    feedback.innerText = `🎤 ${cmd}`;
+    document.body.appendChild(feedback);
+    setTimeout(() => feedback.remove(), 2000);
+
+    if (cmd.includes("show") && cmd.includes("absent")) {
+        setMode('attendance');
+        const tab = document.getElementById('tab-absent');
+        if (tab) tab.click();
+        speak("Showing absentees list");
+    } else if (cmd.includes("generate") && cmd.includes("magic link")) {
+        setMode('config');
+        const btn = document.getElementById('btn-generate-magic');
+        if (btn) btn.click();
+        speak("Magic link generated");
+    } else if (cmd.includes("go to settings") || cmd.includes("open config")) {
+        setMode('config');
+        speak("Opening configuration");
+    } else if (cmd.includes("go to people") || cmd.includes("show stats")) {
+        setMode('analytics');
+        speak("Opening people management");
+    } else if (cmd.includes("hello cognito") || cmd.includes("hey cognito")) {
+        speak("System active and ready.");
+    }
+}
 
 function setMode(mode) {
     currentMode = mode;

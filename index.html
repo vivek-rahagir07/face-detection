@@ -160,117 +160,120 @@
                 <h3 id="loading-text">Loading AI Models...</h3>
                 <p>Please ensure camera access is granted</p>
             </div>
-        </div>
 
-        <div class="controls-panel">
-            <!-- Dashboard Stats -->
-            <div class="stats-container">
-                <div class="stat-box">
-                    <div class="stat-label">Date</div>
-                    <div style="font-weight: 600;" id="display-date">--/--</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value" id="today-count">0</div>
-                    <div class="stat-label">Present Today</div>
-                </div>
-            </div>
-
-            <!-- Modes -->
-            <div class="mode-toggle">
-                <button id="btn-mode-attend" class="btn-secondary active">🕒 Attendance</button>
-                <button id="btn-mode-reg" class="btn-secondary">👤 Registration</button>
-                <button id="btn-mode-analytics" class="btn-secondary">👥 People Stats</button>
-                <button id="btn-mode-config" class="btn-secondary">⚙️ Settings</button>
-            </div>
-
-            <!-- Forms / Panels -->
-            <div id="config-form" class="form-group hidden">
-                <h3>Configure Fields</h3>
-                <p style="font-size: 0.8rem; color: var(--text-muted);">Choose what info to collect during registration
-                </p>
-                <div class="toggle-group">
-                    <label><input type="checkbox" class="field-toggle" data-field="regNo" checked> Registration
-                        Number</label>
-                    <label><input type="checkbox" class="field-toggle" data-field="course" checked> Course /
-                        Dept</label>
-                    <label><input type="checkbox" class="field-toggle" data-field="email"> Email ID</label>
-                    <label><input type="checkbox" class="field-toggle" data-field="phone"> Phone Number</label>
-                </div>
-
-                <h3 style="margin-top: 15px;">Geofencing Settings</h3>
-                <div class="form-group"
-                    style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 12px; border: 1px solid var(--border);">
-                    <label style="display: flex; align-items: center; gap: 8px;">
-                        <input type="checkbox" id="config-geo-enabled"> Enable Geofencing
-                    </label>
-                    <div style="display: flex; gap: 8px; margin-top: 10px;">
-                        <input type="number" id="config-geo-radius" placeholder="Radius (meters)" style="flex: 1;"
-                            value="100">
-                        <button id="btn-set-location" class="btn-secondary btn-sm" style="white-space: nowrap;">📍 Set
-                            Loc</button>
+            <div class="controls-panel">
+                <!-- Dashboard Stats -->
+                <div class="stats-container">
+                    <div class="stat-box">
+                        <div class="stat-label">Date</div>
+                        <div style="font-weight: 600;" id="display-date">--/--</div>
                     </div>
-                    <small id="geo-status"
-                        style="display: block; margin-top: 8px; font-size: 0.7rem; color: var(--text-muted);">Local: Not
-                        set</small>
-                </div>
-
-                <h3 style="margin-top: 15px;">Auto-Onboarding</h3>
-                <div class="form-group"
-                    style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 12px; border: 1px solid var(--border);">
-                    <button id="btn-generate-magic" class="btn-secondary btn-sm" style="width: 100%;">🔗 Generate Magic
-                        Link</button>
-                    <div id="magic-link-container" class="hidden" style="margin-top: 10px;">
-                        <input type="text" id="magic-link-input" readonly style="font-size: 0.7rem; padding: 8px;">
-                        <button id="btn-copy-magic" class="btn-sm"
-                            style="margin-top: 5px; width: 100%; height: 30px; font-size: 0.7rem; background: var(--accent); color: black; border: none; border-radius: 5px;">Copy
-                            Link</button>
+                    <div class="stat-box">
+                        <div class="stat-value" id="today-count">0</div>
+                        <div class="stat-label">Present Today</div>
                     </div>
                 </div>
 
-                <button id="btn-save-config" class="btn-primary" style="margin-top: 10px;">Save Settings</button>
-            </div>
-
-            <!-- Registration -->
-            <div id="reg-form" class="form-group hidden">
-                <h3>Register New Person</h3>
-                <div id="dynamic-fields-container"></div>
-                <div class="registration-actions">
-                    <button id="btn-capture" class="btn-primary">📸 Capture & Register</button>
-                    <button id="btn-upload-trigger" class="btn-secondary">🖼️ Upload from Gallery</button>
-                    <input type="file" id="input-upload-photo" accept="image/*" class="hidden">
+                <!-- Modes -->
+                <div class="mode-toggle">
+                    <button id="btn-mode-attend" class="btn-secondary active">🕒 Attendance</button>
+                    <button id="btn-mode-reg" class="btn-secondary">👤 Registration</button>
+                    <button id="btn-mode-analytics" class="btn-secondary">👥 People Stats</button>
+                    <button id="btn-mode-config" class="btn-secondary">⚙️ Settings</button>
                 </div>
-            </div>
 
-            <!-- Attendance -->
-            <div id="attend-info">
-                <div style="margin-bottom: 15px;">
-                    <div class="list-header">
-                        <div style="display: flex; gap: 10px;">
-                            <span id="tab-present" class="attendance-tab active">Present</span>
-                            <span id="tab-absent" class="attendance-tab">Absent</span>
+                <!-- Forms / Panels -->
+                <div id="config-form" class="form-group hidden">
+                    <h3>Configure Fields</h3>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">Choose what info to collect during
+                        registration
+                    </p>
+                    <div class="toggle-group">
+                        <label><input type="checkbox" class="field-toggle" data-field="regNo" checked> Registration
+                            Number</label>
+                        <label><input type="checkbox" class="field-toggle" data-field="course" checked> Course /
+                            Dept</label>
+                        <label><input type="checkbox" class="field-toggle" data-field="email"> Email ID</label>
+                        <label><input type="checkbox" class="field-toggle" data-field="phone"> Phone Number</label>
+                    </div>
+
+                    <h3 style="margin-top: 15px;">Geofencing Settings</h3>
+                    <div class="form-group"
+                        style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 12px; border: 1px solid var(--border);">
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="config-geo-enabled"> Enable Geofencing
+                        </label>
+                        <div style="display: flex; gap: 8px; margin-top: 10px;">
+                            <input type="number" id="config-geo-radius" placeholder="Radius (meters)" style="flex: 1;"
+                                value="100">
+                            <button id="btn-set-location" class="btn-secondary btn-sm" style="white-space: nowrap;">📍
+                                Set
+                                Loc</button>
                         </div>
-                        <button id="btn-export" class="btn-export">📥 Export</button>
+                        <small id="geo-status"
+                            style="display: block; margin-top: 8px; font-size: 0.7rem; color: var(--text-muted);">Local:
+                            Not
+                            set</small>
                     </div>
-                    <div class="scrollable-list" id="today-list">
-                        <div style="padding:10px; text-align:center; color:#888;">No attendance yet</div>
-                    </div>
-                </div>
-                <div>
-                    <div class="list-header"><span>⚡ Live Activity</span></div>
-                    <div class="scrollable-list" id="live-logs" style="max-height: 120px;"></div>
-                </div>
-            </div>
 
-            <!-- People Stats -->
-            <div id="analytics-panel" class="hidden">
-                <div class="list-header"><span>👥 People Stats</span></div>
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <input type="text" id="people-search" placeholder="Search people...">
+                    <h3 style="margin-top: 15px;">Auto-Onboarding</h3>
+                    <div class="form-group"
+                        style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 12px; border: 1px solid var(--border);">
+                        <button id="btn-generate-magic" class="btn-secondary btn-sm" style="width: 100%;">🔗 Generate
+                            Magic
+                            Link</button>
+                        <div id="magic-link-container" class="hidden" style="margin-top: 10px;">
+                            <input type="text" id="magic-link-input" readonly style="font-size: 0.7rem; padding: 8px;">
+                            <button id="btn-copy-magic" class="btn-sm"
+                                style="margin-top: 5px; width: 100%; height: 30px; font-size: 0.7rem; background: var(--accent); color: black; border: none; border-radius: 5px;">Copy
+                                Link</button>
+                        </div>
+                    </div>
+
+                    <button id="btn-save-config" class="btn-primary" style="margin-top: 10px;">Save Settings</button>
                 </div>
-                <div id="people-list-container" class="scrollable-list" style="max-height: 350px;"></div>
+
+                <!-- Registration -->
+                <div id="reg-form" class="form-group hidden">
+                    <h3>Register New Person</h3>
+                    <div id="dynamic-fields-container"></div>
+                    <div class="registration-actions">
+                        <button id="btn-capture" class="btn-primary">📸 Capture & Register</button>
+                        <button id="btn-upload-trigger" class="btn-secondary">🖼️ Upload from Gallery</button>
+                        <input type="file" id="input-upload-photo" accept="image/*" class="hidden">
+                    </div>
+                </div>
+
+                <!-- Attendance -->
+                <div id="attend-info">
+                    <div style="margin-bottom: 15px;">
+                        <div class="list-header">
+                            <div style="display: flex; gap: 10px;">
+                                <span id="tab-present" class="attendance-tab active">Present</span>
+                                <span id="tab-absent" class="attendance-tab">Absent</span>
+                            </div>
+                            <button id="btn-export" class="btn-export">📥 Export</button>
+                        </div>
+                        <div class="scrollable-list" id="today-list">
+                            <div style="padding:10px; text-align:center; color:#888;">No attendance yet</div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="list-header"><span>⚡ Live Activity</span></div>
+                        <div class="scrollable-list" id="live-logs" style="max-height: 120px;"></div>
+                    </div>
+                </div>
+
+                <!-- People Stats -->
+                <div id="analytics-panel" class="hidden">
+                    <div class="list-header"><span>👥 People Stats</span></div>
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <input type="text" id="people-search" placeholder="Search people...">
+                    </div>
+                    <div id="people-list-container" class="scrollable-list" style="max-height: 350px;"></div>
+                </div>
             </div>
         </div>
-    </div>
     </div>
     </div>
 
