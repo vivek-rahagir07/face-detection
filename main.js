@@ -13,14 +13,12 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-// Configuration & Setup
-
+// Setup
 let db, auth, currentUser;
 const COLL_USERS = 'users';
 const COLL_SPACES = 'spaces';
 const COLL_ATTENDANCE = 'attendance';
 
-// DOM Elements: Portal
 const viewPortal = document.getElementById('view-portal');
 const tabJoin = document.getElementById('tab-join');
 const tabCreate = document.getElementById('tab-create');
@@ -37,7 +35,6 @@ const btnPortalContinue = document.getElementById('btn-portal-continue');
 const portalMobileStart = document.getElementById('portal-mobile-start');
 const portalCard = document.querySelector('.portal-card');
 
-// DOM Elements: Operation
 const viewOperation = document.getElementById('view-operation');
 const currentSpaceTitle = document.getElementById('current-space-title');
 const btnExitWorkspace = document.getElementById('btn-exit-workspace');
@@ -72,12 +69,9 @@ const btnExportHistory = document.getElementById('btn-export-history');
 const tabPresent = document.getElementById('tab-present');
 const tabAbsent = document.getElementById('tab-absent');
 
-// State
 let currentHistoryRecords = [];
 let currentHistoryDate = '';
-// scanStatusOverlay and related elements removed as per request
 
-// State
 let currentMode = 'attendance';
 let currentSpace = null;
 let labeledDescriptors = [];
@@ -93,8 +87,7 @@ let activeAttendanceTab = 'present';
 let lastPresentHTML = '';
 let lastAbsentHTML = '';
 
-// Smoothing box state
-const smoothBoxes = {}; // { label: { x, y, w, h } }
+const smoothBoxes = {};
 const LERP_FACTOR = 0.4;
 
 const qrModal = document.getElementById('qr-modal');
@@ -104,12 +97,10 @@ const qrImage = document.getElementById('qr-image');
 const qrTimerDisplay = document.getElementById('qr-timer');
 const qrStatus = document.getElementById('qr-status');
 
-// New Analytics & Geo Elements
 const analyticsPanel = document.getElementById('analytics-panel');
 const peopleListContainer = document.getElementById('people-list-container');
 const peopleSearchInput = document.getElementById('people-search');
 
-// State for magic link session
 let isMagicLinkSession = false;
 let isAIPaused = false;
 const btnModeAnalytics = document.getElementById('btn-mode-analytics');
@@ -118,7 +109,6 @@ const configGeoRadius = document.getElementById('config-geo-radius');
 const btnSetLocation = document.getElementById('btn-set-location');
 const geoStatus = document.getElementById('geo-status');
 
-// Individual Analytics & Management Elements
 const editModal = document.getElementById('edit-modal');
 const btnCloseEdit = document.getElementById('btn-close-edit');
 const editNameInput = document.getElementById('edit-name');
@@ -130,14 +120,12 @@ const editPersonNameTitle = document.getElementById('edit-person-name-title');
 
 let editingPersonId = null;
 
-// New UX Refinement Elements
 const confirmModal = document.getElementById('confirm-modal');
 const confirmMessage = document.getElementById('confirm-message');
 const btnConfirmYes = document.getElementById('btn-confirm-yes');
 const btnConfirmNo = document.getElementById('btn-confirm-no');
 const toastContainer = document.getElementById('toast-container');
 
-// Mobile Sidebar DOM Elements
 const mobileSidebar = document.getElementById('mobile-sidebar');
 const btnMobileMenu = document.getElementById('btn-mobile-menu');
 const btnCloseSidebar = document.getElementById('btn-close-sidebar');
@@ -185,17 +173,13 @@ function speak(text, gender = 'male') {
         if (synth.speaking) return;
         const voices = synth.getVoices();
 
-        // Attempt to find cool/premium voices
-        let selectedVoice = null;
         if (gender === 'female') {
-            // Look for premium female voices
             selectedVoice = voices.find(v => v.name.includes('Samantha') || v.name.includes('Google US English') || v.name.includes('Victoria') || v.name.includes('Female'));
-            utterance.pitch = 1.1; // Slightly higher for punchiness
+            utterance.pitch = 1.1;
             utterance.rate = 1.0;
         } else {
-            // Look for premium male voices
             selectedVoice = voices.find(v => v.name.includes('Alex') || v.name.includes('Google UK English Male') || v.name.includes('Daniel') || v.name.includes('Male'));
-            utterance.pitch = 0.9; // Deeper for male "cool" effect
+            utterance.pitch = 0.9;
             utterance.rate = 1.0;
         }
 
@@ -203,7 +187,6 @@ function speak(text, gender = 'male') {
         synth.speak(utterance);
     };
 
-    // If voices aren't loaded yet, wait for them
     if (synth.getVoices().length === 0) {
         synth.onvoiceschanged = performSpeak;
     } else {
@@ -211,9 +194,7 @@ function speak(text, gender = 'male') {
     }
 }
 
-// Firebase Initialization
-
-// Initialize Firebase
+// Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyAf9xAmQtFZcvE8tvxpI-tU5teS89Dc6II",
     authDomain: "live-face-attendence-detection.firebaseapp.com",
@@ -229,7 +210,6 @@ try {
     auth = getAuth(app);
     db = getFirestore(app);
 
-    // Ensure anonymous auth for connectivity
     onAuthStateChanged(auth, (user) => {
         if (user) {
             currentUser = user;
@@ -346,7 +326,6 @@ function enterSpace(id, data) {
     portalError.innerText = "";
     showView('view-operation');
 
-    // Reset 3D view for new workspace
     const face3D = document.getElementById('face-3d-container');
     if (face3D) {
         face3D.classList.remove('fade-out');
@@ -356,7 +335,7 @@ function enterSpace(id, data) {
     initSystem();
     startDbListener();
     updateRegistrationForm();
-    init3DFace('face-3d-container'); // Init operation view 3D
+    init3DFace('face-3d-container');
 }
 
 // QR Logic
@@ -372,7 +351,6 @@ async function startQRRotation() {
             qrStatus.innerText = "Syncing with cloud...";
             qrImage.style.opacity = "0.5";
 
-            // Update Firebase
             await updateDoc(spaceRef, { qrNonce: currentNonce });
 
             let baseUrl = window.location.href.split('?')[0].split('#')[0].replace('index.html', '');
@@ -380,7 +358,6 @@ async function startQRRotation() {
 
             const attendanceUrl = `${baseUrl}qr.html?s=${currentSpace.id}&n=${currentNonce}`;
 
-            // Helper to generate locally or fallback to API
             const generateQR = () => {
                 const qrEngine = window.QRCode || (typeof QRCode !== 'undefined' ? QRCode : null);
 
@@ -388,7 +365,7 @@ async function startQRRotation() {
                     qrEngine.toDataURL(attendanceUrl, {
                         width: 250,
                         margin: 4,
-                        errorCorrectionLevel: 'H', // High error correction to handle central logo
+                        errorCorrectionLevel: 'H',
                         color: { dark: '#000000', light: '#ffffff' }
                     }, (err, url) => {
                         if (err) throw err;
@@ -398,7 +375,6 @@ async function startQRRotation() {
                         resetTimer(30);
                     });
                 } else {
-                    // Fallback to external API if local library missing
                     console.warn("QRCode library not found, using API fallback");
                     const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(attendanceUrl)}`;
                     qrImage.src = qrApiUrl;
@@ -419,7 +395,6 @@ async function startQRRotation() {
                 <small style="color:#ff6666;">Reason: ${e.message.split('(')[0]}</small><br>
                 <button onclick="window.location.reload()" style="margin-top:10px; background:var(--accent); color:#000; border:none; padding:5px 10px; border-radius:5px; font-size:11px; cursor:pointer;">⚠️ Hard Refresh Page</button>
             `;
-            // Do not auto-retry immediately to avoid loop if it's a permission error
             setTimeout(refreshQR, 10000);
         }
     };
@@ -890,6 +865,7 @@ function updateRegistrationForm() {
     nameInput.type = 'text';
     nameInput.id = 'reg-name';
     nameInput.placeholder = 'Full Name';
+    nameInput.setAttribute('aria-label', 'Full Name');
     dynamicFieldsContainer.appendChild(nameInput);
 
     // Check for optional fields
@@ -898,6 +874,7 @@ function updateRegistrationForm() {
         input.type = 'text';
         input.id = 'reg-regNo';
         input.placeholder = 'Registration Number';
+        input.setAttribute('aria-label', 'Registration Number');
         dynamicFieldsContainer.appendChild(input);
     }
     if (config.course) {
@@ -905,6 +882,7 @@ function updateRegistrationForm() {
         input.type = 'text';
         input.id = 'reg-course';
         input.placeholder = 'Course / Department';
+        input.setAttribute('aria-label', 'Course or Department');
         dynamicFieldsContainer.appendChild(input);
     }
     if (config.email) {
@@ -912,6 +890,7 @@ function updateRegistrationForm() {
         input.type = 'email';
         input.id = 'reg-email';
         input.placeholder = 'Email ID';
+        input.setAttribute('aria-label', 'Email Address');
         dynamicFieldsContainer.appendChild(input);
     }
     if (config.bloodGroup) {
@@ -919,6 +898,7 @@ function updateRegistrationForm() {
         input.type = 'text';
         input.id = 'reg-bloodGroup';
         input.placeholder = 'Blood Group';
+        input.setAttribute('aria-label', 'Blood Group');
         dynamicFieldsContainer.appendChild(input);
     }
     if (config.weight) {
@@ -926,6 +906,7 @@ function updateRegistrationForm() {
         input.type = 'text';
         input.id = 'reg-weight';
         input.placeholder = 'Weight (kg)';
+        input.setAttribute('aria-label', 'Weight in kilograms');
         dynamicFieldsContainer.appendChild(input);
     }
     if (config.phone) {
@@ -933,6 +914,7 @@ function updateRegistrationForm() {
         input.type = 'text';
         input.id = 'reg-phone';
         input.placeholder = 'Phone Number';
+        input.setAttribute('aria-label', 'Phone Number');
         dynamicFieldsContainer.appendChild(input);
     }
 
@@ -1186,13 +1168,13 @@ async function renderPeopleManagement() {
     const spaceRef = doc(db, COLL_SPACES, currentSpace.id);
     const spaceSnap = await getDoc(spaceRef);
     const historyDates = spaceSnap.data().historyDates || {};
-    const totalDays = Object.keys(historyDates).length || 1;
-
-    const fragment = document.createDocumentFragment();
+    // Calculate max attendance among all users to normalize percentages
+    const maxAttendance = Math.max(...allUsersData.map(u => u.attendanceCount || 0), 0);
+    const denominator = maxAttendance || 1;
 
     filteredUsers.forEach(user => {
         const attendanceCount = user.attendanceCount || 0;
-        const percentage = Math.round((attendanceCount / totalDays) * 100);
+        const percentage = Math.round((attendanceCount / denominator) * 100);
         const isPending = user.approved === false;
 
         const card = document.createElement('div');
@@ -1209,8 +1191,8 @@ async function renderPeopleManagement() {
                         <button class="btn-reject" data-id="${user.id}">Reject</button>
                     </div>
                 ` : `
-                    <div class="percentage-badge">${percentage}%</div>
-                    <button class="btn-icon edit-btn" data-id="${user.id}">✏️</button>
+                    <div class="percentage-badge" aria-label="Attendance Percentage: ${percentage}%">${percentage}%</div>
+                    <button class="btn-icon edit-btn" data-id="${user.id}" aria-label="Edit details for ${user.name}">✏️</button>
                 `}
             </div>
         `;
@@ -1438,17 +1420,14 @@ function drawPath(ctx, points, close = false) {
     ctx.stroke();
 }
 
-// Optimized Mesh Drawing
 function drawFaceMesh(ctx, landmarks, color = '#10b981') {
     const points = landmarks.positions;
     ctx.strokeStyle = color;
-    ctx.globalAlpha = 0.25; // Darker/Subtle mesh
+    ctx.globalAlpha = 0.25;
     ctx.lineWidth = 0.5;
 
-    // Plexus Network
     ctx.beginPath();
     points.forEach((p, i) => {
-        // Connect to next few points to create a web/triangulation look
         for (let j = i + 1; j < i + 4 && j < points.length; j++) {
             ctx.moveTo(p.x, p.y);
             ctx.lineTo(points[j].x, points[j].y);
@@ -1456,7 +1435,6 @@ function drawFaceMesh(ctx, landmarks, color = '#10b981') {
     });
     ctx.stroke();
 
-    // Nodes (Emerald Glow)
     ctx.globalAlpha = 0.6;
     ctx.fillStyle = color;
     points.forEach((p, i) => {
@@ -1469,7 +1447,7 @@ function drawFaceMesh(ctx, landmarks, color = '#10b981') {
     ctx.globalAlpha = 1.0;
 }
 
-// Cyber Audio Engine (Synthesized sounds, no external files)
+// Audio Engine
 const CyberAudio = {
     ctx: null,
     init() {
@@ -1513,13 +1491,11 @@ let wasFaceDetected = false;
 // Main Loop
 
 video.addEventListener('play', () => {
-    // Responsive alignment: Use offsetWidth/Height to match the rendered video size
     const updateDisplaySize = () => {
         if (!video.videoWidth) return null;
         const dims = { width: video.videoWidth, height: video.videoHeight };
         canvas.width = dims.width;
         canvas.height = dims.height;
-        // Important: Reset smoothing on resolution change
         for (let k in smoothBoxes) delete smoothBoxes[k];
         return dims;
     };
@@ -1532,7 +1508,6 @@ video.addEventListener('play', () => {
         if (!isModelsLoaded || !video.srcObject || video.paused || video.ended || isAIPaused) return;
         if (currentMode === 'registration' || document.hidden) return;
 
-        // Ensure dimensions are initialized (Fixes alignment drift)
         if (!canvas.width || canvas.width !== video.videoWidth) {
             updateDisplaySize();
         }
@@ -1545,7 +1520,6 @@ video.addEventListener('play', () => {
                 return faceMatcher ? faceMatcher.findBestMatch(d.descriptor) : { label: 'unknown', distance: 1.0 };
             });
 
-            // Audio Feedback: Lock Sound on first appearance of any face
             if (!wasFaceDetected) {
                 CyberAudio.playLock();
                 wasFaceDetected = true;
@@ -1556,7 +1530,6 @@ video.addEventListener('play', () => {
 
             if (scanIndicator) scanIndicator.style.display = 'block';
 
-            // 2. Recognition Logic for all detected faces
             detections.forEach((detection, i) => {
                 const result = results[i];
                 const isMatch = result.label !== 'unknown' && result.distance <= 0.6;
@@ -1569,7 +1542,6 @@ video.addEventListener('play', () => {
                 }
             });
 
-            // Cleanup history for non-detected labels
             const activeMatchLabels = results.filter(r => r.label !== 'unknown').map(r => r.label);
             for (let k in detectionHistory) {
                 if (!activeMatchLabels.includes(k)) {
@@ -1580,7 +1552,7 @@ video.addEventListener('play', () => {
         } else {
             window.lastDetections = [];
             window.lastResults = [];
-            wasFaceDetected = false; // Reset for next sound
+            wasFaceDetected = false;
             if (scanIndicator) scanIndicator.style.display = 'none';
         }
     }, DETECTION_INTERVAL);
@@ -1636,7 +1608,6 @@ video.addEventListener('play', () => {
 });
 
 
-// Refactored Registration Logic
 async function handleCameraRegistration() {
     if (!currentUser || !currentSpace) return alert("System not ready.");
 
@@ -1695,7 +1666,7 @@ async function handlePhotoUpload(e) {
         console.error("Upload Error:", err);
         regFeedback.innerText = "Error processing image.";
     }
-    e.target.value = ''; // Reset input
+    e.target.value = '';
 }
 
 function collectRegistrationMetadata() {
@@ -1723,7 +1694,7 @@ async function finalizeRegistration(name, metadata, descriptorArray) {
             descriptor: descriptorArray,
             attendanceCount: 0,
             lastAttendance: null,
-            approved: !isMagicLinkSession, // Self-registered users need approval
+            approved: !isMagicLinkSession,
             createdAt: new Date()
         });
 
@@ -1750,12 +1721,10 @@ async function markAttendance(name) {
     const now = Date.now();
     const lastMarked = attendanceCooldowns[name] || 0;
 
-    // 1 minute cooldown
     if (now - lastMarked < 60000) return;
 
-    // Local feedback
     if (navigator.vibrate) navigator.vibrate(100);
-    CyberAudio.playMatch(); // Play the success "chirp"
+    CyberAudio.playMatch();
     showToast(`Attendance marked: ${name}`);
 
     attendanceCooldowns[name] = now;
@@ -1763,10 +1732,9 @@ async function markAttendance(name) {
 
     addLiveLogEntry(name, timeStr);
 
-    // Voice Announcement
     const nowSpoken = Date.now();
     const lastTimeSpoken = lastSpoken[name] || 0;
-    if (nowSpoken - lastTimeSpoken > 10000) { // 10s cooldown per person for voice
+    if (nowSpoken - lastTimeSpoken > 10000) {
         const userData = allUsersData.find(u => u.name === name);
         const gender = (userData && userData.gender) ? userData.gender : 'male';
         speak(`Welcome ${name}`, gender);
@@ -1779,16 +1747,18 @@ async function markAttendance(name) {
     try {
         const userDocRef = doc(db, COLL_USERS, docId);
         const todayDate = new Date().toDateString();
+        const userSnap = await getDoc(userDocRef);
+        const userData = userSnap.data();
+
+        const alreadyAttendedToday = userData.lastAttendance === todayDate;
 
         await updateDoc(userDocRef, {
             lastAttendance: todayDate,
-            attendanceCount: increment(1)
+            attendanceCount: alreadyAttendedToday ? (userData.attendanceCount || 0) : increment(1)
         });
 
         // Save to History Collection
         const dateId = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-        const userSnap = await getDoc(userDocRef);
-        const userData = userSnap.data();
 
         await addDoc(collection(db, COLL_ATTENDANCE), {
             spaceId: currentSpace.id,
@@ -1817,7 +1787,7 @@ async function markAttendance(name) {
     }
 }
 
-// Geofencing: Get Current Location
+// Geofencing
 if (btnSetLocation) {
     btnSetLocation.addEventListener('click', () => {
         if (!navigator.geolocation) {
@@ -1985,8 +1955,7 @@ function init3DFace(containerId) {
     renderer3D.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     container.appendChild(renderer3D.domElement);
 
-    // --- Advanced Procedural Head (Plexus Base) ---
-    const geometry = new THREE.IcosahedronGeometry(2.5, 3); // Base density
+    const geometry = new THREE.IcosahedronGeometry(2.5, 3);
     const positionAttribute = geometry.attributes.position;
     const vertex = new THREE.Vector3();
 
@@ -2027,7 +1996,6 @@ function init3DFace(containerId) {
     const headGroup = new THREE.Group();
     scene3D.add(headGroup);
 
-    // --- The Plexus Effect (Lines) ---
     const lineMaterial = new THREE.LineBasicMaterial({
         color: 0x0ea5e9,
         transparent: true,
@@ -2057,7 +2025,6 @@ function init3DFace(containerId) {
     const plexusLines = new THREE.LineSegments(linesGeometry, lineMaterial);
     headGroup.add(plexusLines);
 
-    // --- Core Points ---
     const pointsMaterial = new THREE.PointsMaterial({
         color: 0x38bdf8,
         size: 0.05,
@@ -2068,7 +2035,6 @@ function init3DFace(containerId) {
     const corePoints = new THREE.Points(geometry, pointsMaterial);
     headGroup.add(corePoints);
 
-    // --- Orbital Network ---
     const orbits = new THREE.Group();
     scene3D.add(orbits);
 
@@ -2102,7 +2068,6 @@ function init3DFace(containerId) {
     ];
     orbitData.forEach(o => orbits.add(o.group));
 
-    // --- Background Depth ---
     const bgCount = 500;
     const bgGeo = new THREE.BufferGeometry();
     const bgPos = new Float32Array(bgCount * 3);
@@ -2111,7 +2076,6 @@ function init3DFace(containerId) {
     const bgPoints = new THREE.Points(bgGeo, new THREE.PointsMaterial({ color: 0x0ea5e9, size: 0.02, transparent: true, opacity: 0.2 }));
     scene3D.add(bgPoints);
 
-    // --- Lighting (Subtle) ---
     scene3D.add(new THREE.AmbientLight(0xffffff, 0.2));
     const spotlight = new THREE.PointLight(0x0ea5e9, 1);
     spotlight.position.set(10, 10, 10);
@@ -2126,11 +2090,9 @@ function init3DFace(containerId) {
         headGroup.rotation.y = Math.sin(time * 0.2) * 0.4;
         headGroup.rotation.x = Math.cos(time * 0.15) * 0.1;
 
-        // Pulse Plexus
         plexusLines.material.opacity = 0.2 + Math.sin(time * 2) * 0.1;
         corePoints.material.opacity = 0.6 + Math.sin(time * 3) * 0.2;
 
-        // Animate Orbits
         orbitData.forEach(o => {
             o.group.rotation.y += o.speed;
             o.group.rotation.x += o.speed * 0.5;

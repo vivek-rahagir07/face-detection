@@ -269,20 +269,22 @@
 
 <body>
     <a href="index.html" class="btn-home">🏠 Home</a>
-    <div class="container" id="app">
+    <div class="container" id="app" role="main">
         <div class="header-logo-container">
-            <img src="folder/cognito attend.png" alt="CognitoAttend Logo" class="header-logo">
+            <img src="folder/cognito attend.png" alt="CognitoAttend Brand Logo" class="header-logo">
         </div>
         <h1>CognitoAttend</h1>
         <p>Dynamic QR Presence System</p>
 
         <div id="form-view">
             <div class="camera-box"
-                style="width: 100%; aspect-ratio: 4/3; background: #111; border-radius: 20px; overflow: hidden; border: 1px solid rgba(0, 242, 255, 0.2); margin-bottom: 20px; position: relative;">
-                <video id="video" autoplay muted playsinline
-                    style="width: 100%; height: 100%; object-fit: cover;"></video>
+                style="width: 100%; aspect-ratio: 4/3; background: #111; border-radius: 20px; overflow: hidden; border: 1px solid rgba(0, 242, 255, 0.2); margin-bottom: 20px; position: relative;"
+                aria-label="Attendance Camera Feed">
+                <video id="video" autoplay muted playsinline style="width: 100%; height: 100%; object-fit: cover;"
+                    aria-label="Live face recognition stream"></video>
                 <canvas id="overlay"
-                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></canvas>
+                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"
+                    aria-hidden="true"></canvas>
                 <div id="loading-overlay"
                     style="position: absolute; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; flex-direction: column; z-index: 10;">
                     <div
@@ -306,13 +308,15 @@
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
-                <button id="btn-submit">📸 Mark Presence</button>
+                <button id="btn-submit" aria-label="Mark Presence using Camera">📸 Mark Presence</button>
                 <button id="btn-gallery"
-                    style="background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #fff;">🖼️ From
+                    style="background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #fff;"
+                    aria-label="Upload photo from Gallery to mark presence">🖼️ From
                     Gallery</button>
-                <input type="file" id="input-gallery" accept="image/*" style="display: none;">
+                <input type="file" id="input-gallery" accept="image/*" style="display: none;"
+                    aria-label="Upload Gallery Photo">
             </div>
-            <div id="status">Ready to scan.</div>
+            <div id="status" aria-live="polite">Ready to scan.</div>
         </div>
 
         <div id="success-view" style="display: none;">
@@ -327,21 +331,10 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, updateDoc, doc, getDoc, getDocs, query, where, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firebase Config (Must match main.js)
-        const firebaseConfig = {
-            apiKey: "AIzaSyAf9xAmQtFZcvE8tvxpI-tU5teS89Dc6II",
-            authDomain: "live-face-attendence-detection.firebaseapp.com",
-            projectId: "live-face-attendence-detection",
-            storageBucket: "live-face-attendence-detection.firebasestorage.app",
-            messagingSenderId: "67072118378",
-            appId: "1:67072118378:web:a988976e9233434b3fc413"
-        };
-
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        // Ensure anonymous auth for connectivity
         let currentUser = null;
         onAuthStateChanged(auth, (user) => {
             if (user) {
@@ -379,14 +372,12 @@
 
         async function initSystem() {
             try {
-                // Load Models
                 await Promise.all([
                     faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
                     faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
                     faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
                 ]);
 
-                // Start Video
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
                 video.srcObject = stream;
                 video.onloadedmetadata = () => {
@@ -397,7 +388,6 @@
                     requestAnimationFrame(processFrame);
                 };
 
-                // Load Labeled Descriptors from Space
                 if (spaceId) {
                     const q = query(collection(db, 'users'), where("spaceId", "==", spaceId));
                     const snap = await getDocs(q);
@@ -502,11 +492,9 @@
             if (!name) return showStatus("Please enter your name.", "error");
             if (!spaceId || !nonce) return showStatus("Invalid QR code.", "error");
 
-            // Biometric Check
             let finalDescriptor = descriptor;
             if (!finalDescriptor) {
                 if (lastDetections && lastDetections.length > 0) {
-                    // Find the best match among all detected faces for the entered name
                     if (faceMatcher) {
                         const matches = lastDetections.map(d => ({
                             descriptor: d.descriptor,
@@ -516,7 +504,6 @@
                         if (userMatch) {
                             finalDescriptor = userMatch.descriptor;
                         } else {
-                            // If no exact name match, take the first face detected
                             finalDescriptor = lastDetections[0].descriptor;
                         }
                     } else {
@@ -552,7 +539,6 @@
                     }
                 }
 
-                // Geofencing Check
                 if (spaceData.geofencing && spaceData.geofencing.enabled && spaceData.geofencing.center) {
                     showStatus("Checking location...", "");
                     const pos = await new Promise((resolve, reject) => {

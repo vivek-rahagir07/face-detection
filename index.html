@@ -12,7 +12,6 @@
     <meta name="author" content="CognitoAttend">
     <link rel="canonical" href="https://cognitoattend.com/">
 
-    <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://cognitoattend.com/">
     <meta property="og:title" content="CognitoAttend | Next-Gen Biometric Attendance">
@@ -20,7 +19,6 @@
         content="Professional face recognition attendance with 3D plexus HUD. Fast, secure, and mobile-ready.">
     <meta property="og:image" content="folder/cognito attend.png">
 
-    <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://cognitoattend.com/">
     <meta property="twitter:title" content="CognitoAttend | Biometric Attendance">
@@ -28,7 +26,6 @@
         content="Professional face recognition attendance with 3D plexus HUD. Fast, secure, and mobile-ready.">
     <meta property="twitter:image" content="folder/cognito attend.png">
 
-    <!-- PWA & Mobile -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -36,32 +33,23 @@
     <link rel="apple-touch-icon" href="folder/cognito attend.png">
     <meta name="msapplication-TileColor" content="#000000">
 
-    <!-- Performance: Preconnect & Preload -->
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://prod.spline.design">
     <link rel="preload" href="folder/cognito attend.png" as="image">
     <link rel="preload" href="folder/hacker2.png" as="image">
 
-    <!-- Google Fonts -->
     <link
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap"
         rel="stylesheet">
 
-    <!-- Face API (Deferred for Performance) -->
     <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
-
-    <!-- Three.js for 3D Animations (Deferred) -->
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
-
-    <!-- QRCode.js for Local QR Generation (Deferred) -->
     <script defer src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 
-    <!-- External CSS -->
     <link rel="stylesheet" href="style.css">
     <script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.34/build/spline-viewer.js"></script>
-
-    <!-- Chart.js for Analytics (Deferred) -->
     <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <!-- Structured Data -->
@@ -128,7 +116,7 @@
 
         <div class="portal-card mobile-hidden">
             <div class="logo-wrapper">
-                <img src="folder/hacker2.png" alt="Hacker Logo" class="card-logo">
+                <img src="folder/hacker2.png" alt="Hacker Logo" class="card-logo" loading="eager">
             </div>
             <h1>CognitoAttend</h1>
             <p>Select your workspace to continue</p>
@@ -138,20 +126,28 @@
                 <button id="tab-create" class="portal-tab">Create New</button>
             </div>
 
-            <!-- Join Form -->
+            <!-- Join -->
             <div id="form-join" class="portal-form">
                 <div class="form-group">
-                    <input type="text" id="portal-join-name" placeholder="Workspace Name (e.g. Savera)">
-                    <input type="password" id="portal-join-pass" placeholder="Workspace Password">
+                    <label for="portal-join-name" class="sr-only">Workspace Name</label>
+                    <input type="text" id="portal-join-name" placeholder="Workspace Name (e.g. Savera)"
+                        aria-label="Workspace Name">
+                    <label for="portal-join-pass" class="sr-only">Workspace Password</label>
+                    <input type="password" id="portal-join-pass" placeholder="Workspace Password"
+                        aria-label="Workspace Password">
                     <button id="btn-portal-join" class="btn-primary">Enter Workspace</button>
                 </div>
             </div>
 
-            <!-- Create Form -->
+            <!-- Create -->
             <div id="form-create" class="portal-form hidden">
                 <div class="form-group">
-                    <input type="text" id="portal-create-name" placeholder="New Workspace Name">
-                    <input type="password" id="portal-create-pass" placeholder="Set Workspace Password">
+                    <label for="portal-create-name" class="sr-only">New Workspace Name</label>
+                    <input type="text" id="portal-create-name" placeholder="New Workspace Name"
+                        aria-label="New Workspace Name">
+                    <label for="portal-create-pass" class="sr-only">Set Workspace Password</label>
+                    <input type="password" id="portal-create-pass" placeholder="Set Workspace Password"
+                        aria-label="Set Workspace Password">
                     <button id="btn-portal-create" class="btn-primary">Initialize & Enter</button>
                 </div>
             </div>
@@ -174,23 +170,26 @@
     <!-- Operation -->
     <div id="view-operation" class="operation-container hidden">
         <div class="operation-header">
-            <button id="btn-exit-workspace" class="btn-secondary btn-sm">🚪 Exit Workspace</button>
-            <button id="btn-mobile-menu" class="btn-secondary btn-sm mobile-only">☰ Menu</button>
+            <button id="btn-exit-workspace" class="btn-secondary btn-sm" aria-label="Exit Workspace">🚪 Exit
+                Workspace</button>
+            <button id="btn-mobile-menu" class="btn-secondary btn-sm mobile-only" aria-label="Open Mobile Menu">☰
+                Menu</button>
             <button id="btn-qr-presence" class="btn-primary btn-sm mobile-hidden"
-                style="background: var(--accent); color: #000;">📱
+                style="background: var(--accent); color: #000;" aria-label="Open QR Presence">📱
                 QR Presence</button>
             <h2 id="current-space-title">Workspace Name</h2>
             <div style="display: flex; gap: 8px; align-items: center;" class="mobile-hidden">
-                <button id="btn-history" class="btn-secondary btn-sm">📜 History</button>
+                <button id="btn-history" class="btn-secondary btn-sm" aria-label="Open Attendance History">📜
+                    History</button>
             </div>
-            <div id="system-status" class="status-badge status-loading">Initializing System...</div>
+            <div id="system-status" class="status-badge status-loading" aria-live="polite">Initializing System...</div>
         </div>
 
         <!-- Mobile Side Navigation -->
-        <div id="mobile-sidebar" class="sidebar-container hidden">
+        <div id="mobile-sidebar" class="sidebar-container hidden" role="navigation" aria-label="Mobile Navigation">
             <div class="sidebar-header">
                 <h3>Menu</h3>
-                <button id="btn-close-sidebar" class="btn-close-sm">&times;</button>
+                <button id="btn-close-sidebar" class="btn-close-sm" aria-label="Close Sidebar">&times;</button>
             </div>
             <div class="sidebar-content">
                 <div class="sidebar-section">
@@ -210,10 +209,9 @@
         </div>
 
         <div class="main-container">
-            <!-- Camera -->
-            <div class="camera-wrapper">
-                <div id="face-3d-container"></div>
-                <video id="video" autoplay muted playsinline></video>
+            <div class="camera-wrapper" aria-label="Camera Feed Section">
+                <div id="face-3d-container" aria-hidden="true"></div>
+                <video id="video" autoplay muted playsinline aria-label="Live Camera Stream"></video>
                 <div class="camera-viewfinder">
                     <div class="viewfinder-corner top-left"></div>
                     <div class="viewfinder-corner top-right"></div>
@@ -245,7 +243,6 @@
             </div>
 
             <div class="controls-panel">
-                <!-- Dashboard Stats -->
                 <div class="stats-container">
                     <div class="stat-box">
                         <div class="stat-label">Date</div>
@@ -257,7 +254,6 @@
                     </div>
                 </div>
 
-                <!-- Modes -->
                 <div class="mode-toggle">
                     <button id="btn-mode-attend" class="btn-secondary active">🕒 Attendance</button>
                     <button id="btn-mode-reg" class="btn-secondary">👤 Registration</button>
@@ -265,7 +261,6 @@
                     <button id="btn-mode-config" class="btn-secondary">⚙️ Settings</button>
                 </div>
 
-                <!-- Forms / Panels -->
                 <div id="config-form" class="form-group hidden">
                     <h3>Configure Fields</h3>
                     <p style="font-size: 0.8rem; color: var(--text-muted);">Choose what info to collect during
@@ -316,7 +311,6 @@
                     <button id="btn-save-config" class="btn-primary" style="margin-top: 10px;">Save Settings</button>
                 </div>
 
-                <!-- Registration -->
                 <div id="reg-form" class="form-group hidden">
                     <h3>Register New Person</h3>
                     <div id="dynamic-fields-container"></div>
@@ -329,7 +323,6 @@
                         style="margin-top: 10px; font-size: 0.85rem; text-align: center; min-height: 20px;"></div>
                 </div>
 
-                <!-- Attendance -->
                 <div id="attend-info">
                     <div style="margin-bottom: 15px;">
                         <div class="list-header">
@@ -349,7 +342,6 @@
                     </div>
                 </div>
 
-                <!-- People Stats -->
                 <div id="analytics-panel" class="hidden">
                     <div class="list-header"><span>👥 People Stats</span></div>
                     <div class="form-group" style="margin-bottom: 15px;">
@@ -361,19 +353,17 @@
         </div>
     </div>
 
-
-    <!-- Bottom Overlay Elements -->
-    <div id="qr-modal" class="qr-modal-container hidden">
+    <div id="qr-modal" class="qr-modal-container hidden" role="dialog" aria-labelledby="qr-modal-title">
         <div class="qr-modal-content">
-            <button id="btn-close-qr" class="btn-close">&times;</button>
-            <h3>QR Presence</h3>
+            <button id="btn-close-qr" class="btn-close" aria-label="Close QR Modal">&times;</button>
+            <h3 id="qr-modal-title">QR Presence</h3>
             <p>Scan to mark attendance. Refreshes in <span id="qr-timer">30</span>s</p>
             <div class="qr-wrapper">
-                <img id="qr-image" src="" alt="QR Code">
+                <img id="qr-image" src="" alt="Dynamic QR Code for Attendance">
                 <div class="qr-logo-overlay">
-                    <img src="folder/cognito attend.png" alt="Logo">
+                    <img src="folder/cognito attend.png" alt="CognitoAttend Brand Logo" loading="lazy">
                 </div>
-                <div class="qr-scanner-line"></div>
+                <div class="qr-scanner-line" aria-hidden="true"></div>
             </div>
             <div id="qr-status" class="qr-status">Generating code...</div>
             <button id="btn-copy-qr-link" class="btn-secondary btn-sm"
@@ -383,9 +373,9 @@
     </div>
 
     <!-- History Modal -->
-    <div id="history-modal" class="qr-modal-container hidden">
+    <div id="history-modal" class="qr-modal-container hidden" role="dialog" aria-labelledby="history-modal-title">
         <div class="qr-modal-content" style="max-width: 800px; width: 95%;">
-            <button id="btn-close-history" class="btn-close">&times;</button>
+            <button id="btn-close-history" class="btn-close" aria-label="Close History Modal">&times;</button>
             <h3 id="history-modal-title">Attendance History</h3>
 
             <div id="history-date-selector"
@@ -421,10 +411,10 @@
     </div>
 
     <!-- Edit Person Modal -->
-    <div id="edit-modal" class="qr-modal-container hidden">
+    <div id="edit-modal" class="qr-modal-container hidden" role="dialog" aria-labelledby="edit-modal-title">
         <div class="qr-modal-content">
-            <button id="btn-close-edit" class="btn-close">&times;</button>
-            <h3>Edit Discovery</h3>
+            <button id="btn-close-edit" class="btn-close" aria-label="Close Edit Modal">&times;</button>
+            <h3 id="edit-modal-title">Edit Discovery</h3>
             <p>Update information for <span id="edit-person-name-title">Person</span></p>
             <div class="form-group" style="margin-top: 20px;">
                 <input type="text" id="edit-name" placeholder="Full Name">
@@ -437,7 +427,6 @@
         </div>
     </div>
 
-    <!-- Custom Confirmation Modal -->
     <div id="confirm-modal" class="qr-modal-container hidden" style="z-index: 10001;">
         <div class="qr-modal-content" style="max-width: 350px;">
             <div style="font-size: 2.5rem; color: var(--danger); margin-bottom: 15px;">⚠</div>
@@ -451,21 +440,19 @@
         </div>
     </div>
 
-    <!-- Toast Notifications -->
     <div id="toast-container"
         style="position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 10002; display: flex; flex-direction: column; gap: 10px; pointer-events: none;">
     </div>
-    </div> <!-- Close view-operation -->
+    </div>
 
-    <!-- Main Application Logic (External) -->
     <script type="module" src="main.js?v=1736862985"></script>
     <div style="position: fixed; bottom: 5px; right: 5px; font-size: 10px; color: #333; pointer-events: none;">v.1925
     </div>
 
-    <!-- Bottom Aesthetic Strip (Global) -->
-    <div class="bottom-strip">
+    <div class="bottom-strip" role="contentinfo">
         <div class="footer-center">
-            <img src="folder/cognito attend.png" alt="Logo" class="footer-brand-logo">
+            <img src="folder/cognito attend.png" alt="CognitoAttend Global Logo" class="footer-brand-logo"
+                loading="lazy">
             <span class="footer-brand-name">CognitoAttend</span>
         </div>
     </div>
