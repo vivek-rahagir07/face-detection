@@ -109,6 +109,10 @@ let activeAttendanceTab = 'present';
 let lastPresentHTML = '';
 let lastAbsentHTML = '';
 
+// Smoothing box state
+const smoothBoxes = {}; // { label: { x, y, w, h } }
+const LERP_FACTOR = 0.4;
+
 const qrModal = document.getElementById('qr-modal');
 const btnQrPresence = document.getElementById('btn-qr-presence');
 const btnCloseQr = document.getElementById('btn-close-qr');
@@ -1454,11 +1458,22 @@ video.addEventListener('play', () => {
                 const isMatch = result.label !== 'unknown' && confidence >= 20;
                 const displayLabel = isMatch ? result.label : 'SEARCHING...';
 
-                // Draw Mesh (Optional, keep for coolness but clean)
-                if (detection.landmarks) drawFaceMesh(ctx, detection.landmarks);
-
-                // Draw Standard Box
-                drawCustomFaceBox(ctx, box, displayLabel, isMatch, confidence);
+                // Smoothing Logic
+                if (isMatch) {
+                    if (!smoothBoxes[displayLabel]) {
+                        smoothBoxes[displayLabel] = { x: box.x, y: box.y, w: box.width, h: box.height };
+                    } else {
+                        const sb = smoothBoxes[displayLabel];
+                        sb.x += (box.x - sb.x) * LERP_FACTOR;
+                        sb.y += (box.y - sb.y) * LERP_FACTOR;
+                        sb.w += (box.width - sb.w) * LERP_FACTOR;
+                        sb.h += (box.height - sb.h) * LERP_FACTOR;
+                    }
+                    const sb = smoothBoxes[displayLabel];
+                    drawCustomFaceBox(ctx, { x: sb.x, y: sb.y, width: sb.w, height: sb.h }, displayLabel, isMatch, confidence);
+                } else {
+                    drawCustomFaceBox(ctx, box, displayLabel, isMatch, confidence);
+                }
             });
         }
 
