@@ -329,115 +329,116 @@
                 </div>
             </div>
         </div>
+    </div>
 
 
-        <!-- Bottom Overlay Elements -->
-        <div id="qr-modal" class="qr-modal-container hidden">
-            <div class="qr-modal-content">
-                <button id="btn-close-qr" class="btn-close">&times;</button>
-                <h3>QR Presence</h3>
-                <p>Scan to mark attendance. Refreshes in <span id="qr-timer">30</span>s</p>
-                <div class="qr-wrapper">
-                    <img id="qr-image" src="" alt="QR Code">
-                    <div class="qr-logo-overlay">
-                        <img src="folder/cognito attend.png" alt="Logo">
-                    </div>
-                    <div class="qr-scanner-line"></div>
+    <!-- Bottom Overlay Elements -->
+    <div id="qr-modal" class="qr-modal-container hidden">
+        <div class="qr-modal-content">
+            <button id="btn-close-qr" class="btn-close">&times;</button>
+            <h3>QR Presence</h3>
+            <p>Scan to mark attendance. Refreshes in <span id="qr-timer">30</span>s</p>
+            <div class="qr-wrapper">
+                <img id="qr-image" src="" alt="QR Code">
+                <div class="qr-logo-overlay">
+                    <img src="folder/cognito attend.png" alt="Logo">
                 </div>
-                <div id="qr-status" class="qr-status">Generating code...</div>
-                <button id="btn-copy-qr-link" class="btn-secondary btn-sm"
-                    style="margin-top: 15px; width: 100%; border: 1px solid rgba(255,255,255,0.1);">🔗 Copy Attendance
-                    Link</button>
+                <div class="qr-scanner-line"></div>
+            </div>
+            <div id="qr-status" class="qr-status">Generating code...</div>
+            <button id="btn-copy-qr-link" class="btn-secondary btn-sm"
+                style="margin-top: 15px; width: 100%; border: 1px solid rgba(255,255,255,0.1);">🔗 Copy Attendance
+                Link</button>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="history-modal" class="qr-modal-container hidden">
+        <div class="qr-modal-content" style="max-width: 800px; width: 95%;">
+            <button id="btn-close-history" class="btn-close">&times;</button>
+            <h3 id="history-modal-title">Attendance History</h3>
+
+            <div id="history-date-selector"
+                style="margin: 20px 0; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+                <!-- Dates will be injected here -->
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center;">
+                <input type="text" id="history-search" placeholder="Search by name, reg no..."
+                    style="flex: 1; margin: 0;">
+                <button id="btn-export-history" class="btn-export" style="height: 45px; display: none;">📥 Export
+                    CSV</button>
+            </div>
+
+            <div id="history-table-container" class="scrollable-list"
+                style="max-height: 400px; border: 1px solid rgba(0, 242, 255, 0.2);">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Reg No</th>
+                            <th>Course</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body">
+                        <!-- Data will be injected here -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="history-status" class="qr-status">Select a date to view attendance</div>
+        </div>
+    </div>
+
+    <!-- Edit Person Modal -->
+    <div id="edit-modal" class="qr-modal-container hidden">
+        <div class="qr-modal-content">
+            <button id="btn-close-edit" class="btn-close">&times;</button>
+            <h3>Edit Discovery</h3>
+            <p>Update information for <span id="edit-person-name-title">Person</span></p>
+            <div class="form-group" style="margin-top: 20px;">
+                <input type="text" id="edit-name" placeholder="Full Name">
+                <input type="text" id="edit-regNo" placeholder="Registration Number">
+                <input type="text" id="edit-course" placeholder="Course / Department">
+                <button id="btn-save-edit" class="btn-primary">Save Changes</button>
+                <button id="btn-delete-person" class="btn-secondary"
+                    style="color: var(--danger); border-color: var(--danger);">Delete Record</button>
             </div>
         </div>
+    </div>
 
-        <!-- History Modal -->
-        <div id="history-modal" class="qr-modal-container hidden">
-            <div class="qr-modal-content" style="max-width: 800px; width: 95%;">
-                <button id="btn-close-history" class="btn-close">&times;</button>
-                <h3 id="history-modal-title">Attendance History</h3>
-
-                <div id="history-date-selector"
-                    style="margin: 20px 0; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
-                    <!-- Dates will be injected here -->
-                </div>
-
-                <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center;">
-                    <input type="text" id="history-search" placeholder="Search by name, reg no..."
-                        style="flex: 1; margin: 0;">
-                    <button id="btn-export-history" class="btn-export" style="height: 45px; display: none;">📥 Export
-                        CSV</button>
-                </div>
-
-                <div id="history-table-container" class="scrollable-list"
-                    style="max-height: 400px; border: 1px solid rgba(0, 242, 255, 0.2);">
-                    <table class="history-table">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Reg No</th>
-                                <th>Course</th>
-                                <th>Time</th>
-                            </tr>
-                        </thead>
-                        <tbody id="history-table-body">
-                            <!-- Data will be injected here -->
-                        </tbody>
-                    </table>
-                </div>
-                <div id="history-status" class="qr-status">Select a date to view attendance</div>
+    <!-- Custom Confirmation Modal -->
+    <div id="confirm-modal" class="qr-modal-container hidden" style="z-index: 10001;">
+        <div class="qr-modal-content" style="max-width: 350px;">
+            <div style="font-size: 2.5rem; color: var(--danger); margin-bottom: 15px;">⚠</div>
+            <h3>Critical Action</h3>
+            <p id="confirm-message">Are you sure you want to proceed?</p>
+            <div style="display: flex; gap: 10px; margin-top: 25px;">
+                <button id="btn-confirm-yes" class="btn-primary" style="background: var(--danger); flex: 1;">Yes,
+                    Delete</button>
+                <button id="btn-confirm-no" class="btn-secondary" style="flex: 1;">Cancel</button>
             </div>
         </div>
+    </div>
 
-        <!-- Edit Person Modal -->
-        <div id="edit-modal" class="qr-modal-container hidden">
-            <div class="qr-modal-content">
-                <button id="btn-close-edit" class="btn-close">&times;</button>
-                <h3>Edit Discovery</h3>
-                <p>Update information for <span id="edit-person-name-title">Person</span></p>
-                <div class="form-group" style="margin-top: 20px;">
-                    <input type="text" id="edit-name" placeholder="Full Name">
-                    <input type="text" id="edit-regNo" placeholder="Registration Number">
-                    <input type="text" id="edit-course" placeholder="Course / Department">
-                    <button id="btn-save-edit" class="btn-primary">Save Changes</button>
-                    <button id="btn-delete-person" class="btn-secondary"
-                        style="color: var(--danger); border-color: var(--danger);">Delete Record</button>
-                </div>
-            </div>
-        </div>
+    <!-- Toast Notifications -->
+    <div id="toast-container"
+        style="position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 10002; display: flex; flex-direction: column; gap: 10px; pointer-events: none;">
+    </div>
+    </div> <!-- Close view-operation -->
 
-        <!-- Custom Confirmation Modal -->
-        <div id="confirm-modal" class="qr-modal-container hidden" style="z-index: 10001;">
-            <div class="qr-modal-content" style="max-width: 350px;">
-                <div style="font-size: 2.5rem; color: var(--danger); margin-bottom: 15px;">⚠</div>
-                <h3>Critical Action</h3>
-                <p id="confirm-message">Are you sure you want to proceed?</p>
-                <div style="display: flex; gap: 10px; margin-top: 25px;">
-                    <button id="btn-confirm-yes" class="btn-primary" style="background: var(--danger); flex: 1;">Yes,
-                        Delete</button>
-                    <button id="btn-confirm-no" class="btn-secondary" style="flex: 1;">Cancel</button>
-                </div>
-            </div>
-        </div>
+    <!-- Main Application Logic (External) -->
+    <script type="module" src="main.js?v=1736862985"></script>
+    <div style="position: fixed; bottom: 5px; right: 5px; font-size: 10px; color: #333; pointer-events: none;">v.1925
+    </div>
 
-        <!-- Toast Notifications -->
-        <div id="toast-container"
-            style="position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 10002; display: flex; flex-direction: column; gap: 10px; pointer-events: none;">
+    <!-- Bottom Aesthetic Strip (Global) -->
+    <div class="bottom-strip">
+        <div class="footer-center">
+            <img src="folder/cognito attend.png" alt="Logo" class="footer-brand-logo">
+            <span class="footer-brand-name">CognitoAttend</span>
         </div>
-
-        <!-- Main Application Logic (External) -->
-        <script type="module" src="main.js?v=1736862985"></script>
-        <div style="position: fixed; bottom: 5px; right: 5px; font-size: 10px; color: #333; pointer-events: none;">
-            v.1925
-        </div>
-
-        <!-- Bottom Aesthetic Strip (Global) -->
-        <div class="bottom-strip">
-            <div class="footer-center">
-                <img src="folder/cognito attend.png" alt="Logo" class="footer-brand-logo">
-                <span class="footer-brand-name">CognitoAttend</span>
-            </div>
-        </div>
+    </div>
 </body>
 
 </html>
