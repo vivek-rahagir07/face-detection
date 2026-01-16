@@ -177,6 +177,22 @@ function updateLiveDateTime() {
     const now = new Date();
     const options = { weekday: 'short', month: 'short', day: 'numeric' };
     if (dateDisplay) dateDisplay.innerText = now.toLocaleDateString('en-US', options);
+
+    // Update HUD Data Left/Right randomly for "Pro" effect
+    const hudL = document.getElementById('hud-data-left');
+    const hudR = document.getElementById('hud-data-right');
+    if (hudL && hudR) {
+        const stats = [
+            `CORE_TEMP: 34.2C`,
+            `SYS_LOAD: ${Math.floor(Math.random() * 20) + 10}%`,
+            `GRID_SYNC: ACTIVE`,
+            `BIOMETRIC_LOCK: TRUE`,
+            `MEMORY: 0x${Math.random().toString(16).slice(2, 8).toUpperCase()}`,
+            `UPTIME: ${Math.floor(performance.now() / 1000)}s`
+        ];
+        hudL.innerHTML = stats.slice(0, 3).map(s => `<div class="hud-data-bit">${s}</div>`).join('');
+        hudR.innerHTML = stats.slice(3, 6).map(s => `<div class="hud-data-bit">${s}</div>`).join('');
+    }
 }
 setInterval(updateLiveDateTime, 60000);
 updateLiveDateTime();
@@ -1462,7 +1478,32 @@ video.addEventListener('play', () => {
                 }
             });
         }
+
+        // Night Vision Logic
+        checkLightLevels();
+
     }, DETECTION_INTERVAL);
+
+    function checkLightLevels() {
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = 1;
+        tempCanvas.height = 1;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(video, 0, 0, 1, 1);
+        const data = tempCtx.getImageData(0, 0, 1, 1).data;
+        const brightness = (data[0] + data[1] + data[2]) / 3;
+
+        const wrapper = document.querySelector('.camera-wrapper');
+        if (wrapper) {
+            if (brightness < 40) { // Very low light
+                wrapper.classList.add('night-vision');
+                statusBadge.innerText = "Dark Vision Active";
+            } else {
+                wrapper.classList.remove('night-vision');
+                if (currentMode === 'attendance') statusBadge.innerText = "System Active";
+            }
+        }
+    }
 
     // --- Smooth HUD Animation Loop (requestAnimationFrame) ---
     function animateHUD() {
@@ -1706,6 +1747,56 @@ if (btnCapture) btnCapture.addEventListener('click', handleCameraRegistration);
 if (btnUploadTrigger) btnUploadTrigger.addEventListener('click', () => inputUploadPhoto.click());
 if (inputUploadPhoto) inputUploadPhoto.addEventListener('change', handlePhotoUpload);
 if (btnExport) btnExport.addEventListener('click', exportToCSV);
+
+// Magic Link Event Listeners
+const btnGenerateMagic = document.getElementById('btn-generate-magic');
+const magicLinkContainer = document.getElementById('magic-link-container');
+const magicLinkInput = document.getElementById('magic-link-input');
+const btnCopyMagic = document.getElementById('btn-copy-magic');
+
+if (btnGenerateMagic) {
+    btnGenerateMagic.addEventListener('click', () => {
+        if (!currentSpace) return alert("Enter a workspace first");
+        let baseUrl = window.location.href.split('?')[0].split('#')[0].replace('index.html', '');
+        if (!baseUrl.endsWith('/')) baseUrl += '/';
+        const url = `${baseUrl}?magic=${currentSpace.id}`;
+        magicLinkInput.value = url;
+        magicLinkContainer.classList.remove('hidden');
+        btnGenerateMagic.innerText = "🔄 Regenerated";
+    });
+}
+
+if (btnCopyMagic) {
+    btnCopyMagic.addEventListener('click', () => {
+        magicLinkInput.select();
+        document.execCommand('copy');
+        btnCopyMagic.innerText = "✅ Copied!";
+        setTimeout(() => btnCopyMagic.innerText = "Copy Link", 2000);
+    });
+}
+
+// Check for Magic Link on load
+window.addEventListener('load', async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const magicId = urlParams.get('magic');
+    if (magicId) {
+        try {
+            const spaceSnap = await getDoc(doc(db, COLL_SPACES, magicId));
+            if (spaceSnap.exists()) {
+                currentSpace = { id: magicId, ...spaceSnap.data() };
+                currentSpaceTitle.innerText = currentSpace.name;
+                setMode('registration');
+                showView('view-operation');
+                initSystem();
+                // Hide other tabs for self-registration mode if desired, 
+                // but let's keep it simple for now and just land on registration.
+                showToast("Magic Link Active: Register yourself now.");
+            }
+        } catch (e) {
+            console.error("Magic Link Fail:", e);
+        }
+    }
+});
 
 function setMode(mode) {
     currentMode = mode;

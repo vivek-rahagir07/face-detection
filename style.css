@@ -2032,3 +2032,108 @@ button:active,
         font-size: 16px !important;
     }
 }
+/* --- Advanced AI HUD & Effects --- */
+
+.hud-container {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.hud-ring {
+    position: absolute;
+    border: 2px solid rgba(0, 242, 255, 0.15);
+    border-radius: 50%;
+    filter: drop-shadow(0 0 10px rgba(0, 242, 255, 0.2));
+}
+
+.hud-ring.rotating {
+    width: 300px;
+    height: 300px;
+    border-top-color: var(--accent);
+    border-bottom-color: var(--accent);
+    animation: spin 8s linear infinite;
+}
+
+.hud-ring.rotating-reverse {
+    width: 260px;
+    height: 260px;
+    border-left-color: #ff00f2;
+    border-right-color: #ff00f2;
+    animation: spin 6s linear infinite reverse;
+    opacity: 0.5;
+}
+
+.hud-scanner-bar {
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    box-shadow: 0 0 20px var(--accent);
+    top: 50%;
+    transform: translateY(-50%);
+    animation: hud-scan 4s ease-in-out infinite;
+    opacity: 0.3;
+}
+
+.hud-column {
+    position: absolute;
+    top: 40px;
+    bottom: 40px;
+    width: 120px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--accent);
+    opacity: 0.6;
+}
+
+.hud-column.left { left: 40px; }
+.hud-column.right { right: 40px; text-align: right; }
+
+.hud-data-bit {
+    background: rgba(0, 242, 255, 0.05);
+    padding: 4px 8px;
+    border-left: 2px solid var(--accent);
+    animation: pulse 2s infinite;
+}
+
+@keyframes hud-scan {
+    0%, 100% { top: 20%; opacity: 0; }
+    50% { top: 80%; opacity: 0.5; }
+}
+
+/* Night Vision Matrix Filter */
+.camera-wrapper.night-vision #video {
+    filter: brightness(1.4) contrast(1.2) sepia(1) hue-rotate(80deg) saturate(2);
+}
+
+.camera-wrapper.night-vision::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, transparent 40%, rgba(0, 50, 0, 0.4) 100%),
+                repeating-linear-gradient(0deg, transparent 0px, rgba(0, 255, 0, 0.05) 1px, transparent 2px);
+    z-index: 10;
+    pointer-events: none;
+}
+
+/* Magic Link UI */
+#magic-link-container {
+    animation: slide-up 0.3s ease;
+}
+
+#magic-link-input {
+    width: 100%;
+    background: #000;
+    border: 1px solid var(--border);
+    color: var(--accent);
+    border-radius: 8px;
+}
