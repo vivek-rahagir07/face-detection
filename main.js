@@ -1322,21 +1322,61 @@ if (btnDeletePerson) {
 
 // Drawing Utils
 
-function drawCustomFaceBox(ctx, box, label, isMatch, confidence) {
+function drawCustomFaceBox(ctx, box, label, isMatch, confidence, resultLabel) {
     const { x, y, width, height } = box;
-    const color = isMatch ? '#fbbf24' : '#ef4444';
+    const isUnknown = resultLabel === 'unknown';
+    const color = isMatch ? '#22c55e' : (isUnknown ? '#ef4444' : '#00f2ff');
+    const cornerSize = 25;
+    const padding = 10;
 
     ctx.strokeStyle = color;
     ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.rect(x, y, width, height);
-    ctx.stroke();
 
-    // Label
-    if (isMatch) {
-        ctx.font = '700 14px Inter';
+    // 1. Digital Double Corner Brackets
+    const drawCorner = (cx, cy, dx, dy) => {
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + dy * cornerSize);
+        ctx.lineTo(cx, cy);
+        ctx.lineTo(cx + dx * cornerSize, cy);
+        ctx.stroke();
+
+        // Inner bracket offset
+        const offset = 6;
+        ctx.beginPath();
+        ctx.moveTo(cx + dx * offset, cy + dy * (cornerSize + offset));
+        ctx.lineTo(cx + dx * offset, cy + dy * offset);
+        ctx.lineTo(cx + dx * (cornerSize + offset), cy + dy * offset);
+        ctx.stroke();
+    };
+
+    drawCorner(x - padding, y - padding, 1, 1); // TL
+    drawCorner(x + width + padding, y - padding, -1, 1); // TR
+    drawCorner(x - padding, y + height + padding, 1, -1); // BL
+    drawCorner(x + width + padding, y + height + padding, -1, -1); // BR
+
+    // 2. Status Pill (The "Green Sign")
+    if (isMatch || isUnknown) {
+        ctx.font = '900 12px Inter';
+        const statusText = isMatch ? `${label.toUpperCase()} [${confidence}%]` : 'STRANGER_DETECTED';
+        const textWidth = ctx.measureText(statusText).width;
+        const pillWidth = textWidth + 30;
+        const pillHeight = 24;
+        const pillX = x + (width / 2) - (pillWidth / 2);
+        const pillY = y - padding - 40;
+
+        // Glow
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = color;
+
         ctx.fillStyle = color;
-        ctx.fillText(label.toUpperCase(), x, y - 10);
+        ctx.beginPath();
+        ctx.roundRect(pillX, pillY, pillWidth, pillHeight, 12);
+        ctx.fill();
+
+        ctx.shadowBlur = 0;
+
+        ctx.fillStyle = '#000';
+        ctx.fillText(statusText, pillX + 15, pillY + 16);
     }
 }
 
@@ -1352,32 +1392,34 @@ function drawPath(ctx, points, close = false) {
 }
 
 // Optimized Mesh Drawing
-function drawFaceMesh(ctx, landmarks) {
+function drawFaceMesh(ctx, landmarks, color = '#00f2ff') {
     const points = landmarks.positions;
-    ctx.strokeStyle = 'rgba(0, 242, 255, 0.4)';
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = 0.3;
     ctx.lineWidth = 0.5;
 
-    // GPU-friendly mesh drawing
+    // Plexus Network
     ctx.beginPath();
-    // Connecting key landmarks for a digital cyber-net look
-    // This is faster than lots of small strokes
     points.forEach((p, i) => {
-        if (i % 2 === 0) { // Sparse mesh for performance
+        // Connect to next few points to create a web/triangulation look
+        for (let j = i + 1; j < i + 5 && j < points.length; j++) {
             ctx.moveTo(p.x, p.y);
-            const neighbor = points[i + 1] || points[0];
-            ctx.lineTo(neighbor.x, neighbor.y);
+            ctx.lineTo(points[j].x, points[j].y);
         }
     });
     ctx.stroke();
 
-    // Draw nodes
-    ctx.fillStyle = 'rgba(0, 242, 255, 0.8)';
-    for (let i = 0; i < points.length; i += 4) { // Only draw every 4th point as node
-        const p = points[i];
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 1.2, 0, 2 * Math.PI);
-        ctx.fill();
-    }
+    // Nodes
+    ctx.globalAlpha = 0.8;
+    ctx.fillStyle = color;
+    points.forEach((p, i) => {
+        if (i % 3 === 0) {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 1, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    });
+    ctx.globalAlpha = 1.0;
 }
 
 // Main Loop
@@ -1460,6 +1502,10 @@ video.addEventListener('play', () => {
                 const isMatch = result.label !== 'unknown' && confidence >= 20;
                 const displayLabel = isMatch ? result.label : 'SEARCHING...';
 
+                // Reactive Color
+                const isUnknown = result.label === 'unknown';
+                const statusColor = isMatch ? '#22c55e' : (isUnknown ? '#ef4444' : '#00f2ff');
+
                 // Smoothing Logic
                 if (isMatch) {
                     if (!smoothBoxes[displayLabel]) {
@@ -1472,9 +1518,17 @@ video.addEventListener('play', () => {
                         sb.h += (box.height - sb.h) * LERP_FACTOR;
                     }
                     const sb = smoothBoxes[displayLabel];
-                    drawCustomFaceBox(ctx, { x: sb.x, y: sb.y, width: sb.w, height: sb.h }, displayLabel, isMatch, confidence);
+
+                    // Draw Mesh
+                    if (detection.landmarks) drawFaceMesh(ctx, detection.landmarks, statusColor);
+
+                    // Draw Brackets & Status
+                    drawCustomFaceBox(ctx, { x: sb.x, y: sb.y, width: sb.w, height: sb.h }, displayLabel, isMatch, confidence, result.label);
                 } else {
-                    drawCustomFaceBox(ctx, box, displayLabel, isMatch, confidence);
+                    // Draw Mesh
+                    if (detection.landmarks) drawFaceMesh(ctx, detection.landmarks, statusColor);
+
+                    drawCustomFaceBox(ctx, box, displayLabel, isMatch, confidence, result.label);
                 }
             });
         }
