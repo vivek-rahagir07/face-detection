@@ -565,9 +565,9 @@ input:focus {
 }
 
 .footer-brand-logo {
-    width: 42px;
+    width: 52px;
     height: auto;
-    filter: drop-shadow(0 0 15px var(--accent, #10b981));
+    filter: drop-shadow(0 0 20px var(--accent, #10b981));
     transition: transform 0.3s ease;
 }
 
@@ -576,10 +576,10 @@ input:focus {
 }
 
 .footer-brand-name {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 1.4rem;
-    font-weight: 500;
-    letter-spacing: 0.1em;
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 300;
+    letter-spacing: 0.5em;
     color: #fff;
     text-transform: uppercase;
     background: linear-gradient(90deg, #fff, var(--accent, #10b981), #fff);
@@ -587,8 +587,8 @@ input:focus {
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    animation: footer-shine 3s linear infinite;
-    filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.3));
+    animation: footer-shine 4s linear infinite;
+    filter: drop-shadow(0 0 15px rgba(16, 185, 129, 0.2));
 }
 
 @keyframes footer-shine {
