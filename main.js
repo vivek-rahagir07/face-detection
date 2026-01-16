@@ -1385,8 +1385,10 @@ function drawFaceMesh(ctx, landmarks) {
 video.addEventListener('play', () => {
     // Responsive alignment: Use offsetWidth/Height to match the rendered video size
     const updateDisplaySize = () => {
-        const displaySize = { width: video.offsetWidth, height: video.offsetHeight };
+        const displaySize = { width: video.clientWidth, height: video.clientHeight };
         faceapi.matchDimensions(canvas, displaySize);
+        // Clear smoothing on resize to prevent "ghost" boxes during transition
+        for (let k in smoothBoxes) delete smoothBoxes[k];
         return displaySize;
     };
 
