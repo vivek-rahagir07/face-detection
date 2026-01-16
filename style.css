@@ -1953,6 +1953,11 @@ input:focus {
         white-space: nowrap;
     }
 
+    #btn-qr-presence,
+    #btn-history {
+        display: none !important;
+    }
+
     .status-badge {
         font-size: 0.7rem;
         padding: 8px 12px;
