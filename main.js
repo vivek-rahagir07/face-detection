@@ -156,6 +156,7 @@ let confirmCallback = null;
 // HUD Animation State
 let hudScanCycle = 0; // 0 to 1
 let hudScanDir = 1;
+let hudRotation = 0; // Continuous rotation for rings
 const lastSpoken = {};
 
 // Device Detection for Performance
@@ -1312,23 +1313,20 @@ if (btnDeletePerson) {
 function drawCustomFaceBox(ctx, box, label, isMatch, confidence, resultLabel) {
     const { x, y, width, height } = box;
     const isUnknown = resultLabel === 'unknown';
-    // Emerald Green while searching, Neon Green for Match, Red for Stranger
     const color = isMatch ? '#22c55e' : (isUnknown ? '#ef4444' : '#10b981');
-    const cornerSize = 30; // Larger corners
+    const cornerSize = 30;
     const padding = 15;
 
     ctx.strokeStyle = color;
-    ctx.lineWidth = 3; // Thicker lines for impact
+    ctx.lineWidth = 3;
 
-    // 1. Digital Double Corner Brackets
+    // TL/TR/BL/BR Corner brackets implementation...
     const drawCorner = (cx, cy, dx, dy) => {
         ctx.beginPath();
         ctx.moveTo(cx, cy + dy * cornerSize);
         ctx.lineTo(cx, cy);
         ctx.lineTo(cx + dx * cornerSize, cy);
         ctx.stroke();
-
-        // Inner bracket
         ctx.lineWidth = 1.5;
         const offset = 8;
         ctx.beginPath();
@@ -1339,34 +1337,102 @@ function drawCustomFaceBox(ctx, box, label, isMatch, confidence, resultLabel) {
         ctx.lineWidth = 3;
     };
 
-    drawCorner(x - padding, y - padding, 1, 1); // TL
-    drawCorner(x + width + padding, y - padding, -1, 1); // TR
-    drawCorner(x - padding, y + height + padding, 1, -1); // BL
-    drawCorner(x + width + padding, y + height + padding, -1, -1); // BR
+    drawCorner(x - padding, y - padding, 1, 1);
+    drawCorner(x + width + padding, y - padding, -1, 1);
+    drawCorner(x - padding, y + height + padding, 1, -1);
+    drawCorner(x + width + padding, y + height + padding, -1, -1);
 
-    // 2. Status Pill (Positioned above the face box)
+    // Dynamic Data Rings (Rotating around the face)
+    const centerX = x + width / 2;
+    const centerY = y + height / 2;
+    const baseRadius = Math.max(width, height) / 2 + 30;
+
+    if (isMatch) {
+        const userData = allUsersData.find(u => u.name === label);
+        const dept = userData ? (userData.course || 'DEPT_01') : 'DEPT_01';
+        const idNo = userData ? (userData.regNo || 'ID_000') : 'ID_000';
+
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.setLineDash([5, 15]);
+
+        // Ring 1: Name
+        ctx.rotate(hudRotation);
+        ctx.beginPath();
+        ctx.arc(0, 0, baseRadius + 10, 0, Math.PI * 1.5);
+        ctx.strokeStyle = color;
+        ctx.globalAlpha = 0.4;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.font = '800 10px Inter';
+        ctx.fillStyle = color;
+        ctx.fillText(label.toUpperCase(), baseRadius + 15, 0);
+
+        // Ring 2: ID
+        ctx.rotate(-hudRotation * 1.5);
+        ctx.beginPath();
+        ctx.arc(0, 0, baseRadius + 25, 0, Math.PI * 1.2);
+        ctx.stroke();
+        ctx.fillText(`ID: ${idNo}`, baseRadius + 30, 0);
+
+        // Ring 3: Dept
+        ctx.rotate(hudRotation * 0.8);
+        ctx.beginPath();
+        ctx.arc(0, 0, baseRadius + 40, 0, Math.PI * 1.8);
+        ctx.stroke();
+        ctx.fillText(dept.toUpperCase(), baseRadius + 45, 0);
+
+        ctx.restore();
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1.0;
+    }
+
+    // Biometric Barcode (Right Side)
+    if (isMatch || isUnknown) {
+        const barcodeX = x + width + padding + 40;
+        const barcodeY = y;
+        const barcodeHeight = height;
+
+        ctx.save();
+        ctx.globalAlpha = 0.6;
+        ctx.translate(barcodeX, barcodeY);
+
+        for (let i = 0; i < barcodeHeight; i += 4) {
+            const bWidth = Math.random() > 0.5 ? 20 : 10;
+            const flicker = Math.random() > 0.1 ? 1 : 0.2;
+            ctx.fillStyle = color;
+            ctx.globalAlpha = flicker * 0.6;
+            ctx.fillRect(0, i, bWidth, 2);
+        }
+
+        // Vertical Rotating Bio-Tag
+        ctx.rotate(Math.PI / 2);
+        ctx.font = '900 9px monospace';
+        ctx.fillStyle = color;
+        const bioText = isMatch ? `BIOSEC_${label.slice(0, 3).toUpperCase()}_${Math.floor(Date.now() / 1000).toString().slice(-4)}` : "ENCRYPTION_ERROR";
+        ctx.fillText(bioText, 0, -5);
+
+        ctx.restore();
+    }
+
+    // Status Pill implementation remains...
     if (isMatch || isUnknown) {
         ctx.font = '900 13px Inter';
         const statusText = isMatch ? `${label.toUpperCase()} [${confidence}%]` : 'UNKNOWN_ACCESS_DENIED';
         const textWidth = ctx.measureText(statusText).width;
         const pillWidth = textWidth + 30;
         const pillHeight = 26;
-
-        // Positioned above the detected face area
         const pillX = x + (width / 2) - (pillWidth / 2);
         const pillY = y - padding - pillHeight - 5;
 
-        // Glow
         ctx.shadowBlur = 20;
         ctx.shadowColor = color;
-
         ctx.fillStyle = color;
         ctx.beginPath();
         ctx.roundRect(pillX, pillY, pillWidth, pillHeight, 13);
         ctx.fill();
-
         ctx.shadowBlur = 0;
-
         ctx.fillStyle = '#000';
         ctx.fillText(statusText, pillX + 15, pillY + 18);
     }
@@ -1530,6 +1596,7 @@ video.addEventListener('play', () => {
         }
         hudScanCycle += hudScanDir * (isMobile ? 0.02 : 0.04);
         if (hudScanCycle > 1 || hudScanCycle < 0) hudScanDir *= -1;
+        hudRotation += 0.02; // Increment HUD rotation
 
         if (window.lastDetection && window.lastResult) {
             const detection = window.lastDetection;
