@@ -71,6 +71,9 @@ const historySearchInput = document.getElementById('history-search');
 const btnExportHistory = document.getElementById('btn-export-history');
 const tabPresent = document.getElementById('tab-present');
 const tabAbsent = document.getElementById('tab-absent');
+const btnManualScan = document.getElementById('btn-manual-scan');
+const btnAttendGallery = document.getElementById('btn-attend-gallery');
+const inputAttendGallery = document.getElementById('input-attend-gallery');
 
 // State
 let currentHistoryRecords = [];
@@ -1642,6 +1645,7 @@ async function handleCameraRegistration() {
     if (detection) {
         await finalizeRegistration(name, metadata, Array.from(detection.descriptor));
     } else {
+        alert("No face detected in camera. Please align your face and try again.");
         regFeedback.innerText = "No face detected in camera.";
         regFeedback.style.color = "var(--danger)";
     }
@@ -1672,6 +1676,7 @@ async function handlePhotoUpload(e) {
         if (detection) {
             await finalizeRegistration(name, metadata, Array.from(detection.descriptor));
         } else {
+            alert("No face detected in uploaded photo. Please try another image.");
             regFeedback.innerText = "No face detected in uploaded photo.";
             regFeedback.style.color = "var(--danger)";
         }
@@ -1834,6 +1839,59 @@ document.getElementById('btn-mode-config').addEventListener('click', () => setMo
 if (btnCapture) btnCapture.addEventListener('click', handleCameraRegistration);
 if (btnUploadTrigger) btnUploadTrigger.addEventListener('click', () => inputUploadPhoto.click());
 if (inputUploadPhoto) inputUploadPhoto.addEventListener('change', handlePhotoUpload);
+
+if (btnManualScan) {
+    btnManualScan.addEventListener('click', async () => {
+        if (!isModelsLoaded || !video.srcObject) return alert("System not ready");
+        btnManualScan.innerText = "Scanning...";
+        try {
+            const detection = await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
+            if (detection) {
+                const result = faceMatcher ? faceMatcher.findBestMatch(detection.descriptor) : { label: 'unknown', distance: 1.0 };
+                if (result.label !== 'unknown' && result.distance < 0.4) {
+                    markAttendance(result.label);
+                    showToast(`Verified: ${result.label}`);
+                } else {
+                    alert("Face not recognized. Please ensure the person is registered.");
+                }
+            } else {
+                alert("No face detected. Please ensure a face is visible to the camera.");
+            }
+        } catch (err) {
+            console.error(err);
+        }
+        btnManualScan.innerText = "📸 Manual Scan";
+    });
+}
+
+if (btnAttendGallery) btnAttendGallery.addEventListener('click', () => inputAttendGallery.click());
+
+if (inputAttendGallery) {
+    inputAttendGallery.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        try {
+            const img = await faceapi.bufferToImage(file);
+            const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
+            if (detection) {
+                const result = faceMatcher ? faceMatcher.findBestMatch(detection.descriptor) : { label: 'unknown', distance: 1.0 };
+                if (result.label !== 'unknown' && result.distance < 0.4) {
+                    markAttendance(result.label);
+                    showToast(`Verified: ${result.label}`);
+                } else {
+                    alert("Face not recognized in the photo.");
+                }
+            } else {
+                alert("No face detected in the photo.");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Error processing photo.");
+        }
+        e.target.value = '';
+    });
+}
+
 if (btnExport) btnExport.addEventListener('click', exportToCSV);
 
 // Magic Link Event Listeners

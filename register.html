@@ -253,7 +253,16 @@
                     <option value="other">Other</option>
                 </select>
             </div>
-            <button id="btn-submit" class="btn-register" disabled>Register Profile</button>
+            <div class="registration-actions"
+                style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+                <button id="btn-snap" class="btn-register"
+                    style="background: var(--accent); color: #000; margin-top: 0;">📸 Capture & Register</button>
+                <button id="btn-gallery" class="btn-register"
+                    style="background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #fff; margin-top: 0;">🖼️
+                    Upload from Gallery</button>
+                <input type="file" id="input-gallery" accept="image/*" style="display: none;">
+            </div>
+            <button id="btn-submit" class="btn-register" style="display: none;">Register Profile</button>
             <div id="feedback">Initializing AI Models...</div>
         </div>
 
@@ -345,6 +354,9 @@
         const inputName = document.getElementById('name');
         const dynamicFields = document.getElementById('dynamic-fields');
         const loadingOverlay = document.getElementById('loading-overlay');
+        const btnSnap = document.getElementById('btn-snap');
+        const btnGallery = document.getElementById('btn-gallery');
+        const inputGallery = document.getElementById('input-gallery');
 
         const params = new URLSearchParams(window.location.search);
         const spaceId = params.get('s');
@@ -539,49 +551,87 @@
             }
         }
 
-        btnSubmit.onclick = async () => {
+        btnSnap.onclick = async () => {
             const name = inputName.value.trim();
             if (!name) return alert("Please enter your name.");
             if (!lastDetection) return alert("Please align your face with the camera.");
 
-            btnSubmit.disabled = true;
+            btnSnap.disabled = true;
             feedback.innerText = "Saving profile...";
 
             try {
-                // Check if name exists in space
-                const q = query(collection(db, 'users'), where("spaceId", "==", spaceId), where("name", "==", name));
-                const snap = await getDocs(q);
-                if (!snap.empty) throw new Error("This name is already registered in this workspace.");
-
-                const metadata = { gender: document.getElementById('gender').value };
-                if (workspaceConfig.config?.fields) {
-                    workspaceConfig.config.fields.forEach(f => {
-                        const el = document.getElementById(`reg-${f}`);
-                        if (el) metadata[f] = el.value.trim();
-                    });
-                }
-
-                await addDoc(collection(db, 'users'), {
-                    spaceId: spaceId,
-                    name: name,
-                    ...metadata,
-                    descriptor: Array.from(lastDetection.descriptor),
-                    attendanceCount: 0,
-                    lastAttendance: null,
-                    approved: false,
-                    createdAt: new Date().toISOString()
-                });
-
-                document.getElementById('form-view').style.display = 'none';
-                document.getElementById('success-view').style.display = 'block';
-                feedback.style.display = 'none';
-
+                await processRegistration(name, lastDetection.descriptor);
             } catch (err) {
                 alert(err.message);
-                btnSubmit.disabled = false;
+                btnSnap.disabled = false;
                 feedback.innerText = "Error: " + err.message;
             }
         };
+
+        btnGallery.onclick = () => inputGallery.click();
+
+        inputGallery.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const name = inputName.value.trim();
+            if (!name) {
+                alert("Please enter your name first.");
+                e.target.value = '';
+                return;
+            }
+
+            feedback.innerText = "Processing Gallery Photo...";
+            feedback.style.color = "#10b981";
+
+            try {
+                const img = await faceapi.bufferToImage(file);
+                const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
+
+                if (detection) {
+                    await processRegistration(name, detection.descriptor);
+                } else {
+                    alert("No face detected in the uploaded photo. Please try another one.");
+                    feedback.innerText = "No face detected in upload";
+                    feedback.style.color = "#ef4444";
+                }
+            } catch (err) {
+                console.error("Upload Error:", err);
+                alert("Error processing image: " + err.message);
+                feedback.innerText = "Error processing upload";
+            }
+            e.target.value = '';
+        };
+
+        async function processRegistration(name, descriptor) {
+            // Check if name exists in space
+            const q = query(collection(db, 'users'), where("spaceId", "==", spaceId), where("name", "==", name));
+            const snap = await getDocs(q);
+            if (!snap.empty) throw new Error("This name is already registered in this workspace.");
+
+            const metadata = { gender: document.getElementById('gender').value };
+            if (workspaceConfig.config?.fields) {
+                workspaceConfig.config.fields.forEach(f => {
+                    const el = document.getElementById(`reg-${f}`);
+                    if (el) metadata[f] = el.value.trim();
+                });
+            }
+
+            await addDoc(collection(db, 'users'), {
+                spaceId: spaceId,
+                name: name,
+                ...metadata,
+                descriptor: Array.from(descriptor),
+                attendanceCount: 0,
+                lastAttendance: null,
+                approved: false, // Portals always require approval
+                createdAt: new Date().toISOString()
+            });
+
+            document.getElementById('form-view').style.display = 'none';
+            document.getElementById('success-view').style.display = 'block';
+            feedback.style.display = 'none';
+        }
 
         startPortal();
     </script>
