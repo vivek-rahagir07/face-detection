@@ -1427,56 +1427,54 @@ function drawFaceMesh(ctx, landmarks, color = '#00f2ff') {
 video.addEventListener('play', () => {
     // Responsive alignment: Use offsetWidth/Height to match the rendered video size
     const updateDisplaySize = () => {
-        // Use intrinsic video size for pixel-perfect matching
-        faceapi.matchDimensions(canvas, video);
-        // Clear smoothing on resize
+        if (!video.videoWidth) return null;
+        const dims = { width: video.videoWidth, height: video.videoHeight };
+        canvas.width = dims.width;
+        canvas.height = dims.height;
+        // Important: Reset smoothing on resolution change
         for (let k in smoothBoxes) delete smoothBoxes[k];
-        return { width: video.videoWidth, height: video.videoHeight };
+        return dims;
     };
 
     let displaySize = updateDisplaySize();
+    video.addEventListener('loadedmetadata', () => { displaySize = updateDisplaySize(); });
     window.addEventListener('resize', () => { displaySize = updateDisplaySize(); });
 
     setInterval(async () => {
-        if (!isModelsLoaded || !video.srcObject) return;
+        if (!isModelsLoaded || !video.srcObject || video.paused || video.ended) return;
         if (currentMode === 'registration' || document.hidden) return;
 
-        const detections = await faceapi.detectAllFaces(video)
-            .withFaceLandmarks()
-            .withFaceDescriptors();
-
-        const ctx = canvas.getContext('2d');
-        // results are in intrinsic coordinates now, no resizing needed
-        window.lastDetections = detections;
-        window.lastResults = faceMatcher ? detections.map(d => faceMatcher.findBestMatch(d.descriptor)) : [];
-
-        // UI Feedback: Scanning indicator
-        if (detections.length > 0) {
-            if (scanIndicator) scanIndicator.style.display = 'block';
-        } else {
-            if (scanIndicator) scanIndicator.style.display = 'none';
+        // Ensure dimensions are initialized (Fixes alignment drift)
+        if (!canvas.width || canvas.width !== video.videoWidth) {
+            updateDisplaySize();
         }
+        const detection = await faceapi.detectSingleFace(video)
+            .withFaceLandmarks()
+            .withFaceDescriptor();
 
-        if (window.lastResults) {
-            window.lastResults.forEach((result, i) => {
-                // Strict threshold: 0.6 distance (40% match)
-                const isMatch = result.label !== 'unknown' && result.distance <= 0.6;
-                if (isMatch) {
-                    detectionHistory[result.label] = (detectionHistory[result.label] || 0) + 1;
-                    if (detectionHistory[result.label] >= VALIDATION_THRESHOLD) {
-                        markAttendance(result.label);
-                        detectionHistory[result.label] = 0;
-                    }
-                }
-            });
+        if (detection) {
+            const result = faceMatcher ? faceMatcher.findBestMatch(detection.descriptor) : { label: 'unknown', distance: 1.0 };
+            window.lastDetection = detection;
+            window.lastResult = result;
 
-            // Cleanup detection history
-            Object.keys(detectionHistory).forEach(name => {
-                const isStillInFrame = window.lastResults.some(r => r.label === name);
-                if (!isStillInFrame) {
-                    detectionHistory[name] = Math.max(0, (detectionHistory[name] || 0) - 1);
+            if (scanIndicator) scanIndicator.style.display = 'block';
+
+            // 2. Recognition Logic
+            const isMatch = result.label !== 'unknown' && result.distance <= 0.6;
+            if (isMatch) {
+                detectionHistory[result.label] = (detectionHistory[result.label] || 0) + 1;
+                if (detectionHistory[result.label] >= VALIDATION_THRESHOLD) {
+                    markAttendance(result.label);
+                    detectionHistory[result.label] = 0;
                 }
-            });
+            } else {
+                // Clear history slowly if no match
+                for (let k in detectionHistory) detectionHistory[k] = Math.max(0, detectionHistory[k] - 1);
+            }
+        } else {
+            window.lastDetection = null;
+            window.lastResult = null;
+            if (scanIndicator) scanIndicator.style.display = 'none';
         }
     }, DETECTION_INTERVAL);
 
@@ -1489,36 +1487,33 @@ video.addEventListener('play', () => {
         hudScanCycle += hudScanDir * (isMobile ? 0.02 : 0.04);
         if (hudScanCycle > 1 || hudScanCycle < 0) hudScanDir *= -1;
 
-        if (window.lastDetections && window.lastResults) {
-            window.lastDetections.forEach((detection, i) => {
-                const result = window.lastResults[i];
-                if (!detection || !result) return;
+        if (window.lastDetection && window.lastResult) {
+            const detection = window.lastDetection;
+            const result = window.lastResult;
+            const box = detection.detection.box;
+            const confidence = Math.round((1 - result.distance) * 100);
+            const isMatch = result.label !== 'unknown' && result.distance <= 0.6;
+            const displayLabel = isMatch ? result.label : 'SEARCHING...';
 
-                const box = detection.detection.box;
-                const confidence = Math.round((1 - result.distance) * 100);
-                const isMatch = result.label !== 'unknown' && result.distance <= 0.6;
-                const displayLabel = isMatch ? result.label : 'SEARCHING...';
+            const isUnknown = result.label === 'unknown';
+            const statusColor = isMatch ? '#22c55e' : (isUnknown ? '#ef4444' : '#00f2ff');
 
-                const isUnknown = result.label === 'unknown';
-                const statusColor = isMatch ? '#22c55e' : (isUnknown ? '#ef4444' : '#00f2ff');
-
-                let drawBox = box;
-                if (isMatch) {
-                    if (!smoothBoxes[displayLabel]) {
-                        smoothBoxes[displayLabel] = { x: box.x, y: box.y, w: box.width, h: box.height };
-                    } else {
-                        const sb = smoothBoxes[displayLabel];
-                        sb.x += (box.x - sb.x) * LERP_FACTOR;
-                        sb.y += (box.y - sb.y) * LERP_FACTOR;
-                        sb.w += (box.width - sb.w) * LERP_FACTOR;
-                        sb.h += (box.height - sb.h) * LERP_FACTOR;
-                    }
-                    drawBox = smoothBoxes[displayLabel];
+            let drawBox = box;
+            if (isMatch) {
+                if (!smoothBoxes[displayLabel]) {
+                    smoothBoxes[displayLabel] = { x: box.x, y: box.y, w: box.width, h: box.height };
+                } else {
+                    const sb = smoothBoxes[displayLabel];
+                    sb.x += (box.x - sb.x) * LERP_FACTOR;
+                    sb.y += (box.y - sb.y) * LERP_FACTOR;
+                    sb.w += (box.width - sb.w) * LERP_FACTOR;
+                    sb.h += (box.height - sb.h) * LERP_FACTOR;
                 }
+                drawBox = smoothBoxes[displayLabel];
+            }
 
-                if (detection.landmarks) drawFaceMesh(ctx, detection.landmarks, statusColor);
-                drawCustomFaceBox(ctx, drawBox, displayLabel, isMatch, confidence, result.label);
-            });
+            if (detection.landmarks) drawFaceMesh(ctx, detection.landmarks, statusColor);
+            drawCustomFaceBox(ctx, drawBox, displayLabel, isMatch, confidence, result.label);
         }
 
         requestAnimationFrame(animate);
