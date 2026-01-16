@@ -523,15 +523,15 @@ input:focus {
 }
 
 /* Enhanced Footer Branding */
+/* Enhanced Footer Branding (3-Column Layout) */
 .bottom-strip {
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
-    min-height: 60px;
+    min-height: 70px;
     padding: 10px 40px;
     display: flex;
-    flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
     z-index: 5000;
@@ -539,28 +539,53 @@ input:focus {
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.footer-left,
+.footer-right {
+    flex: 1;
+    display: flex;
+    align-items: center;
+}
+
+.footer-left {
+    justify-content: flex-start;
+}
+
+.footer-right {
+    justify-content: flex-end;
     gap: 20px;
 }
 
-.footer-info {
+.footer-center {
+    flex: 0 0 auto;
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    align-items: center;
+    gap: 12px;
+}
+
+.footer-brand-logo {
+    width: 32px;
+    height: auto;
+    filter: drop-shadow(0 0 10px var(--accent, #10b981));
+}
+
+.footer-brand-name {
+    font-size: 1.2rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #fff;
 }
 
 .footer-credits {
-    font-size: 0.9rem;
-    font-weight: 800;
-    color: #fff;
-    letter-spacing: 0.02em;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #888;
 }
 
 .footer-credits span {
-    color: var(--accent, #10b981);
-    text-transform: uppercase;
-    font-size: 0.75rem;
-    margin-left: 8px;
-    letter-spacing: 0.1em;
+    color: #fff;
+    margin-left: 4px;
 }
 
 .footer-contact {
@@ -585,7 +610,6 @@ input:focus {
 
 .footer-social {
     display: flex;
-    gap: 15px;
 }
 
 .social-link {
@@ -609,18 +633,31 @@ input:focus {
     transform: translateY(-2px);
 }
 
-@media (max-width: 800px) {
+@media (max-width: 900px) {
     .bottom-strip {
         padding: 20px;
         flex-direction: column;
+        height: auto;
         text-align: center;
         gap: 15px;
+    }
+
+    .footer-left,
+    .footer-center,
+    .footer-right {
+        width: 100%;
+        justify-content: center;
+        flex: none;
     }
 
     .footer-contact {
         flex-direction: column;
         gap: 8px;
-        align-items: center;
+    }
+
+    .footer-right {
+        flex-direction: column-reverse;
+        gap: 10px;
     }
 }
 
