@@ -1801,22 +1801,30 @@ input:focus {
     }
 
     .operation-header {
-        padding: 12px;
-        flex-wrap: wrap;
-        gap: 8px;
-        justify-content: center;
+        padding: 10px;
+        flex-wrap: nowrap;
+        gap: 6px;
+        justify-content: flex-start;
+        border-radius: 0;
+        margin-bottom: 0;
     }
 
     .operation-header h2 {
-        width: 100%;
-        text-align: center;
-        font-size: 1.1rem;
-        order: -1;
+        flex: 1;
+        text-align: left;
+        font-size: 1rem;
+        order: unset;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
     }
 
     .operation-header .btn-sm {
-        padding: 8px 12px;
-        font-size: 0.75rem;
+        padding: 6px 8px;
+        font-size: 0.7rem;
+        flex-shrink: 0;
+        white-space: nowrap;
     }
 
     .status-badge {
@@ -1871,6 +1879,7 @@ button:active,
     background: rgba(255, 255, 255, 0.1);
     border-radius: 10px;
 }
+
 /* Mobile Sidebar System */
 .sidebar-container {
     position: fixed;
@@ -1887,12 +1896,13 @@ button:active,
     flex-direction: column;
     transform: translateX(0);
     transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 20px 0 50px rgba(0,0,0,0.8);
+    box-shadow: 20px 0 50px rgba(0, 0, 0, 0.8);
 }
 
 .sidebar-container.hidden {
     transform: translateX(-105%);
-    display: flex !important; /* Keep it flex but off-screen */
+    display: flex !important;
+    /* Keep it flex but off-screen */
 }
 
 .sidebar-header {
@@ -1900,7 +1910,7 @@ button:active,
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .sidebar-header h3 {
@@ -1956,7 +1966,7 @@ button:active,
 }
 
 .nav-item:hover {
-    background: rgba(255,255,255,0.05);
+    background: rgba(255, 255, 255, 0.05);
     color: #fff;
 }
 
@@ -1969,7 +1979,7 @@ button:active,
 .mobile-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.6);
+    background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(5px);
     z-index: 2999;
     animation: fadeIn 0.3s ease;
@@ -2014,7 +2024,7 @@ button:active,
 
     .controls-panel.active {
         transform: translateY(0);
-        box-shadow: 0 -10px 40px rgba(0,0,0,0.8);
+        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.8);
     }
 
     /* Zoom fix for inputs */
