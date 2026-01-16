@@ -1960,9 +1960,13 @@ input:focus {
         white-space: nowrap;
     }
 
-    #btn-qr-presence,
-    #btn-history {
-        display: none !important;
+    /* More aggressive hiding for tablets/phones */
+    @media (max-width: 900px) {
+
+        #btn-qr-presence,
+        #btn-history {
+            display: none !important;
+        }
     }
 
     .status-badge {
