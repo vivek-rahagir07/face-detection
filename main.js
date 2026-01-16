@@ -1840,7 +1840,12 @@ function initVoiceCommands() {
 
     // Toggle voice listening
     window.addEventListener('keydown', (e) => {
-        if (e.code === 'Space' && e.ctrlKey) {
+        // Support Cmd+M (Mac) or Ctrl+M (Windows/Linux)
+        const isM = e.key === 'm' || e.key === 'M';
+        const isModifier = e.ctrlKey || e.metaKey;
+
+        if (isM && isModifier) {
+            e.preventDefault(); // Prevent standard browser behavior
             toggleVoice();
         }
     });
@@ -1852,10 +1857,20 @@ function toggleVoice() {
         isListening = false;
         showToast("Voice Control Off");
         document.querySelector('.shining-logo')?.classList.remove('listening');
+        speak("Voice control deactivated.");
     } else {
-        recognition.start();
-        isListening = true;
-        showToast("Cognito is listening...");
+        try {
+            recognition.start();
+            isListening = true;
+            showToast("Cognito is listening...");
+            speak("Voice control active. How can I help?");
+        } catch (err) {
+            console.error("Speech Recognition Error:", err);
+            // Sometimes it errors if already started or permission denied
+            if (err.error === 'not-allowed') {
+                showToast("Microphone permission denied.");
+            }
+        }
     }
 }
 
@@ -1863,28 +1878,49 @@ function handleVoiceCommand(cmd) {
     console.log("Command:", cmd);
     const feedback = document.createElement('div');
     feedback.className = 'voice-toast';
-    feedback.innerText = `🎤 ${cmd}`;
+    feedback.innerHTML = `
+        <div class="voice-toast-icon">🎤</div>
+        <div class="voice-toast-text">${cmd}</div>
+    `;
     document.body.appendChild(feedback);
-    setTimeout(() => feedback.remove(), 2000);
+    setTimeout(() => {
+        feedback.classList.add('fade-out');
+        setTimeout(() => feedback.remove(), 500);
+    }, 3000);
 
-    if (cmd.includes("show") && cmd.includes("absent")) {
+    // Normalize command logic
+    const contains = (words) => words.every(word => cmd.includes(word));
+    const any = (words) => words.some(word => cmd.includes(word));
+
+    if (contains(["show", "absent"])) {
         setMode('attendance');
         const tab = document.getElementById('tab-absent');
         if (tab) tab.click();
         speak("Showing absentees list");
-    } else if (cmd.includes("generate") && cmd.includes("magic link")) {
+    } else if (contains(["generate", "magic"])) {
         setMode('config');
         const btn = document.getElementById('btn-generate-magic');
         if (btn) btn.click();
         speak("Magic link generated");
-    } else if (cmd.includes("go to settings") || cmd.includes("open config")) {
+    } else if (any(["settings", "config", "configure"])) {
         setMode('config');
         speak("Opening configuration");
-    } else if (cmd.includes("go to people") || cmd.includes("show stats")) {
+    } else if (any(["people", "stats", "analytics", "management"])) {
         setMode('analytics');
         speak("Opening people management");
-    } else if (cmd.includes("hello cognito") || cmd.includes("hey cognito")) {
+    } else if (any(["attendance", "camera", "home"])) {
+        setMode('attendance');
+        speak("Switching to attendance mode");
+    } else if (contains(["export", "data"]) || contains(["download", "csv"])) {
+        exportToCSV();
+        speak("Exporting attendance data");
+    } else if (any(["hello", "hi", "hey"]) && cmd.includes("cognito")) {
         speak("System active and ready.");
+    } else if (cmd.includes("identify") || cmd.includes("who am i")) {
+        speak("Please look at the camera for identification.");
+        // We could trigger a forced scan here if needed
+    } else if (cmd.includes("stop") || cmd.includes("quit") || cmd.includes("exit")) {
+        toggleVoice();
     }
 }
 
