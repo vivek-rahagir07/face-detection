@@ -374,7 +374,7 @@
         const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
 
         let faceMatcher = null;
-        let lastDetection = null;
+        let lastDetections = [];
         let isReady = false;
 
         async function initSystem() {
@@ -421,15 +421,17 @@
 
         async function processFrame() {
             if (!isReady) return;
-            const detection = await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
-            lastDetection = detection;
+            const detections = await faceapi.detectAllFaces(video).withFaceLandmarks().withFaceDescriptors();
+            lastDetections = detections;
 
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            if (detection) {
-                const box = detection.detection.box;
-                drawHUD(ctx, box, inputName.value.trim());
+            if (detections && detections.length > 0) {
+                detections.forEach(detection => {
+                    const box = detection.detection.box;
+                    drawHUD(ctx, box, "");
+                });
             }
 
             requestAnimationFrame(processFrame);
@@ -501,7 +503,28 @@
             if (!spaceId || !nonce) return showStatus("Invalid QR code.", "error");
 
             // Biometric Check
-            const finalDescriptor = descriptor || (lastDetection ? lastDetection.descriptor : null);
+            let finalDescriptor = descriptor;
+            if (!finalDescriptor) {
+                if (lastDetections && lastDetections.length > 0) {
+                    // Find the best match among all detected faces for the entered name
+                    if (faceMatcher) {
+                        const matches = lastDetections.map(d => ({
+                            descriptor: d.descriptor,
+                            match: faceMatcher.findBestMatch(d.descriptor)
+                        }));
+                        const userMatch = matches.find(m => m.match.label === name);
+                        if (userMatch) {
+                            finalDescriptor = userMatch.descriptor;
+                        } else {
+                            // If no exact name match, take the first face detected
+                            finalDescriptor = lastDetections[0].descriptor;
+                        }
+                    } else {
+                        finalDescriptor = lastDetections[0].descriptor;
+                    }
+                }
+            }
+
             if (!finalDescriptor) return showStatus("No face detected. Align your face with the camera.", "error");
 
             btnSubmit.disabled = true;

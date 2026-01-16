@@ -1539,39 +1539,50 @@ video.addEventListener('play', () => {
         if (!canvas.width || canvas.width !== video.videoWidth) {
             updateDisplaySize();
         }
-        const detection = await faceapi.detectSingleFace(video)
+        const detections = await faceapi.detectAllFaces(video)
             .withFaceLandmarks()
-            .withFaceDescriptor();
+            .withFaceDescriptors();
 
-        if (detection) {
-            const result = faceMatcher ? faceMatcher.findBestMatch(detection.descriptor) : { label: 'unknown', distance: 1.0 };
+        if (detections && detections.length > 0) {
+            const results = detections.map(d => {
+                return faceMatcher ? faceMatcher.findBestMatch(d.descriptor) : { label: 'unknown', distance: 1.0 };
+            });
 
-            // Audio Feedback: Lock Sound on first appearance
+            // Audio Feedback: Lock Sound on first appearance of any face
             if (!wasFaceDetected) {
                 CyberAudio.playLock();
                 wasFaceDetected = true;
             }
 
-            window.lastDetection = detection;
-            window.lastResult = result;
+            window.lastDetections = detections;
+            window.lastResults = results;
 
             if (scanIndicator) scanIndicator.style.display = 'block';
 
-            // 2. Recognition Logic
-            const isMatch = result.label !== 'unknown' && result.distance <= 0.6;
-            if (isMatch) {
-                detectionHistory[result.label] = (detectionHistory[result.label] || 0) + 1;
-                if (detectionHistory[result.label] >= VALIDATION_THRESHOLD) {
-                    markAttendance(result.label);
-                    detectionHistory[result.label] = 0;
+            // 2. Recognition Logic for all detected faces
+            detections.forEach((detection, i) => {
+                const result = results[i];
+                const isMatch = result.label !== 'unknown' && result.distance <= 0.6;
+                if (isMatch) {
+                    detectionHistory[result.label] = (detectionHistory[result.label] || 0) + 1;
+                    if (detectionHistory[result.label] >= VALIDATION_THRESHOLD) {
+                        markAttendance(result.label);
+                        detectionHistory[result.label] = 0;
+                    }
                 }
-            } else {
-                // Clear history slowly if no match
-                for (let k in detectionHistory) detectionHistory[k] = Math.max(0, detectionHistory[k] - 1);
+            });
+
+            // Cleanup history for non-detected labels
+            const activeMatchLabels = results.filter(r => r.label !== 'unknown').map(r => r.label);
+            for (let k in detectionHistory) {
+                if (!activeMatchLabels.includes(k)) {
+                    detectionHistory[k] = Math.max(0, detectionHistory[k] - 1);
+                }
             }
+
         } else {
-            window.lastDetection = null;
-            window.lastResult = null;
+            window.lastDetections = [];
+            window.lastResults = [];
             wasFaceDetected = false; // Reset for next sound
             if (scanIndicator) scanIndicator.style.display = 'none';
         }
@@ -1590,33 +1601,36 @@ video.addEventListener('play', () => {
         if (hudScanCycle > 1 || hudScanCycle < 0) hudScanDir *= -1;
         hudRotation += 0.02; // Increment HUD rotation
 
-        if (window.lastDetection && window.lastResult) {
-            const detection = window.lastDetection;
-            const result = window.lastResult;
-            const box = detection.detection.box;
-            const confidence = Math.round((1 - result.distance) * 100);
-            const isMatch = result.label !== 'unknown' && result.distance <= 0.6;
-            const displayLabel = isMatch ? result.label : 'SEARCHING...';
+        if (window.lastDetections && window.lastDetections.length > 0) {
+            window.lastDetections.forEach((detection, i) => {
+                const result = window.lastResults[i];
+                if (!result) return;
 
-            const isUnknown = result.label === 'unknown';
-            const statusColor = isMatch ? '#22c55e' : (isUnknown ? '#ef4444' : '#10b981');
+                const box = detection.detection.box;
+                const confidence = Math.round((1 - result.distance) * 100);
+                const isMatch = result.label !== 'unknown' && result.distance <= 0.6;
+                const displayLabel = isMatch ? result.label : 'SEARCHING...';
 
-            let drawBox = box;
-            if (isMatch) {
-                if (!smoothBoxes[displayLabel]) {
-                    smoothBoxes[displayLabel] = { x: box.x, y: box.y, w: box.width, h: box.height };
-                } else {
-                    const sb = smoothBoxes[displayLabel];
-                    sb.x += (box.x - sb.x) * LERP_FACTOR;
-                    sb.y += (box.y - sb.y) * LERP_FACTOR;
-                    sb.w += (box.width - sb.w) * LERP_FACTOR;
-                    sb.h += (box.height - sb.h) * LERP_FACTOR;
+                const isUnknown = result.label === 'unknown';
+                const statusColor = isMatch ? '#22c55e' : (isUnknown ? '#ef4444' : '#10b981');
+
+                let drawBox = box;
+                if (isMatch) {
+                    if (!smoothBoxes[displayLabel]) {
+                        smoothBoxes[displayLabel] = { x: box.x, y: box.y, w: box.width, h: box.height };
+                    } else {
+                        const sb = smoothBoxes[displayLabel];
+                        sb.x += (box.x - sb.x) * LERP_FACTOR;
+                        sb.y += (box.y - sb.y) * LERP_FACTOR;
+                        sb.w += (box.width - sb.w) * LERP_FACTOR;
+                        sb.h += (box.height - sb.h) * LERP_FACTOR;
+                    }
+                    drawBox = smoothBoxes[displayLabel];
                 }
-                drawBox = smoothBoxes[displayLabel];
-            }
 
-            if (detection.landmarks) drawFaceMesh(ctx, detection.landmarks, statusColor);
-            drawCustomFaceBox(ctx, drawBox, displayLabel, isMatch, confidence, result.label);
+                if (detection.landmarks) drawFaceMesh(ctx, detection.landmarks, statusColor);
+                drawCustomFaceBox(ctx, drawBox, displayLabel, isMatch, confidence, result.label);
+            });
         }
 
         requestAnimationFrame(animate);
