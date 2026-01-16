@@ -127,6 +127,7 @@ const peopleSearchInput = document.getElementById('people-search');
 
 // State for magic link session
 let isMagicLinkSession = false;
+let isAIPaused = false;
 
 // Voice Commands State
 let recognition = null;
@@ -556,6 +557,7 @@ if (sideBtnExport) sideBtnExport.addEventListener('click', () => {
 // QR Modal Controls
 if (btnQrPresence) {
     btnQrPresence.addEventListener('click', () => {
+        isAIPaused = true;
         qrModal.classList.remove('hidden');
         startQRRotation();
     });
@@ -563,6 +565,7 @@ if (btnQrPresence) {
 
 if (btnCloseQr) {
     btnCloseQr.addEventListener('click', () => {
+        isAIPaused = false;
         qrModal.classList.add('hidden');
         stopQRRotation();
     });
@@ -1487,7 +1490,7 @@ video.addEventListener('play', () => {
     window.addEventListener('resize', () => { displaySize = updateDisplaySize(); });
 
     setInterval(async () => {
-        if (!isModelsLoaded || !video.srcObject || video.paused || video.ended) return;
+        if (!isModelsLoaded || !video.srcObject || video.paused || video.ended || isAIPaused) return;
         if (currentMode === 'registration' || document.hidden) return;
 
         // Ensure dimensions are initialized (Fixes alignment drift)
@@ -1537,7 +1540,10 @@ video.addEventListener('play', () => {
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Update animation cycle for scan lines if any
+        if (isAIPaused) {
+            requestAnimationFrame(animate);
+            return;
+        }
         hudScanCycle += hudScanDir * (isMobile ? 0.02 : 0.04);
         if (hudScanCycle > 1 || hudScanCycle < 0) hudScanDir *= -1;
 
