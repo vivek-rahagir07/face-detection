@@ -1427,6 +1427,47 @@ function drawFaceMesh(ctx, landmarks, color = '#10b981') {
     ctx.globalAlpha = 1.0;
 }
 
+// Cyber Audio Engine (Synthesized sounds, no external files)
+const CyberAudio = {
+    ctx: null,
+    init() {
+        if (this.ctx) return;
+        try {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (e) {
+            console.warn("Audio Context failed", e);
+        }
+    },
+    async play(freq, type, duration, vol = 0.1) {
+        this.init();
+        if (!this.ctx) return;
+        if (this.ctx.state === 'suspended') await this.ctx.resume();
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+        gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start();
+        osc.stop(this.ctx.currentTime + duration);
+    },
+    playLock() { this.play(800, 'sine', 0.1, 0.05); },
+    playMatch() {
+        this.play(600, 'sine', 0.1, 0.05);
+        setTimeout(() => this.play(900, 'sine', 0.15, 0.05), 60);
+    },
+    playError() { this.play(150, 'square', 0.2, 0.03); }
+};
+
+let wasFaceDetected = false;
+
 // Main Loop
 
 video.addEventListener('play', () => {
@@ -1459,6 +1500,13 @@ video.addEventListener('play', () => {
 
         if (detection) {
             const result = faceMatcher ? faceMatcher.findBestMatch(detection.descriptor) : { label: 'unknown', distance: 1.0 };
+
+            // Audio Feedback: Lock Sound on first appearance
+            if (!wasFaceDetected) {
+                CyberAudio.playLock();
+                wasFaceDetected = true;
+            }
+
             window.lastDetection = detection;
             window.lastResult = result;
 
@@ -1479,6 +1527,7 @@ video.addEventListener('play', () => {
         } else {
             window.lastDetection = null;
             window.lastResult = null;
+            wasFaceDetected = false; // Reset for next sound
             if (scanIndicator) scanIndicator.style.display = 'none';
         }
     }, DETECTION_INTERVAL);
@@ -1644,6 +1693,7 @@ async function markAttendance(name) {
 
     // Local feedback
     if (navigator.vibrate) navigator.vibrate(100);
+    CyberAudio.playMatch(); // Play the success "chirp"
     showToast(`Attendance marked: ${name}`);
 
     attendanceCooldowns[name] = now;

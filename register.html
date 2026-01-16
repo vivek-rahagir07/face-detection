@@ -346,6 +346,46 @@
 
         const startTime = Date.now();
 
+        const CyberAudio = {
+            ctx: null,
+            init() {
+                if (this.ctx) return;
+                try {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    console.warn("Audio Context failed", e);
+                }
+            },
+            async play(freq, type, duration, vol = 0.1) {
+                this.init();
+                if (!this.ctx) return;
+                if (this.ctx.state === 'suspended') await this.ctx.resume();
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            },
+            playLock() { this.play(800, 'sine', 0.1, 0.05); },
+            playMatch() {
+                this.play(600, 'sine', 0.1, 0.05);
+                setTimeout(() => this.play(900, 'sine', 0.15, 0.05), 60);
+            },
+            playError() { this.play(150, 'square', 0.2, 0.03); }
+        };
+
+        let wasFaceDetected = false;
+
         // Firebase Config (Must match main.js)
         const firebaseConfig = {
             apiKey: "AIzaSyAf9xAmQtFZcvE8tvxpI-tU5teS89Dc6II",
@@ -516,10 +556,17 @@
             if (detection) {
                 const box = detection.detection.box;
                 drawHUD(ctx, box, inputName.value.trim());
+
+                if (!wasFaceDetected) {
+                    CyberAudio.playLock();
+                    wasFaceDetected = true;
+                }
+
                 btnSubmit.disabled = false;
                 feedback.innerText = "Face Locked";
                 feedback.style.color = "#22c55e";
             } else {
+                wasFaceDetected = false;
                 btnSubmit.disabled = true;
                 feedback.innerText = "Move closer to camera";
                 feedback.style.color = "#10b981";
