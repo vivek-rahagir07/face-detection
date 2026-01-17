@@ -172,7 +172,8 @@
         <div class="operation-header">
             <button id="btn-exit-workspace" class="btn-secondary btn-sm" aria-label="Exit Workspace">🚪 Exit
                 Workspace</button>
-            <button id="btn-upgrade-premium" class="btn-primary btn-sm btn-upgrade-anim mobile-hidden"
+            <button id="btn-upgrade-premium"
+                class="btn-primary btn-sm btn-upgrade-anim btn-upgrade-premium-trigger mobile-hidden"
                 style="background: linear-gradient(90deg, #ff00f2, #7000ff); color: #fff; border: none; font-weight: 800;"
                 aria-label="Upgrade to Premium">✨ Get Premium</button>
             <button id="btn-mobile-menu" class="btn-secondary btn-sm mobile-only" aria-label="Open Mobile Menu">☰
@@ -205,6 +206,8 @@
                 <div class="sidebar-section">
                     <h4>Actions</h4>
                     <button id="side-btn-qr" class="nav-item">📱 QR Presence</button>
+                    <button class="nav-item btn-upgrade-premium-trigger" style="color: #ff00f2; font-weight: 800;">✨ Get
+                        Premium</button>
                     <button id="side-btn-history" class="nav-item">📜 History</button>
                     <button id="side-btn-export" class="nav-item">📥 Export CSV</button>
                 </div>
@@ -517,90 +520,92 @@
             <img src="folder/cognito attend.png" alt="CognitoAttend Global Logo" class="footer-brand-logo"
                 loading="lazy">
             <span class="footer-brand-name">CognitoAttend</span>
-            <!-- Premium Upgrade Modal -->
-            <div id="premium-modal" class="modal-overlay hidden">
-                <div class="modal-content premium-modal-content">
-                    <div id="premium-step-plans">
-                        <div class="modal-header">
-                            <h2>✨ Upgrade to Premium</h2>
-                            <button id="btn-close-premium" class="btn-close"
-                                aria-label="Close Upgrade Modal">&times;</button>
-                        </div>
-                        <div class="premium-benefits">
-                            <div class="benefit-item">📊 Executive Analytics Dashboard</div>
-                            <div class="benefit-item">🧠 AI Mood & Expression Tracking</div>
-                            <div class="benefit-item">📂 Unlimited Attendance Logs</div>
-                            <div class="benefit-item">🔒 Advanced Bio-Liveness Security</div>
-                        </div>
+        </div>
+    </div>
 
-                        <div class="pricing-grid">
-                            <div class="pricing-card" data-plan="monthly" data-amt="29">
-                                <div class="plan-name">Monthly</div>
-                                <div class="plan-price">$29<span>/mo</span></div>
-                                <button class="btn-primary btn-select-plan" style="width: 100%;">Select Monthly</button>
-                            </div>
-                            <div class="pricing-card highlighted" data-plan="yearly" data-amt="290">
-                                <div class="plan-name">Yearly</div>
-                                <div class="plan-price">$290<span>/yr</span></div>
-                                <div class="plan-save">Save 20%</div>
-                                <button class="btn-primary btn-select-plan" style="width: 100%;">Select Yearly</button>
-                            </div>
-                        </div>
+    <!-- Premium Upgrade Modal -->
+    <div id="premium-modal" class="qr-modal-container hidden">
+        <div class="qr-modal-content premium-modal-content">
+            <div id="premium-step-plans">
+                <div class="modal-header">
+                    <h2>✨ Upgrade to Premium</h2>
+                    <button id="btn-close-premium" class="btn-close" aria-label="Close Upgrade Modal">&times;</button>
+                </div>
+                <div class="premium-benefits">
+                    <div class="benefit-item">📊 Executive Analytics Dashboard</div>
+                    <div class="benefit-item">🧠 AI Mood & Expression Tracking</div>
+                    <div class="benefit-item">📂 Unlimited Attendance Logs</div>
+                    <div class="benefit-item">🔒 Advanced Bio-Liveness Security</div>
+                </div>
+
+                <div class="pricing-grid">
+                    <div class="pricing-card" data-plan="monthly" data-amt="29">
+                        <div class="plan-name">Monthly</div>
+                        <div class="plan-price">$29<span>/mo</span></div>
+                        <button class="btn-primary btn-select-plan" style="width: 100%;">Select Monthly</button>
+                    </div>
+                    <div class="pricing-card highlighted" data-plan="yearly" data-amt="290">
+                        <div class="plan-name">Yearly</div>
+                        <div class="plan-price">$290<span>/yr</span></div>
+                        <div class="plan-save">Save 20%</div>
+                        <button class="btn-primary btn-select-plan" style="width: 100%;">Select Yearly</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- UPI Payment Section -->
+            <div id="premium-step-pay" class="hidden">
+                <div class="modal-header">
+                    <button id="btn-back-plans"
+                        style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1.2rem;">←</button>
+                    <h2 style="flex:1; text-align:center;">UPI Payment</h2>
+                    <button id="btn-close-premium-2" class="btn-close">&times;</button>
+                </div>
+
+                <div class="upi-pay-container" style="text-align: center; padding: 20px 0;">
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px;">Scan to pay for <span
+                            id="selected-plan-name" style="color: #fff; font-weight: 800;">Yearly</span> plan</p>
+
+                    <div id="upi-qr-wrapper"
+                        style="background: #fff; padding: 15px; border-radius: 20px; display: inline-block; margin-bottom: 20px; box-shadow: 0 0 30px rgba(0, 242, 255, 0.2);">
+                        <div id="upi-qr-code"></div>
                     </div>
 
-                    <!-- UPI Payment Section (Hidden initially) -->
-                    <div id="premium-step-pay" class="hidden">
-                        <div class="modal-header">
-                            <button id="btn-back-plans"
-                                style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1.2rem;">←</button>
-                            <h2 style="flex:1; text-align:center;">UPI Payment</h2>
-                            <button id="btn-close-premium-2" class="btn-close">&times;</button>
-                        </div>
-
-                        <div class="upi-pay-container" style="text-align: center; padding: 20px 0;">
-                            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px;">Scan to pay for
-                                <span id="selected-plan-name" style="color: #fff; font-weight: 800;">Yearly</span> plan
-                            </p>
-
-                            <div id="upi-qr-wrapper"
-                                style="background: #fff; padding: 15px; border-radius: 20px; display: inline-block; margin-bottom: 20px; box-shadow: 0 0 30px rgba(0, 242, 255, 0.2);">
-                                <div id="upi-qr-code"></div>
-                            </div>
-
-                            <div class="upi-id-box"
-                                style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px;">
-                                <small style="color: var(--text-muted); display: block; margin-bottom: 5px;">UPI
-                                    ID</small>
-                                <strong style="font-size: 1.1rem; color: var(--accent);">9996445592@ibl</strong>
-                                <button id="btn-copy-upi"
-                                    style="margin-left: 10px; background: none; border: none; cursor: pointer;">📋</button>
-                            </div>
-
-                            <button id="btn-verify-payment" class="btn-primary" style="width: 100%;">Verify & Activate
-                                Premium</button>
-                            <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 15px;">
-                                After payment, click verify. Instant activation.
-                            </p>
-                        </div>
+                    <div class="upi-id-box"
+                        style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px;">
+                        <small style="color: var(--text-muted); display: block; margin-bottom: 5px;">UPI ID</small>
+                        <strong style="font-size: 1.1rem; color: var(--accent);">9996445592@ibl</strong>
+                        <button id="btn-copy-upi"
+                            style="margin-left: 10px; background: none; border: none; cursor: pointer;">📋</button>
                     </div>
 
-                    <p id="premium-modal-footer"
-                        style="font-size: 0.7rem; color: var(--text-muted); text-align: center; margin-top: 15px;">
-                        One-time subscription per workspace. Non-refundable.
+                    <button id="btn-verify-payment" class="btn-primary" style="width: 100%;">Verify & Activate
+                        Premium</button>
+                    <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 15px;">
+                        After payment, click verify. Instant activation.
                     </p>
                 </div>
             </div>
 
-            <!-- Success Modal -->
-            <div id="upgrade-success-modal" class="modal-overlay hidden">
-                <div class="modal-content" style="text-align: center; border-color: var(--success);">
-                    <div style="font-size: 4rem; margin-bottom: 20px;">🏆</div>
-                    <h2 style="color: var(--success);">Premium Activated!</h2>
-                    <p>Your workspace now has full access to all elite features.</p>
-                    <button id="btn-success-close" class="btn-primary" style="margin-top: 20px; width: 100%;">Launch
-                        Dashboard</button>
-                </div>
-            </div>
+            <p id="premium-modal-footer"
+                style="font-size: 0.7rem; color: var(--text-muted); text-align: center; margin-top: 15px;">
+                One-time subscription per workspace. Non-refundable.
+            </p>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="upgrade-success-modal" class="qr-modal-container hidden">
+        <div class="qr-modal-content" style="text-align: center; border-color: var(--success);">
+            <div style="font-size: 4rem; margin-bottom: 20px;">🏆</div>
+            <h2 style="color: var(--success);">Premium Activated!</h2>
+            <p>Your workspace now has full access to all elite features.</p>
+            <button id="btn-success-close" class="btn-primary" style="margin-top: 20px; width: 100%;">Launch
+                Dashboard</button>
+        </div>
+    </div>
+
+    <script type="module" src="main.js?v=1736862985"></script>
 </body>
 
 </html>

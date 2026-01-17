@@ -346,10 +346,9 @@ function enterSpace(id, data) {
 }
 
 function updatePremiumUI(isPremium) {
-    const btnUpgrade = document.getElementById('btn-upgrade-premium');
-    if (btnUpgrade) {
-        btnUpgrade.style.display = isPremium ? 'none' : 'flex';
-    }
+    document.querySelectorAll('.btn-upgrade-premium-trigger').forEach(btn => {
+        btn.style.display = isPremium ? 'none' : 'flex';
+    });
 
     const dashboard = document.querySelector('.premium-dashboard');
     if (dashboard) {
@@ -2367,7 +2366,7 @@ function init3DFace(containerId) {
 
 
 // Premium Subscription Handlers
-const btnUpgrade = document.getElementById('btn-upgrade-premium');
+const btnUpgradeList = document.querySelectorAll('.btn-upgrade-premium-trigger');
 const premiumModal = document.getElementById('premium-modal');
 const successModal = document.getElementById('upgrade-success-modal');
 
@@ -2382,11 +2381,15 @@ const upiQrContainer = document.getElementById('upi-qr-code');
 
 let selectedPlanData = null;
 
-if (btnUpgrade) btnUpgrade.onclick = () => {
-    premiumModal.classList.remove('hidden');
-    stepPlans.classList.remove('hidden');
-    stepPay.classList.add('hidden');
-};
+btnUpgradeList.forEach(btn => {
+    btn.onclick = () => {
+        premiumModal.classList.remove('hidden');
+        stepPlans.classList.remove('hidden');
+        stepPay.classList.add('hidden');
+        // Close sidebar if on mobile
+        if (typeof toggleSidebar === 'function') toggleSidebar(false);
+    };
+});
 
 const closePremium = () => premiumModal.classList.add('hidden');
 if (btnClosePremium) btnClosePremium.onclick = closePremium;
