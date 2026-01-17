@@ -103,6 +103,8 @@ const btnCloseQr = document.getElementById('btn-close-qr');
 const qrImage = document.getElementById('qr-image');
 const qrTimerDisplay = document.getElementById('qr-timer');
 const qrStatus = document.getElementById('qr-status');
+const qrScanCountDisplay = document.getElementById('qr-scan-count');
+const configQrRefresh = document.getElementById('config-qr-refresh');
 
 
 const analyticsPanel = document.getElementById('analytics-panel');
@@ -367,19 +369,18 @@ async function startQRRotation() {
     const refreshQR = async () => {
         currentNonce = Math.random().toString(36).substring(2, 12);
         const spaceRef = doc(db, COLL_SPACES, currentSpace.id);
+        const refreshMs = parseInt(currentSpace.config.qrRefreshInterval || 30000);
 
         try {
             qrStatus.innerText = "Syncing with cloud...";
             qrImage.style.opacity = "0.5";
 
-
-            await updateDoc(spaceRef, { qrNonce: currentNonce });
+            await updateDoc(spaceRef, { qrNonce: currentNonce, qrScanCount: 0 });
 
             let baseUrl = window.location.href.split('?')[0].split('#')[0].replace('index.html', '');
             if (!baseUrl.endsWith('/')) baseUrl += '/';
 
             const attendanceUrl = `${baseUrl}qr.html?s=${currentSpace.id}&n=${currentNonce}`;
-
 
             const generateQR = () => {
                 const qrEngine = window.QRCode || (typeof QRCode !== 'undefined' ? QRCode : null);
@@ -395,17 +396,16 @@ async function startQRRotation() {
                         qrImage.src = url;
                         qrImage.style.opacity = "1";
                         qrStatus.innerHTML = "[PRO] Code is live. Scan now.";
-                        resetTimer(30);
+                        resetTimer(refreshMs / 1000);
                     });
                 } else {
-
                     console.warn("QRCode library not found, using API fallback");
                     const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(attendanceUrl)}`;
                     qrImage.src = qrApiUrl;
                     qrImage.onload = () => {
                         qrImage.style.opacity = "1";
                         qrStatus.innerHTML = "[PRO] Live (API Fallback)";
-                        resetTimer(30);
+                        resetTimer(refreshMs / 1000);
                     };
                 }
             };
@@ -425,7 +425,19 @@ async function startQRRotation() {
     };
 
     await refreshQR();
-    qrInterval = setInterval(refreshQR, 30000);
+    const intervalMs = parseInt(currentSpace.config.qrRefreshInterval || 30000);
+    qrInterval = setInterval(refreshQR, intervalMs);
+
+    // Listen for scan count updates
+    const unsubscribeQr = onSnapshot(doc(db, COLL_SPACES, currentSpace.id), (doc) => {
+        if (doc.exists()) {
+            const data = doc.data();
+            if (qrScanCountDisplay) qrScanCountDisplay.innerText = data.qrScanCount || 0;
+        }
+    });
+
+    // Store unsubscribe to clean up later
+    qrModal._unsubscribe = unsubscribeQr;
 }
 
 function stopQRRotation() {
@@ -433,6 +445,10 @@ function stopQRRotation() {
     if (qrTimerInterval) clearInterval(qrTimerInterval);
     qrInterval = null;
     qrTimerInterval = null;
+    if (qrModal._unsubscribe) {
+        qrModal._unsubscribe();
+        qrModal._unsubscribe = null;
+    }
 }
 
 function resetTimer(seconds) {
@@ -1002,9 +1018,11 @@ async function saveSpaceConfig() {
                 enabled: geofenceEnabled,
                 radius: geofenceRadius,
                 center: lat && lng ? { lat, lng } : null
-            }
+            },
+            qrRefreshInterval: configQrRefresh.value
         });
         currentSpace.config = newConfig;
+        currentSpace.config.qrRefreshInterval = configQrRefresh.value;
         currentSpace.geofencing = { enabled: geofenceEnabled, radius: geofenceRadius, center: lat && lng ? { lat, lng } : null };
         alert("Settings saved!");
         setMode('attendance');
@@ -1030,6 +1048,10 @@ function syncConfigToggles() {
         geoStatus.innerText = `Lat: ${gf.center.lat.toFixed(6)}, Lng: ${gf.center.lng.toFixed(6)}`;
     } else {
         geoStatus.innerText = "Location not set";
+    }
+
+    if (configQrRefresh) {
+        configQrRefresh.value = config.qrRefreshInterval || "30000";
     }
 }
 

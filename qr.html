@@ -277,23 +277,6 @@
         <p>Dynamic QR Presence System</p>
 
         <div id="form-view">
-            <div class="camera-box"
-                style="width: 100%; aspect-ratio: 4/3; background: #111; border-radius: 20px; overflow: hidden; border: 1px solid rgba(0, 242, 255, 0.2); margin-bottom: 20px; position: relative;"
-                aria-label="Attendance Camera Feed">
-                <video id="video" autoplay muted playsinline style="width: 100%; height: 100%; object-fit: cover;"
-                    aria-label="Live face recognition stream"></video>
-                <canvas id="overlay"
-                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"
-                    aria-hidden="true"></canvas>
-                <div id="loading-overlay"
-                    style="position: absolute; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; flex-direction: column; z-index: 10;">
-                    <div
-                        style="width: 30px; height: 30px; border: 2px solid var(--accent); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;">
-                    </div>
-                    <p style="margin-top: 10px; font-size: 0.7rem; color: var(--accent);">Initializing AI...</p>
-                </div>
-            </div>
-
             <div class="input-group">
                 <label for="name">Your Name</label>
                 <input type="text" id="name" placeholder="Enter your full name" autocomplete="off">
@@ -308,15 +291,9 @@
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
-                <button id="btn-submit" aria-label="Mark Presence using Camera">📸 Mark Presence</button>
-                <button id="btn-gallery"
-                    style="background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #fff;"
-                    aria-label="Upload photo from Gallery to mark presence">🖼️ From
-                    Gallery</button>
-                <input type="file" id="input-gallery" accept="image/*" style="display: none;"
-                    aria-label="Upload Gallery Photo">
+                <button id="btn-submit" aria-label="Mark Presence">✅ Submit Attendance</button>
             </div>
-            <div id="status" aria-live="polite">Ready to scan.</div>
+            <div id="status" aria-live="polite">Ready to submit.</div>
         </div>
 
         <div id="success-view" style="display: none;">
@@ -373,80 +350,24 @@
 
         async function initSystem() {
             try {
-
-                await Promise.all([
-                    faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
-                    faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-                    faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
-                ]);
-
-
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-                video.srcObject = stream;
-                video.onloadedmetadata = () => {
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    loadingOverlay.style.display = 'none';
-                    isReady = true;
-                    requestAnimationFrame(processFrame);
-                };
-
+                // Simplified: No face-api models or camera needed for this flow
+                isReady = true;
 
                 if (spaceId) {
-                    const q = query(collection(db, 'users'), where("spaceId", "==", spaceId));
-                    const snap = await getDocs(q);
-                    const labeled = [];
-                    snap.forEach(doc => {
-                        const data = doc.data();
-                        if (data.descriptor && data.name) {
-                            labeled.push(new faceapi.LabeledFaceDescriptors(data.name, [new Float32Array(data.descriptor)]));
-                        }
-                    });
-                    if (labeled.length > 0) {
-                        faceMatcher = new faceapi.FaceMatcher(labeled, 0.4);
+                    // Pre-fetch some space data if needed, but we don't need labeled descriptors anymore
+                    // We can check if space exists here
+                    const spaceSnap = await getDoc(doc(db, 'spaces', spaceId));
+                    if (!spaceSnap.exists()) {
+                        showStatus("Error: Workspace not found.", "error");
                     }
                 }
-
             } catch (err) {
                 console.error(err);
-                showStatus("Hardware error: " + err.message, "error");
+                showStatus("Initialization error: " + err.message, "error");
             }
         }
 
-        async function processFrame() {
-            if (!isReady) return;
-            const detections = await faceapi.detectAllFaces(video).withFaceLandmarks().withFaceDescriptors();
-            lastDetections = detections;
 
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            if (detections && detections.length > 0) {
-                detections.forEach(detection => {
-                    const box = detection.detection.box;
-                    drawHUD(ctx, box, "");
-                });
-            }
-
-            requestAnimationFrame(processFrame);
-        }
-
-        function drawHUD(ctx, box, name) {
-            const color = '#00f2ff';
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 3;
-            const size = 30;
-            const pad = 10;
-            const { x, y, width: w, height: h } = box;
-
-            const drawC = (cx, cy, dx, dy) => {
-                ctx.beginPath();
-                ctx.moveTo(cx, cy + dy * size); ctx.lineTo(cx, cy); ctx.lineTo(cx + dx * size, cy);
-                ctx.stroke();
-            };
-            drawC(x - pad, y - pad, 1, 1); drawC(x + w + pad, y - pad, -1, 1);
-            drawC(x - pad, y + h + pad, 1, -1); drawC(x + w + pad, y + h + pad, -1, -1);
-        }
 
         function speak(text, gender = 'male', voiceEnabled = false) {
             if (!voiceEnabled) return;
@@ -491,38 +412,13 @@
             return R * c;
         }
 
-        async function markPresence(descriptor = null) {
+        async function markPresence() {
             const name = inputName.value.trim();
             if (!name) return showStatus("Please enter your name.", "error");
             if (!spaceId || !nonce) return showStatus("Invalid QR code.", "error");
 
-
-            let finalDescriptor = descriptor;
-            if (!finalDescriptor) {
-                if (lastDetections && lastDetections.length > 0) {
-
-                    if (faceMatcher) {
-                        const matches = lastDetections.map(d => ({
-                            descriptor: d.descriptor,
-                            match: faceMatcher.findBestMatch(d.descriptor)
-                        }));
-                        const userMatch = matches.find(m => m.match.label === name);
-                        if (userMatch) {
-                            finalDescriptor = userMatch.descriptor;
-                        } else {
-
-                            finalDescriptor = lastDetections[0].descriptor;
-                        }
-                    } else {
-                        finalDescriptor = lastDetections[0].descriptor;
-                    }
-                }
-            }
-
-            if (!finalDescriptor) return showStatus("No face detected. Align your face with the camera.", "error");
-
             btnSubmit.disabled = true;
-            showStatus("Verifying identity<span class=\"loading-dots\"></span>", "");
+            showStatus("Submitting attendance<span class=\"loading-dots\"></span>", "");
 
             try {
                 // 1. Verify Space and Nonce
@@ -533,18 +429,8 @@
                 const spaceData = spaceSnap.data();
                 if (spaceData.qrNonce !== nonce) throw new Error("QR code expired. Please scan again.");
 
-                // Match Face
-                if (faceMatcher) {
-                    const match = faceMatcher.findBestMatch(finalDescriptor);
-                    if (match.label !== 'unknown' && match.label !== name) {
-                        // If they entered a name but the face matches someone else
-                        throw new Error(`Face mismatch. Detected: ${match.label}`);
-                    }
-                    if (match.label === 'unknown' && faceMatcher.labeledDescriptors.length > 0) {
-                        // Optional: allow new person or strictly require registration
-                        // console.log("New face detected for existing user name?");
-                    }
-                }
+                // Increment QR Scan Count
+                await updateDoc(spaceRef, { qrScanCount: increment(1) });
 
 
                 if (spaceData.geofencing && spaceData.geofencing.enabled && spaceData.geofencing.center) {
@@ -595,9 +481,9 @@
                         lastAttendance: todayStr,
                         attendanceCount: 1,
                         gender: gender,
-                        descriptor: Array.from(finalDescriptor),
+                        descriptor: null, // No descriptor as photo is skipped
                         createdAt: new Date().toISOString(),
-                        type: 'qr-biometric'
+                        type: 'qr-manual'
                     });
 
                     await recordAttendanceHistory(newUserDoc.id, name, '', '', gender);
@@ -641,31 +527,6 @@
             statusDiv.className = type;
         }
 
-        btnGallery.onclick = () => inputGallery.click();
-        inputGallery.onchange = async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const name = inputName.value.trim();
-            if (!name) {
-                alert("Please enter your name first.");
-                e.target.value = '';
-                return;
-            }
-            showStatus("Processing Photo...", "");
-            try {
-                const img = await faceapi.bufferToImage(file);
-                const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
-                if (detection) {
-                    await markPresence(detection.descriptor);
-                } else {
-                    alert("No face detected in photo.");
-                    showStatus("No face detected in upload", "error");
-                }
-            } catch (err) {
-                alert("Error processing image.");
-            }
-            e.target.value = '';
-        };
 
         btnSubmit.addEventListener('click', () => markPresence());
         inputName.addEventListener('keypress', (e) => { if (e.key === 'Enter') markPresence(); });

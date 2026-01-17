@@ -326,6 +326,18 @@
                     </div>
 
                     <button id="btn-save-config" class="btn-primary" style="margin-top: 10px;">Save Settings</button>
+                    <h3 style="margin-top: 15px;">QR Scanner Settings</h3>
+                    <div class="form-group"
+                        style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 12px; border: 1px solid var(--border);">
+                        <label for="config-qr-refresh">QR Refresh Interval</label>
+                        <select id="config-qr-refresh"
+                            style="width: 100%; background: #111; border: 1px solid rgba(255, 255, 255, 0.1); padding: 12px; border-radius: 12px; color: #fff; margin-top: 8px;">
+                            <option value="30000">30 Seconds</option>
+                            <option value="60000">1 Minute</option>
+                            <option value="120000">2 Minutes</option>
+                            <option value="300000">5 Minutes</option>
+                        </select>
+                    </div>
                 </div>
 
 
@@ -386,6 +398,10 @@
                     <img src="folder/cognito attend.png" alt="CognitoAttend Brand Logo" loading="lazy">
                 </div>
                 <div class="qr-scanner-line" aria-hidden="true"></div>
+            </div>
+            <div id="qr-scans-display"
+                style="margin-top: 10px; font-size: 0.9rem; color: var(--accent); font-weight: 800;">
+                Scans: <span id="qr-scan-count">0</span>
             </div>
             <div id="qr-status" class="qr-status">Generating code...</div>
             <button id="btn-copy-qr-link" class="btn-secondary btn-sm"
