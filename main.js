@@ -147,6 +147,11 @@ const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/
 const DETECTION_INTERVAL = isMobile ? 250 : 100;
 
 let hourlyChart = null;
+let trendChart = null;
+let genderChart = null;
+let trafficChart = null;
+let moodChart = null;
+let moodHistory = [];
 
 // Advanced Detection State
 const VALIDATION_THRESHOLD = 5;
@@ -326,6 +331,8 @@ function enterSpace(id, data) {
     portalError.innerText = "";
     showView('view-operation');
 
+    updatePremiumUI(currentSpace.premium);
+
     const face3D = document.getElementById('face-3d-container');
     if (face3D) {
         face3D.classList.remove('fade-out');
@@ -336,6 +343,24 @@ function enterSpace(id, data) {
     startDbListener();
     updateRegistrationForm();
     init3DFace('face-3d-container');
+}
+
+function updatePremiumUI(isPremium) {
+    const btnUpgrade = document.getElementById('btn-upgrade-premium');
+    if (btnUpgrade) {
+        btnUpgrade.style.display = isPremium ? 'none' : 'flex';
+    }
+
+    const dashboard = document.querySelector('.premium-dashboard');
+    if (dashboard) {
+        dashboard.style.display = isPremium ? 'block' : 'none';
+    }
+
+    if (isPremium) {
+        document.querySelectorAll('.premium-badge-v2').forEach(b => b.innerText = 'ACTIVE');
+    } else {
+        document.querySelectorAll('.premium-badge-v2').forEach(b => b.innerText = 'PRO');
+    }
 }
 
 // QR Logic
@@ -727,8 +752,9 @@ async function loadModels(url) {
 
         await Promise.all([
             faceapi.nets.ssdMobilenetv1.loadFromUri(url),
-            faceapi.nets.faceLandmark68Net.loadFromUri(url),
-            faceapi.nets.faceRecognitionNet.loadFromUri(url)
+            faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+            faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+            faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL)
         ]);
 
         console.log("Models Loaded successfully from", url);
@@ -1011,6 +1037,7 @@ function syncConfigToggles() {
 // Database Listener
 
 let unsubscribeUsers = null;
+let unsubscribeAttendance = null;
 
 function startDbListener() {
     if (!currentSpace) return;
@@ -1083,6 +1110,162 @@ function startDbListener() {
         // Render based on active tab
         renderAttendanceList();
         renderPeopleManagement();
+        updateExecutiveKPIs();
+    });
+
+    if (unsubscribeAttendance) unsubscribeAttendance();
+    const qAttend = query(collection(db, COLL_ATTENDANCE), where("spaceId", "==", currentSpace.id));
+    unsubscribeAttendance = onSnapshot(qAttend, (snapshot) => {
+        const attendanceData = snapshot.docs.map(doc => doc.data());
+        updateExecutiveDashboard(attendanceData);
+    });
+}
+
+function updateExecutiveKPIs() {
+    const totalReg = document.getElementById('kpi-total-reg');
+    const avgPunctuality = document.getElementById('kpi-avg-punctuality');
+    if (!totalReg) return;
+
+    totalReg.innerText = allUsersData.length;
+
+    // Simulate punctuality based on avg attendance count vs possible days
+    const maxAttendance = Math.max(...allUsersData.map(u => u.attendanceCount || 0), 0);
+    const avg = allUsersData.length > 0 ? (allUsersData.reduce((acc, u) => acc + (u.attendanceCount || 0), 0) / (allUsersData.length * (maxAttendance || 1))) * 100 : 0;
+    avgPunctuality.innerText = Math.round(avg) + '%';
+}
+
+function updateExecutiveDashboard(attendanceData) {
+    if (!attendanceData || attendanceData.length === 0) return;
+
+    // 1. Process Trend Data (Last 7 Days)
+    const last7Days = [...Array(7)].map((_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        return d.toISOString().split('T')[0];
+    }).reverse();
+
+    const trendCounts = last7Days.map(date => attendanceData.filter(a => a.date === date).length);
+
+    // 2. Process Gender Split
+    const genders = { male: 0, female: 0, other: 0 };
+    allUsersData.forEach(u => {
+        if (genders[u.gender] !== undefined) genders[u.gender]++;
+        else genders.other++;
+    });
+
+    // 3. Process Hourly Traffic
+    const hourlyDistribution = Array(24).fill(0);
+    attendanceData.forEach(a => {
+        if (a.timestamp) {
+            const hour = new Date(a.timestamp.seconds * 1000).getHours();
+            hourlyDistribution[hour]++;
+        }
+    });
+
+    // Update Peak Hour KPI
+    const peakHour = hourlyDistribution.indexOf(Math.max(...hourlyDistribution));
+    const peakTimeEl = document.getElementById('kpi-peak-hour');
+    if (peakTimeEl) peakTimeEl.innerText = `${peakHour}:00`;
+
+    // 4. Process Mood Data
+    const moods = { happy: 0, neutral: 0, sad: 0, angry: 0, surprised: 0, relaxed: 0 };
+    attendanceData.forEach(a => {
+        if (a.mood) {
+            if (moods[a.mood] !== undefined) moods[a.mood]++;
+            else moods.neutral++;
+        }
+    });
+
+    // Update Happiness Score KPI
+    const totalMoods = Object.values(moods).reduce((a, b) => a + b, 0);
+    const positiveMoods = moods.happy + moods.relaxed + (moods.surprised * 0.5);
+    const happinessScore = totalMoods > 0 ? (positiveMoods / totalMoods) * 100 : 85; // Default to 85% for vibe
+    const happinessEl = document.getElementById('kpi-happiness-score');
+    if (happinessEl) happinessEl.innerText = `${Math.round(happinessScore)}%`;
+
+    renderCharts(last7Days, trendCounts, genders, hourlyDistribution, moods);
+}
+
+function renderCharts(labels, trendData, genderData, trafficData, moodData) {
+    const ctxTrend = document.getElementById('attendanceTrendChart')?.getContext('2d');
+    const ctxGender = document.getElementById('genderDistributionChart')?.getContext('2d');
+    const ctxTraffic = document.getElementById('peakHourChart')?.getContext('2d');
+    const ctxMood = document.getElementById('moodDistributionChart')?.getContext('2d');
+
+    if (!ctxTrend || !ctxGender || !ctxTraffic || !ctxMood) return;
+
+    const chartConfig = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false }
+        },
+        scales: {
+            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } },
+            x: { grid: { display: false }, ticks: { color: '#888' } }
+        }
+    };
+
+    // Trends Chart
+    if (trendChart) trendChart.destroy();
+    trendChart = new Chart(ctxTrend, {
+        type: 'line',
+        data: {
+            labels: labels.map(l => l.split('-').slice(1).join('/')),
+            datasets: [{
+                label: 'Attendance',
+                data: trendData,
+                borderColor: '#00f2ff',
+                backgroundColor: 'rgba(0, 242, 255, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: chartConfig
+    });
+
+    // Gender Split
+    if (genderChart) genderChart.destroy();
+    genderChart = new Chart(ctxGender, {
+        type: 'doughnut',
+        data: {
+            labels: ['Male', 'Female', 'Unknown'],
+            datasets: [{
+                data: [genderData.male, genderData.female, genderData.other],
+                backgroundColor: ['#00f2ff', '#ff00f2', '#333'],
+                borderWidth: 0
+            }]
+        },
+        options: { ...chartConfig, scales: {} }
+    });
+
+    // Peak Hour
+    if (trafficChart) trafficChart.destroy();
+    trafficChart = new Chart(ctxTraffic, {
+        type: 'bar',
+        data: {
+            labels: Array.from({ length: 24 }, (_, i) => `${i}h`),
+            datasets: [{
+                data: trafficData,
+                backgroundColor: '#00f2ff'
+            }]
+        },
+        options: chartConfig
+    });
+
+    // Mood Distribution
+    if (moodChart) moodChart.destroy();
+    moodChart = new Chart(ctxMood, {
+        type: 'doughnut',
+        data: {
+            labels: ['Happy', 'Neutral', 'Sad', 'Angry', 'Surprised'],
+            datasets: [{
+                data: [moodData.happy, moodData.neutral, moodData.sad, moodData.angry, moodData.surprised],
+                backgroundColor: ['#00f2ff', '#10b981', '#94a3b8', '#ef4444', '#ff00f2'],
+                borderWidth: 0
+            }]
+        },
+        options: { ...chartConfig, scales: {} }
     });
 }
 
@@ -1281,7 +1464,7 @@ if (btnDeletePerson) {
 
 // Drawing Utils
 
-function drawCustomFaceBox(ctx, box, label, isMatch, confidence, resultLabel) {
+function drawCustomFaceBox(ctx, box, label, isMatch, confidence, resultLabel, mood = 'neutral') {
     const { x, y, width, height } = box;
     const isUnknown = resultLabel === 'unknown';
     const color = isMatch ? '#22c55e' : (isUnknown ? '#ef4444' : '#10b981');
@@ -1384,6 +1567,53 @@ function drawCustomFaceBox(ctx, box, label, isMatch, confidence, resultLabel) {
         const bioText = isMatch ? `BIOSEC_${label.slice(0, 3).toUpperCase()}_${Math.floor(Date.now() / 1000).toString().slice(-4)}` : "ENCRYPTION_ERROR";
         ctx.fillText(bioText, 0, -5);
 
+        ctx.restore();
+    }
+
+    // Mood Scanner HUD (Left Side) - Gated by Premium
+    if ((isMatch || isUnknown) && currentSpace?.premium) {
+        const moodX = x - padding - 40;
+        const moodY = y;
+        const moodColors = {
+            happy: '#00f2ff',
+            neutral: '#10b981',
+            sad: '#94a3b8',
+            angry: '#ef4444',
+            surprised: '#ff00f2',
+            fearful: '#7c3aed',
+            disgusted: '#84cc16'
+        };
+        const mColor = moodColors[mood] || '#10b981';
+
+        ctx.save();
+        ctx.translate(moodX, moodY);
+
+        // Mood Buffer Bar
+        ctx.fillStyle = mColor;
+        ctx.globalAlpha = 0.3;
+        ctx.fillRect(0, 0, 15, height);
+
+        ctx.globalAlpha = 0.8;
+        ctx.fillRect(0, height - (Math.random() * height), 15, 2); // Flickering line
+
+        // Emotion Label
+        ctx.rotate(-Math.PI / 2);
+        ctx.font = '900 10px Inter';
+        ctx.fillStyle = mColor;
+        ctx.fillText(`VIBE_${mood.toUpperCase()}`, -height, 12);
+
+        ctx.restore();
+
+        // Mood Ring around face
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.beginPath();
+        ctx.arc(0, 0, baseRadius + 15, 0, Math.PI * 2);
+        ctx.strokeStyle = mColor;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([2, 5]);
+        ctx.globalAlpha = 0.3;
+        ctx.stroke();
         ctx.restore();
     }
 
@@ -1513,7 +1743,8 @@ video.addEventListener('play', () => {
         }
         const detections = await faceapi.detectAllFaces(video)
             .withFaceLandmarks()
-            .withFaceDescriptors();
+            .withFaceDescriptors()
+            .withFaceExpressions();
 
         if (detections && detections.length > 0) {
             const results = detections.map(d => {
@@ -1536,7 +1767,7 @@ video.addEventListener('play', () => {
                 if (isMatch) {
                     detectionHistory[result.label] = (detectionHistory[result.label] || 0) + 1;
                     if (detectionHistory[result.label] >= VALIDATION_THRESHOLD) {
-                        markAttendance(result.label);
+                        markAttendance(result.label, topExpression);
                         detectionHistory[result.label] = 0;
                     }
                 }
@@ -1576,6 +1807,9 @@ video.addEventListener('play', () => {
                 if (!result) return;
 
                 const box = detection.detection.box;
+                const expressions = detection.expressions;
+                const topExpression = Object.entries(expressions).reduce((a, b) => a[1] > b[1] ? a : b)[0];
+
                 const confidence = Math.round((1 - result.distance) * 100);
                 const isMatch = result.label !== 'unknown' && result.distance <= 0.6;
                 const displayLabel = isMatch ? result.label : 'SEARCHING...';
@@ -1598,7 +1832,7 @@ video.addEventListener('play', () => {
                 }
 
                 if (detection.landmarks) drawFaceMesh(ctx, detection.landmarks, statusColor);
-                drawCustomFaceBox(ctx, drawBox, displayLabel, isMatch, confidence, result.label);
+                drawCustomFaceBox(ctx, drawBox, displayLabel, isMatch, confidence, result.label, topExpression);
             });
         }
 
@@ -1717,7 +1951,7 @@ function resetRegistrationForm() {
     inputs.forEach(i => i.value = "");
 }
 
-async function markAttendance(name) {
+async function markAttendance(name, mood = 'neutral') {
     const now = Date.now();
     const lastMarked = attendanceCooldowns[name] || 0;
 
@@ -1737,7 +1971,13 @@ async function markAttendance(name) {
     if (nowSpoken - lastTimeSpoken > 10000) {
         const userData = allUsersData.find(u => u.name === name);
         const gender = (userData && userData.gender) ? userData.gender : 'male';
-        speak(`Welcome ${name}`, gender);
+
+        let moodGreeting = `Welcome ${name}`;
+        if (mood === 'happy') moodGreeting = `Great to see you smiling, ${name}!`;
+        if (mood === 'sad') moodGreeting = `Keep your head up ${name}, we're glad you're here.`;
+        if (mood === 'angry') moodGreeting = `Take a deep breath ${name}. You've got this.`;
+
+        speak(moodGreeting, gender);
         lastSpoken[name] = nowSpoken;
     }
 
@@ -1767,6 +2007,8 @@ async function markAttendance(name) {
             regNo: userData.regNo || '',
             course: userData.course || '',
             date: dateId,
+            mood: mood,
+            gender: userData.gender || 'male',
             timestamp: new Date()
         });
 
@@ -1856,6 +2098,10 @@ window.addEventListener('load', async () => {
 
 
 function setMode(mode) {
+    if (mode === 'analytics' && !currentSpace.premium) {
+        document.getElementById('premium-modal').classList.remove('hidden');
+        return;
+    }
     currentMode = mode;
 
     // UI elements update
@@ -2119,3 +2365,46 @@ function init3DFace(containerId) {
 }
 
 
+
+// Premium Subscription Handlers
+const btnUpgrade = document.getElementById('btn-upgrade-premium');
+const btnClosePremium = document.getElementById('btn-close-premium');
+const premiumModal = document.getElementById('premium-modal');
+const successModal = document.getElementById('upgrade-success-modal');
+const btnSuccessClose = document.getElementById('btn-success-close');
+
+if (btnUpgrade) btnUpgrade.onclick = () => premiumModal.classList.remove('hidden');
+if (btnClosePremium) btnClosePremium.onclick = () => premiumModal.classList.add('hidden');
+if (btnSuccessClose) btnSuccessClose.onclick = () => {
+    successModal.classList.add('hidden');
+    setMode('analytics');
+};
+
+document.querySelectorAll('.btn-select-plan').forEach(btn => {
+    btn.onclick = async () => {
+        if (!currentSpace) return;
+        const plan = btn.parentElement.dataset.plan;
+
+        btn.innerText = "Processing...";
+        btn.disabled = true;
+
+        try {
+            await updateDoc(doc(db, COLL_SPACES, currentSpace.id), {
+                premium: true,
+                subscriptionPlan: plan,
+                subscriptionDate: new Date().toISOString()
+            });
+
+            currentSpace.premium = true;
+            updatePremiumUI(true);
+            premiumModal.classList.add('hidden');
+            successModal.classList.remove('hidden');
+            showToast("Premium features unlocked successfully!");
+        } catch (e) {
+            showToast("Upgrade failed: " + e.message, "error");
+        } finally {
+            btn.innerText = `Select ${plan.charAt(0).toUpperCase() + plan.slice(1)}`;
+            btn.disabled = false;
+        }
+    };
+});
