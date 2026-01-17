@@ -4,7 +4,7 @@
     --primary-dark: #94a3b8;
     --secondary: #475569;
     --success: #00f2ff;
-    /* Using vibrant blue for success/primary accents */
+
     --accent: #00f2ff;
     --danger: #ff4444;
     --warning: #cbd5e1;
@@ -21,6 +21,18 @@
         0 8px 10px -6px rgb(0 0 0 / 0.5);
     --transition: 0.3s ease;
     --nav-height: 80px;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
 }
 
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
@@ -131,7 +143,7 @@ h1 {
     width: 100%;
     height: auto;
     filter: none;
-    /* Removed glow effect to improve scannability */
+
 }
 
 .camera-wrapper {
@@ -1992,7 +2004,7 @@ input:focus {
         padding: 8px 12px;
     }
 
-    /* Full width modals on mobile */
+
     .qr-modal-content {
         width: 95% !important;
         max-width: none !important;
@@ -2000,7 +2012,7 @@ input:focus {
         padding: 24px 16px;
     }
 
-    /* Typography Polish */
+
     h1 {
         font-size: 2.2rem;
     }
@@ -2014,7 +2026,7 @@ input:focus {
     }
 }
 
-/* Enhanced Tap Feedback */
+
 button:active,
 .list-item:active,
 .management-person-card:active {
@@ -2023,13 +2035,13 @@ button:active,
     transition: transform 0.1s ease;
 }
 
-/* Smooth scrolling for modal content */
+
 .qr-modal-content {
     max-height: 90vh;
     overflow-y: auto;
 }
 
-/* Touch-friendly Scrollbars */
+
 ::-webkit-scrollbar {
     width: 4px;
     height: 4px;
@@ -2040,7 +2052,7 @@ button:active,
     border-radius: 10px;
 }
 
-/* Mobile Sidebar System */
+
 .sidebar-container {
     position: fixed;
     top: 0;
@@ -2187,13 +2199,13 @@ button:active,
         box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.8);
     }
 
-    /* Zoom fix for inputs */
+
     input {
         font-size: 16px !important;
     }
 }
 
-/* Magic Link UI */
+
 #magic-link-container {
     animation: slide-up 0.3s ease;
 }
@@ -2206,7 +2218,7 @@ button:active,
     border-radius: 8px;
 }
 
-/* --- Phase 3: Admin Approval & Voice UI --- */
+
 
 .badge-pending {
     background: #fefce8;
@@ -2248,7 +2260,7 @@ button:active,
 }
 
 
-/* Configuration Panel Fixes */
+
 .toggle-group {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -2281,8 +2293,8 @@ button:active,
         grid-template-columns: 1fr;
     }
 }
+
 @keyframes blink {
-<<<<<<< HEAD
 
     0%,
     100% {
@@ -2293,172 +2305,3 @@ button:active,
         opacity: 0.3;
     }
 }
-
-/* --- Executive Premium Dashboard --- */
-.premium-dashboard {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 28px;
-    padding: 24px;
-    margin-top: 20px;
-    animation: fadeInPortal 0.8s ease-out;
-}
-
-.kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin-bottom: 24px;
-}
-
-.kpi-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 20px;
-    padding: 20px;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(10px);
-}
-
-.kpi-card:hover {
-    border-color: var(--accent);
-    background: rgba(0, 242, 255, 0.05);
-    transform: translateY(-5px);
-    box-shadow: 0 10px 30px rgba(0, 242, 255, 0.1);
-}
-
-.kpi-icon {
-    font-size: 1.8rem;
-    background: rgba(255, 255, 255, 0.05);
-    width: 60px;
-    height: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.kpi-data {
-    display: flex;
-    flex-direction: column;
-}
-
-.kpi-value {
-    font-family: 'Outfit', sans-serif;
-    font-size: 1.6rem;
-    font-weight: 800;
-    line-height: 1;
-    color: #fff;
-}
-
-.kpi-label {
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    font-weight: 600;
-    margin-top: 4px;
-}
-
-.charts-grid {
-    display: grid;
-    grid-template-columns: 1.5fr 1fr;
-    grid-template-rows: auto auto;
-    gap: 16px;
-}
-
-.chart-container-wrapper {
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 20px;
-    padding: 20px;
-}
-
-.chart-container-wrapper.main-chart {
-    grid-column: 1 / 2;
-    grid-row: 1 / 3;
-}
-
-.chart-container-wrapper h4 {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    margin-bottom: 20px;
-    letter-spacing: 0.05em;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.chart-container-wrapper h4::before {
-    content: '';
-    width: 4px;
-    height: 14px;
-    background: var(--accent);
-    border-radius: 2px;
-}
-
-
-
-
-/* --- QR Timer Customization --- */
-.btn-timer-opt {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: var(--text-muted);
-    padding: 6px 14px;
-    border-radius: 10px;
-    font-size: 0.75rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-family: 'Inter', sans-serif;
-}
-
-.btn-timer-opt:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.2);
-    color: #fff;
-    transform: translateY(-1px);
-}
-
-.btn-timer-opt.active {
-    background: var(--accent);
-    color: #000;
-    border-color: var(--accent);
-    font-weight: 800;
-    box-shadow: 0 0 20px rgba(0, 242, 255, 0.35);
-}
-
-#custom-timer-controls input:focus {
-    border-color: var(--accent);
-    outline: none;
-    box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);
-}
-
-/* --- Compatibility Fixes --- */
-.premium-modal-content {
-    z-index: 2100 !important;
-    position: relative !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    background: rgba(15, 15, 15, 0.98) !important;
-    transform: none !important;
-    /* Reset transform in case of animation conflict */
-    animation: fadeInPortal 0.5s ease-out forwards !important;
-}
-
-@media (min-width: 900px) {
-    .premium-modal-content {
-        min-width: 500px;
-        max-width: 600px;
-    }
-}
-=======
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-}
->>>>>>> parent of 0c94c13 (commit)

@@ -13,14 +13,14 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-// Configuration & Setup
+// Setup
 
 let db, auth, currentUser;
 const COLL_USERS = 'users';
 const COLL_SPACES = 'spaces';
 const COLL_ATTENDANCE = 'attendance';
 
-// DOM Elements: Portal
+
 const viewPortal = document.getElementById('view-portal');
 const tabJoin = document.getElementById('tab-join');
 const tabCreate = document.getElementById('tab-create');
@@ -37,7 +37,7 @@ const btnPortalContinue = document.getElementById('btn-portal-continue');
 const portalMobileStart = document.getElementById('portal-mobile-start');
 const portalCard = document.querySelector('.portal-card');
 
-// DOM Elements: Operation
+
 const viewOperation = document.getElementById('view-operation');
 const currentSpaceTitle = document.getElementById('current-space-title');
 const btnExitWorkspace = document.getElementById('btn-exit-workspace');
@@ -72,12 +72,12 @@ const btnExportHistory = document.getElementById('btn-export-history');
 const tabPresent = document.getElementById('tab-present');
 const tabAbsent = document.getElementById('tab-absent');
 
-// State
+
 let currentHistoryRecords = [];
 let currentHistoryDate = '';
-// scanStatusOverlay and related elements removed as per request
 
-// State
+
+
 let currentMode = 'attendance';
 let currentSpace = null;
 let labeledDescriptors = [];
@@ -93,8 +93,8 @@ let activeAttendanceTab = 'present';
 let lastPresentHTML = '';
 let lastAbsentHTML = '';
 
-// Smoothing box state
-const smoothBoxes = {}; // { label: { x, y, w, h } }
+const smoothBoxes = {};
+
 const LERP_FACTOR = 0.4;
 
 const qrModal = document.getElementById('qr-modal');
@@ -104,12 +104,12 @@ const qrImage = document.getElementById('qr-image');
 const qrTimerDisplay = document.getElementById('qr-timer');
 const qrStatus = document.getElementById('qr-status');
 
-// New Analytics & Geo Elements
+
 const analyticsPanel = document.getElementById('analytics-panel');
 const peopleListContainer = document.getElementById('people-list-container');
 const peopleSearchInput = document.getElementById('people-search');
 
-// State for magic link session
+
 let isMagicLinkSession = false;
 let isAIPaused = false;
 const btnModeAnalytics = document.getElementById('btn-mode-analytics');
@@ -118,7 +118,7 @@ const configGeoRadius = document.getElementById('config-geo-radius');
 const btnSetLocation = document.getElementById('btn-set-location');
 const geoStatus = document.getElementById('geo-status');
 
-// Individual Analytics & Management Elements
+
 const editModal = document.getElementById('edit-modal');
 const btnCloseEdit = document.getElementById('btn-close-edit');
 const editNameInput = document.getElementById('edit-name');
@@ -130,62 +130,14 @@ const editPersonNameTitle = document.getElementById('edit-person-name-title');
 
 let editingPersonId = null;
 
-<<<<<<< HEAD
-function openEditModal(uid) {
-    const userData = allUsersData.find(u => u.id === uid);
-    if (!userData) return;
 
-    editingPersonId = uid;
-    editModal.classList.remove('hidden');
-    editNameInput.value = userData.name || '';
-    editRegNoInput.value = userData.regNo || '';
-    editCourseInput.value = userData.course || '';
-    editPersonNameTitle.innerText = userData.name;
-
-    // Setup delete button in edit modal too
-    btnDeletePerson.onclick = () => {
-        editModal.classList.add('hidden');
-        confirmDeletePerson(uid, userData.name);
-    }
-}
-
-function confirmDeletePerson(uid, name) {
-    confirmModal.classList.remove('hidden');
-    confirmMessage.innerHTML = `Are you sure you want to delete <b>${name}</b>?<br>This cannot be undone.`;
-
-    // Clean up old listeners
-    const newYes = btnConfirmYes.cloneNode(true);
-    const newNo = btnConfirmNo.cloneNode(true);
-    btnConfirmYes.parentNode.replaceChild(newYes, btnConfirmYes);
-    btnConfirmNo.parentNode.replaceChild(newNo, btnConfirmNo);
-
-    newYes.addEventListener('click', async () => {
-        confirmModal.classList.add('hidden');
-        try {
-            await deleteDoc(doc(db, COLL_USERS, uid));
-            showToast(`${name} deleted successfully.`);
-        } catch (e) {
-            console.error(e);
-            alert("Delete failed: " + e.message);
-        }
-    });
-
-    newNo.addEventListener('click', () => {
-        confirmModal.classList.add('hidden');
-    });
-}
-
-
-=======
-// New UX Refinement Elements
->>>>>>> parent of 0c94c13 (commit)
 const confirmModal = document.getElementById('confirm-modal');
 const confirmMessage = document.getElementById('confirm-message');
 const btnConfirmYes = document.getElementById('btn-confirm-yes');
 const btnConfirmNo = document.getElementById('btn-confirm-no');
 const toastContainer = document.getElementById('toast-container');
 
-// Mobile Sidebar DOM Elements
+
 const mobileSidebar = document.getElementById('mobile-sidebar');
 const btnMobileMenu = document.getElementById('btn-mobile-menu');
 const btnCloseSidebar = document.getElementById('btn-close-sidebar');
@@ -206,8 +158,10 @@ const lastSpoken = {};
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 const DETECTION_INTERVAL = isMobile ? 250 : 100;
 
+let hourlyChart = null;
+
 // Advanced Detection State
-const VALIDATION_THRESHOLD = 3; // Reduced from 5 for faster attendance
+const VALIDATION_THRESHOLD = 5;
 const detectionHistory = {};
 
 // Set Live Date & Time
@@ -231,17 +185,17 @@ function speak(text, gender = 'male') {
         if (synth.speaking) return;
         const voices = synth.getVoices();
 
-        // Attempt to find cool/premium voices
-        let selectedVoice = null;
+
+
         if (gender === 'female') {
-            // Look for premium female voices
+
             selectedVoice = voices.find(v => v.name.includes('Samantha') || v.name.includes('Google US English') || v.name.includes('Victoria') || v.name.includes('Female'));
-            utterance.pitch = 1.1; // Slightly higher for punchiness
+            utterance.pitch = 1.1;
             utterance.rate = 1.0;
         } else {
-            // Look for premium male voices
+
             selectedVoice = voices.find(v => v.name.includes('Alex') || v.name.includes('Google UK English Male') || v.name.includes('Daniel') || v.name.includes('Male'));
-            utterance.pitch = 0.9; // Deeper for male "cool" effect
+            utterance.pitch = 0.9;
             utterance.rate = 1.0;
         }
 
@@ -249,7 +203,7 @@ function speak(text, gender = 'male') {
         synth.speak(utterance);
     };
 
-    // If voices aren't loaded yet, wait for them
+
     if (synth.getVoices().length === 0) {
         synth.onvoiceschanged = performSpeak;
     } else {
@@ -257,9 +211,9 @@ function speak(text, gender = 'male') {
     }
 }
 
-// Firebase Initialization
+// Firebase
 
-// Initialize Firebase
+
 const firebaseConfig = {
     apiKey: "AIzaSyAf9xAmQtFZcvE8tvxpI-tU5teS89Dc6II",
     authDomain: "live-face-attendence-detection.firebaseapp.com",
@@ -275,7 +229,7 @@ try {
     auth = getAuth(app);
     db = getFirestore(app);
 
-    // Ensure anonymous auth for connectivity
+
     onAuthStateChanged(auth, (user) => {
         if (user) {
             currentUser = user;
@@ -392,16 +346,7 @@ function enterSpace(id, data) {
     portalError.innerText = "";
     showView('view-operation');
 
-<<<<<<< HEAD
-    // Premium features unlocked for everyone
-    document.querySelectorAll('.premium-dashboard').forEach(el => {
-        el.style.display = 'block';
-    });
-    document.querySelectorAll('.btn-upgrade-premium-trigger').forEach(btn => btn.style.display = 'none');
 
-=======
-    // Reset 3D view for new workspace
->>>>>>> parent of 0c94c13 (commit)
     const face3D = document.getElementById('face-3d-container');
     if (face3D) {
         face3D.classList.remove('fade-out');
@@ -411,13 +356,10 @@ function enterSpace(id, data) {
     initSystem();
     startDbListener();
     updateRegistrationForm();
-    init3DFace('face-3d-container'); // Init operation view 3D
+    init3DFace('face-3d-container');
 }
 
-
 // QR Logic
-let qrRefreshInterval = 30; // Seconds
-
 async function startQRRotation() {
     if (!currentSpace) return;
     stopQRRotation();
@@ -430,7 +372,7 @@ async function startQRRotation() {
             qrStatus.innerText = "Syncing with cloud...";
             qrImage.style.opacity = "0.5";
 
-            // Update Firebase
+
             await updateDoc(spaceRef, { qrNonce: currentNonce });
 
             let baseUrl = window.location.href.split('?')[0].split('#')[0].replace('index.html', '');
@@ -438,7 +380,7 @@ async function startQRRotation() {
 
             const attendanceUrl = `${baseUrl}qr.html?s=${currentSpace.id}&n=${currentNonce}`;
 
-            // Helper to generate locally or fallback to API
+
             const generateQR = () => {
                 const qrEngine = window.QRCode || (typeof QRCode !== 'undefined' ? QRCode : null);
 
@@ -446,24 +388,24 @@ async function startQRRotation() {
                     qrEngine.toDataURL(attendanceUrl, {
                         width: 250,
                         margin: 4,
-                        errorCorrectionLevel: 'H', // High error correction to handle central logo
+                        errorCorrectionLevel: 'H',
                         color: { dark: '#000000', light: '#ffffff' }
                     }, (err, url) => {
                         if (err) throw err;
                         qrImage.src = url;
                         qrImage.style.opacity = "1";
-                        qrStatus.innerHTML = "Code is live. Scan now.";
-                        resetTimer(qrRefreshInterval);
+                        qrStatus.innerHTML = "[PRO] Code is live. Scan now.";
+                        resetTimer(30);
                     });
                 } else {
-                    // Fallback to external API if local library missing
+
                     console.warn("QRCode library not found, using API fallback");
                     const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(attendanceUrl)}`;
                     qrImage.src = qrApiUrl;
                     qrImage.onload = () => {
                         qrImage.style.opacity = "1";
-                        qrStatus.innerHTML = "Live (API Fallback)";
-                        resetTimer(qrRefreshInterval);
+                        qrStatus.innerHTML = "[PRO] Live (API Fallback)";
+                        resetTimer(30);
                     };
                 }
             };
@@ -477,13 +419,13 @@ async function startQRRotation() {
                 <small style="color:#ff6666;">Reason: ${e.message.split('(')[0]}</small><br>
                 <button onclick="window.location.reload()" style="margin-top:10px; background:var(--accent); color:#000; border:none; padding:5px 10px; border-radius:5px; font-size:11px; cursor:pointer;">⚠️ Hard Refresh Page</button>
             `;
-            // Do not auto-retry immediately to avoid loop if it's a permission error
+
             setTimeout(refreshQR, 10000);
         }
     };
 
     await refreshQR();
-    qrInterval = setInterval(refreshQR, qrRefreshInterval * 1000);
+    qrInterval = setInterval(refreshQR, 30000);
 }
 
 function stopQRRotation() {
@@ -810,10 +752,8 @@ async function loadModels(url) {
 
         await Promise.all([
             faceapi.nets.ssdMobilenetv1.loadFromUri(url),
-            faceapi.nets.tinyFaceDetector.loadFromUri(url), // Load TinyFace for mobile logic
-            faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-            faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
-            faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL)
+            faceapi.nets.faceLandmark68Net.loadFromUri(url),
+            faceapi.nets.faceRecognitionNet.loadFromUri(url)
         ]);
 
         console.log("Models Loaded successfully from", url);
@@ -950,6 +890,7 @@ function updateRegistrationForm() {
     nameInput.type = 'text';
     nameInput.id = 'reg-name';
     nameInput.placeholder = 'Full Name';
+    nameInput.setAttribute('aria-label', 'Full Name');
     dynamicFieldsContainer.appendChild(nameInput);
 
     // Check for optional fields
@@ -958,6 +899,7 @@ function updateRegistrationForm() {
         input.type = 'text';
         input.id = 'reg-regNo';
         input.placeholder = 'Registration Number';
+        input.setAttribute('aria-label', 'Registration Number');
         dynamicFieldsContainer.appendChild(input);
     }
     if (config.course) {
@@ -965,6 +907,7 @@ function updateRegistrationForm() {
         input.type = 'text';
         input.id = 'reg-course';
         input.placeholder = 'Course / Department';
+        input.setAttribute('aria-label', 'Course or Department');
         dynamicFieldsContainer.appendChild(input);
     }
     if (config.email) {
@@ -972,6 +915,7 @@ function updateRegistrationForm() {
         input.type = 'email';
         input.id = 'reg-email';
         input.placeholder = 'Email ID';
+        input.setAttribute('aria-label', 'Email Address');
         dynamicFieldsContainer.appendChild(input);
     }
     if (config.bloodGroup) {
@@ -979,6 +923,7 @@ function updateRegistrationForm() {
         input.type = 'text';
         input.id = 'reg-bloodGroup';
         input.placeholder = 'Blood Group';
+        input.setAttribute('aria-label', 'Blood Group');
         dynamicFieldsContainer.appendChild(input);
     }
     if (config.weight) {
@@ -986,6 +931,7 @@ function updateRegistrationForm() {
         input.type = 'text';
         input.id = 'reg-weight';
         input.placeholder = 'Weight (kg)';
+        input.setAttribute('aria-label', 'Weight in kilograms');
         dynamicFieldsContainer.appendChild(input);
     }
     if (config.phone) {
@@ -993,6 +939,7 @@ function updateRegistrationForm() {
         input.type = 'text';
         input.id = 'reg-phone';
         input.placeholder = 'Phone Number';
+        input.setAttribute('aria-label', 'Phone Number');
         dynamicFieldsContainer.appendChild(input);
     }
 
@@ -1089,7 +1036,6 @@ function syncConfigToggles() {
 // Database Listener
 
 let unsubscribeUsers = null;
-let unsubscribeAttendance = null;
 
 function startDbListener() {
     if (!currentSpace) return;
@@ -1165,56 +1111,6 @@ function startDbListener() {
     });
 }
 
-// --- People Management Helpers ---
-
-function openEditModal(uid) {
-    const userData = allUsersData.find(u => u.id === uid);
-    if (!userData) return;
-
-    editingPersonId = uid;
-    editModal.classList.remove('hidden');
-    editNameInput.value = userData.name || '';
-    editRegNoInput.value = userData.regNo || '';
-    editCourseInput.value = userData.course || '';
-    editPersonNameTitle.innerText = userData.name;
-
-    // Setup delete button in edit modal too
-    if (btnDeletePerson) {
-        btnDeletePerson.onclick = () => {
-            editModal.classList.add('hidden');
-            confirmDeletePerson(uid, userData.name);
-        };
-    }
-}
-
-function confirmDeletePerson(uid, name) {
-    confirmModal.classList.remove('hidden');
-    confirmMessage.innerHTML = `Are you sure you want to delete <b>${name}</b>?<br>This cannot be undone.`;
-
-    // Clean up old listeners
-    const newYes = btnConfirmYes.cloneNode(true);
-    const newNo = btnConfirmNo.cloneNode(true);
-    btnConfirmYes.parentNode.replaceChild(newYes, btnConfirmYes);
-    btnConfirmNo.parentNode.replaceChild(newNo, btnConfirmNo);
-
-    newYes.addEventListener('click', async () => {
-        confirmModal.classList.add('hidden');
-        try {
-            await deleteDoc(doc(db, COLL_USERS, uid));
-            showToast(`${name} deleted successfully.`);
-        } catch (e) {
-            console.error(e);
-            alert("Delete failed: " + e.message);
-        }
-    });
-
-    newNo.addEventListener('click', () => {
-        confirmModal.classList.add('hidden');
-    });
-}
-
-
-
 function renderAttendanceList() {
     if (!todayListContainer) return;
 
@@ -1276,17 +1172,12 @@ if (peopleSearchInput) {
 }
 
 async function renderPeopleManagement() {
-    renderPeopleList();
-}
-
-async function renderPeopleList() {
     if (!peopleListContainer) return;
 
     // Filter by search query
-    const term = peopleSearchInput ? peopleSearchInput.value.toLowerCase() : '';
-    const filtered = allUsersData.filter(u =>
-        u.name.toLowerCase().includes(term) ||
-        (u.regNo && u.regNo.toLowerCase().includes(term))
+    const filteredUsers = allUsersData.filter(user =>
+        user.name.toLowerCase().includes(peopleSearchQuery) ||
+        (user.regNo && user.regNo.toLowerCase().includes(peopleSearchQuery))
     );
 
     if (filteredUsers.length === 0) {
@@ -1302,13 +1193,13 @@ async function renderPeopleList() {
     const spaceRef = doc(db, COLL_SPACES, currentSpace.id);
     const spaceSnap = await getDoc(spaceRef);
     const historyDates = spaceSnap.data().historyDates || {};
-    const totalDays = Object.keys(historyDates).length || 1;
-
-    const fragment = document.createDocumentFragment();
+    // Calculate max attendance among all users to normalize percentages
+    const maxAttendance = Math.max(...allUsersData.map(u => u.attendanceCount || 0), 0);
+    const denominator = maxAttendance || 1;
 
     filteredUsers.forEach(user => {
         const attendanceCount = user.attendanceCount || 0;
-        const percentage = Math.round((attendanceCount / totalDays) * 100);
+        const percentage = Math.round((attendanceCount / denominator) * 100);
         const isPending = user.approved === false;
 
         const card = document.createElement('div');
@@ -1325,8 +1216,8 @@ async function renderPeopleList() {
                         <button class="btn-reject" data-id="${user.id}">Reject</button>
                     </div>
                 ` : `
-                    <div class="percentage-badge">${percentage}%</div>
-                    <button class="btn-icon edit-btn" data-id="${user.id}">✏️</button>
+                    <div class="percentage-badge" aria-label="Attendance Percentage: ${percentage}%">${percentage}%</div>
+                    <button class="btn-icon edit-btn" data-id="${user.id}" aria-label="Edit details for ${user.name}">✏️</button>
                 `}
             </div>
         `;
@@ -1415,7 +1306,7 @@ if (btnDeletePerson) {
 
 // Drawing Utils
 
-function drawCustomFaceBox(ctx, box, label, isMatch, confidence, resultLabel, mood = 'neutral') {
+function drawCustomFaceBox(ctx, box, label, isMatch, confidence, resultLabel) {
     const { x, y, width, height } = box;
     const isUnknown = resultLabel === 'unknown';
     const color = isMatch ? '#22c55e' : (isUnknown ? '#ef4444' : '#10b981');
@@ -1521,53 +1412,6 @@ function drawCustomFaceBox(ctx, box, label, isMatch, confidence, resultLabel, mo
         ctx.restore();
     }
 
-    // Mood Scanner HUD (Left Side) - Gated by Premium
-    if ((isMatch || isUnknown) && currentSpace?.premium) {
-        const moodX = x - padding - 40;
-        const moodY = y;
-        const moodColors = {
-            happy: '#00f2ff',
-            neutral: '#10b981',
-            sad: '#94a3b8',
-            angry: '#ef4444',
-            surprised: '#ff00f2',
-            fearful: '#7c3aed',
-            disgusted: '#84cc16'
-        };
-        const mColor = moodColors[mood] || '#10b981';
-
-        ctx.save();
-        ctx.translate(moodX, moodY);
-
-        // Mood Buffer Bar
-        ctx.fillStyle = mColor;
-        ctx.globalAlpha = 0.3;
-        ctx.fillRect(0, 0, 15, height);
-
-        ctx.globalAlpha = 0.8;
-        ctx.fillRect(0, height - (Math.random() * height), 15, 2); // Flickering line
-
-        // Emotion Label
-        ctx.rotate(-Math.PI / 2);
-        ctx.font = '900 10px Inter';
-        ctx.fillStyle = mColor;
-        ctx.fillText(`VIBE_${mood.toUpperCase()}`, -height, 12);
-
-        ctx.restore();
-
-        // Mood Ring around face
-        ctx.save();
-        ctx.translate(centerX, centerY);
-        ctx.beginPath();
-        ctx.arc(0, 0, baseRadius + 15, 0, Math.PI * 2);
-        ctx.strokeStyle = mColor;
-        ctx.lineWidth = 1;
-        ctx.setLineDash([2, 5]);
-        ctx.globalAlpha = 0.3;
-        ctx.stroke();
-        ctx.restore();
-    }
-
     // Status Pill implementation remains...
     if (isMatch || isUnknown) {
         ctx.font = '900 13px Inter';
@@ -1601,17 +1445,17 @@ function drawPath(ctx, points, close = false) {
     ctx.stroke();
 }
 
-// Optimized Mesh Drawing
+
 function drawFaceMesh(ctx, landmarks, color = '#10b981') {
     const points = landmarks.positions;
     ctx.strokeStyle = color;
-    ctx.globalAlpha = 0.25; // Darker/Subtle mesh
+    ctx.globalAlpha = 0.25;
     ctx.lineWidth = 0.5;
 
-    // Plexus Network
+
     ctx.beginPath();
     points.forEach((p, i) => {
-        // Connect to next few points to create a web/triangulation look
+
         for (let j = i + 1; j < i + 4 && j < points.length; j++) {
             ctx.moveTo(p.x, p.y);
             ctx.lineTo(points[j].x, points[j].y);
@@ -1619,7 +1463,7 @@ function drawFaceMesh(ctx, landmarks, color = '#10b981') {
     });
     ctx.stroke();
 
-    // Nodes (Emerald Glow)
+
     ctx.globalAlpha = 0.6;
     ctx.fillStyle = color;
     points.forEach((p, i) => {
@@ -1632,7 +1476,7 @@ function drawFaceMesh(ctx, landmarks, color = '#10b981') {
     ctx.globalAlpha = 1.0;
 }
 
-// Cyber Audio Engine (Synthesized sounds, no external files)
+// Audio Engine
 const CyberAudio = {
     ctx: null,
     init() {
@@ -1676,13 +1520,13 @@ let wasFaceDetected = false;
 // Main Loop
 
 video.addEventListener('play', () => {
-    // Responsive alignment: Use offsetWidth/Height to match the rendered video size
+
     const updateDisplaySize = () => {
         if (!video.videoWidth) return null;
         const dims = { width: video.videoWidth, height: video.videoHeight };
         canvas.width = dims.width;
         canvas.height = dims.height;
-        // Important: Reset smoothing on resolution change
+
         for (let k in smoothBoxes) delete smoothBoxes[k];
         return dims;
     };
@@ -1695,83 +1539,31 @@ video.addEventListener('play', () => {
         if (!isModelsLoaded || !video.srcObject || video.paused || video.ended || isAIPaused) return;
         if (currentMode === 'registration' || document.hidden) return;
 
-        // Ensure dimensions are initialized (Fixes alignment drift)
+
         if (!canvas.width || canvas.width !== video.videoWidth) {
             updateDisplaySize();
         }
+        const detections = await faceapi.detectAllFaces(video)
+            .withFaceLandmarks()
+            .withFaceDescriptors();
 
-        try {
-            let detections;
+        if (detections && detections.length > 0) {
+            const results = detections.map(d => {
+                return faceMatcher ? faceMatcher.findBestMatch(d.descriptor) : { label: 'unknown', distance: 1.0 };
+            });
 
-<<<<<<< HEAD
-            // MOBILE OPTIMIZATION: Use TinyFaceDetector for phones (much faster)
-            if (isMobile) {
-                // Use TinyFaceDetector with 0.3 score threshold (balance of speed/accuracy)
-                // Note: TinyFace is less accurate but way faster. 
-                const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.3 });
-                detections = await faceapi.detectAllFaces(video, options)
-                    .withFaceLandmarks()
-                    .withFaceDescriptors()
-                    .withFaceExpressions();
-            } else {
-                // DESKTOP: Use SSD MobileNet with 0.2 threshold (high accuracy)
-                const options = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.2 });
-                detections = await faceapi.detectAllFaces(video, options)
-                    .withFaceLandmarks()
-                    .withFaceDescriptors()
-                    .withFaceExpressions();
-=======
-            // Audio Feedback: Lock Sound on first appearance of any face
+
             if (!wasFaceDetected) {
                 CyberAudio.playLock();
                 wasFaceDetected = true;
->>>>>>> parent of 0c94c13 (commit)
             }
 
-            if (detections && detections.length > 0) {
-                const results = detections.map(d => {
-                    return faceMatcher ? faceMatcher.findBestMatch(d.descriptor) : { label: 'unknown', distance: 1.0 };
-                });
+            window.lastDetections = detections;
+            window.lastResults = results;
 
-                if (!wasFaceDetected) {
-                    CyberAudio.playLock();
-                    wasFaceDetected = true;
-                }
+            if (scanIndicator) scanIndicator.style.display = 'block';
 
-<<<<<<< HEAD
-                window.lastDetections = detections;
-                window.lastResults = results;
 
-                if (scanIndicator) scanIndicator.style.display = 'block';
-
-                detections.forEach((detection, i) => {
-                    const result = results[i];
-                    // On mobile, loose distance slightly to 0.65 as TinyFace descriptors vary more
-                    const matchThreshold = isMobile ? 0.65 : 0.6;
-                    const isMatch = result.label !== 'unknown' && result.distance <= matchThreshold;
-
-                    if (isMatch) {
-                        detectionHistory[result.label] = (detectionHistory[result.label] || 0) + 1;
-
-                        // SPEED OPTIMIZATION: Faster validation (2 frames for mobile/fast, 3 for desktop)
-                        const speedThreshold = isMobile ? 2 : 3;
-
-                        if (detectionHistory[result.label] >= speedThreshold) {
-                            // Extract top expression
-                            const expressions = detection.expressions;
-                            const topExpression = Object.entries(expressions).reduce((a, b) => a[1] > b[1] ? a : b)[0];
-                            markAttendance(result.label, topExpression);
-                            detectionHistory[result.label] = 0;
-                        }
-                    }
-                });
-
-                const activeMatchLabels = results.filter(r => r.label !== 'unknown').map(r => r.label);
-                for (let k in detectionHistory) {
-                    if (!activeMatchLabels.includes(k)) {
-                        detectionHistory[k] = Math.max(0, detectionHistory[k] - 1);
-=======
-            // 2. Recognition Logic for all detected faces
             detections.forEach((detection, i) => {
                 const result = results[i];
                 const isMatch = result.label !== 'unknown' && result.distance <= 0.6;
@@ -1780,22 +1572,11 @@ video.addEventListener('play', () => {
                     if (detectionHistory[result.label] >= VALIDATION_THRESHOLD) {
                         markAttendance(result.label);
                         detectionHistory[result.label] = 0;
->>>>>>> parent of 0c94c13 (commit)
                     }
                 }
+            });
 
-<<<<<<< HEAD
-            } else {
-                window.lastDetections = [];
-                window.lastResults = [];
-                wasFaceDetected = false;
-                if (scanIndicator) scanIndicator.style.display = 'none';
-            }
-        } catch (err) {
-            console.warn("Detection Loop Error:", err);
-            // Non-blocking error, allow loop to retry
-=======
-            // Cleanup history for non-detected labels
+
             const activeMatchLabels = results.filter(r => r.label !== 'unknown').map(r => r.label);
             for (let k in detectionHistory) {
                 if (!activeMatchLabels.includes(k)) {
@@ -1806,9 +1587,8 @@ video.addEventListener('play', () => {
         } else {
             window.lastDetections = [];
             window.lastResults = [];
-            wasFaceDetected = false; // Reset for next sound
+            wasFaceDetected = false;
             if (scanIndicator) scanIndicator.style.display = 'none';
->>>>>>> parent of 0c94c13 (commit)
         }
     }, DETECTION_INTERVAL);
 
@@ -1831,9 +1611,6 @@ video.addEventListener('play', () => {
                 if (!result) return;
 
                 const box = detection.detection.box;
-                const expressions = detection.expressions;
-                const topExpression = Object.entries(expressions).reduce((a, b) => a[1] > b[1] ? a : b)[0];
-
                 const confidence = Math.round((1 - result.distance) * 100);
                 const isMatch = result.label !== 'unknown' && result.distance <= 0.6;
                 const displayLabel = isMatch ? result.label : 'SEARCHING...';
@@ -1856,7 +1633,7 @@ video.addEventListener('play', () => {
                 }
 
                 if (detection.landmarks) drawFaceMesh(ctx, detection.landmarks, statusColor);
-                drawCustomFaceBox(ctx, drawBox, displayLabel, isMatch, confidence, result.label, topExpression);
+                drawCustomFaceBox(ctx, drawBox, displayLabel, isMatch, confidence, result.label);
             });
         }
 
@@ -1866,7 +1643,7 @@ video.addEventListener('play', () => {
 });
 
 
-// Refactored Registration Logic
+
 async function handleCameraRegistration() {
     if (!currentUser || !currentSpace) return alert("System not ready.");
 
@@ -1925,7 +1702,7 @@ async function handlePhotoUpload(e) {
         console.error("Upload Error:", err);
         regFeedback.innerText = "Error processing image.";
     }
-    e.target.value = ''; // Reset input
+    e.target.value = '';
 }
 
 function collectRegistrationMetadata() {
@@ -1953,7 +1730,7 @@ async function finalizeRegistration(name, metadata, descriptorArray) {
             descriptor: descriptorArray,
             attendanceCount: 0,
             lastAttendance: null,
-            approved: !isMagicLinkSession, // Self-registered users need approval
+            approved: !isMagicLinkSession,
             createdAt: new Date()
         });
 
@@ -1976,16 +1753,16 @@ function resetRegistrationForm() {
     inputs.forEach(i => i.value = "");
 }
 
-async function markAttendance(name, mood = 'neutral') {
+async function markAttendance(name) {
     const now = Date.now();
     const lastMarked = attendanceCooldowns[name] || 0;
 
-    // 1 minute cooldown
+
     if (now - lastMarked < 60000) return;
 
-    // Local feedback
+
     if (navigator.vibrate) navigator.vibrate(100);
-    CyberAudio.playMatch(); // Play the success "chirp"
+    CyberAudio.playMatch();
     showToast(`Attendance marked: ${name}`);
 
     attendanceCooldowns[name] = now;
@@ -1993,19 +1770,13 @@ async function markAttendance(name, mood = 'neutral') {
 
     addLiveLogEntry(name, timeStr);
 
-    // Voice Announcement
+
     const nowSpoken = Date.now();
     const lastTimeSpoken = lastSpoken[name] || 0;
-    if (nowSpoken - lastTimeSpoken > 10000) { // 10s cooldown per person for voice
+    if (nowSpoken - lastTimeSpoken > 10000) {
         const userData = allUsersData.find(u => u.name === name);
         const gender = (userData && userData.gender) ? userData.gender : 'male';
-
-        let moodGreeting = `Welcome ${name}`;
-        if (mood === 'happy') moodGreeting = `Great to see you smiling, ${name}!`;
-        if (mood === 'sad') moodGreeting = `Keep your head up ${name}, we're glad you're here.`;
-        if (mood === 'angry') moodGreeting = `Take a deep breath ${name}. You've got this.`;
-
-        speak(moodGreeting, gender);
+        speak(`Welcome ${name}`, gender);
         lastSpoken[name] = nowSpoken;
     }
 
@@ -2015,16 +1786,20 @@ async function markAttendance(name, mood = 'neutral') {
     try {
         const userDocRef = doc(db, COLL_USERS, docId);
         const todayDate = new Date().toDateString();
+        const userSnap = await getDoc(userDocRef);
+        const userData = userSnap.data();
+
+        const alreadyAttendedToday = userData.lastAttendance === todayDate;
 
         await updateDoc(userDocRef, {
             lastAttendance: todayDate,
-            attendanceCount: increment(1)
+            attendanceCount: alreadyAttendedToday ? (userData.attendanceCount || 0) : increment(1)
         });
 
         // Save to History Collection
         const dateId = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-        const userSnap = await getDoc(userDocRef);
-        const userData = userSnap.data();
+
+
 
         await addDoc(collection(db, COLL_ATTENDANCE), {
             spaceId: currentSpace.id,
@@ -2033,8 +1808,6 @@ async function markAttendance(name, mood = 'neutral') {
             regNo: userData.regNo || '',
             course: userData.course || '',
             date: dateId,
-            mood: mood,
-            gender: userData.gender || 'male',
             timestamp: new Date()
         });
 
@@ -2055,7 +1828,7 @@ async function markAttendance(name, mood = 'neutral') {
     }
 }
 
-// Geofencing: Get Current Location
+// Geofencing
 if (btnSetLocation) {
     btnSetLocation.addEventListener('click', () => {
         if (!navigator.geolocation) {
@@ -2124,10 +1897,6 @@ window.addEventListener('load', async () => {
 
 
 function setMode(mode) {
-    if (mode === 'analytics' && !currentSpace.premium) {
-        document.getElementById('premium-modal').classList.remove('hidden');
-        return;
-    }
     currentMode = mode;
 
     // UI elements update
@@ -2227,8 +1996,8 @@ function init3DFace(containerId) {
     renderer3D.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     container.appendChild(renderer3D.domElement);
 
-    // --- Advanced Procedural Head (Plexus Base) ---
-    const geometry = new THREE.IcosahedronGeometry(2.5, 3); // Base density
+    const geometry = new THREE.IcosahedronGeometry(2.5, 3);
+
     const positionAttribute = geometry.attributes.position;
     const vertex = new THREE.Vector3();
 
@@ -2269,7 +2038,7 @@ function init3DFace(containerId) {
     const headGroup = new THREE.Group();
     scene3D.add(headGroup);
 
-    // --- The Plexus Effect (Lines) ---
+
     const lineMaterial = new THREE.LineBasicMaterial({
         color: 0x0ea5e9,
         transparent: true,
@@ -2299,7 +2068,7 @@ function init3DFace(containerId) {
     const plexusLines = new THREE.LineSegments(linesGeometry, lineMaterial);
     headGroup.add(plexusLines);
 
-    // --- Core Points ---
+
     const pointsMaterial = new THREE.PointsMaterial({
         color: 0x38bdf8,
         size: 0.05,
@@ -2310,7 +2079,7 @@ function init3DFace(containerId) {
     const corePoints = new THREE.Points(geometry, pointsMaterial);
     headGroup.add(corePoints);
 
-    // --- Orbital Network ---
+
     const orbits = new THREE.Group();
     scene3D.add(orbits);
 
@@ -2344,7 +2113,7 @@ function init3DFace(containerId) {
     ];
     orbitData.forEach(o => orbits.add(o.group));
 
-    // --- Background Depth ---
+
     const bgCount = 500;
     const bgGeo = new THREE.BufferGeometry();
     const bgPos = new Float32Array(bgCount * 3);
@@ -2353,7 +2122,7 @@ function init3DFace(containerId) {
     const bgPoints = new THREE.Points(bgGeo, new THREE.PointsMaterial({ color: 0x0ea5e9, size: 0.02, transparent: true, opacity: 0.2 }));
     scene3D.add(bgPoints);
 
-    // --- Lighting (Subtle) ---
+
     scene3D.add(new THREE.AmbientLight(0xffffff, 0.2));
     const spotlight = new THREE.PointLight(0x0ea5e9, 1);
     spotlight.position.set(10, 10, 10);
@@ -2368,11 +2137,11 @@ function init3DFace(containerId) {
         headGroup.rotation.y = Math.sin(time * 0.2) * 0.4;
         headGroup.rotation.x = Math.cos(time * 0.15) * 0.1;
 
-        // Pulse Plexus
+
         plexusLines.material.opacity = 0.2 + Math.sin(time * 2) * 0.1;
         corePoints.material.opacity = 0.6 + Math.sin(time * 3) * 0.2;
 
-        // Animate Orbits
+
         orbitData.forEach(o => {
             o.group.rotation.y += o.speed;
             o.group.rotation.x += o.speed * 0.5;
@@ -2398,168 +2167,3 @@ function init3DFace(containerId) {
     });
 }
 
-
-
-// Premium Subscription Handlers
-const btnUpgradeList = document.querySelectorAll('.btn-upgrade-premium-trigger');
-const premiumModal = document.getElementById('premium-modal');
-const successModal = document.getElementById('upgrade-success-modal');
-
-const stepPlans = document.getElementById('premium-step-plans');
-const stepPay = document.getElementById('premium-step-pay');
-const btnClosePremium = document.getElementById('btn-close-premium');
-const btnClosePremium2 = document.getElementById('btn-close-premium-2');
-const btnBackPlans = document.getElementById('btn-back-plans');
-const btnVerifyPay = document.getElementById('btn-verify-payment');
-const btnSuccessClose = document.getElementById('btn-success-close');
-const upiQrContainer = document.getElementById('upi-qr-code');
-
-let selectedPlanData = null;
-
-btnUpgradeList.forEach(btn => {
-    btn.onclick = () => {
-        premiumModal.classList.remove('hidden');
-        stepPlans.classList.remove('hidden');
-        stepPay.classList.add('hidden');
-        // Close sidebar if on mobile
-        if (typeof toggleSidebar === 'function') toggleSidebar(false);
-    };
-});
-
-const closePremium = () => premiumModal.classList.add('hidden');
-if (btnClosePremium) btnClosePremium.onclick = closePremium;
-if (btnClosePremium2) btnClosePremium2.onclick = closePremium;
-
-if (btnBackPlans) btnBackPlans.onclick = () => {
-    stepPay.classList.add('hidden');
-    stepPlans.classList.remove('hidden');
-};
-
-if (btnSuccessClose) btnSuccessClose.onclick = () => {
-    successModal.classList.add('hidden');
-    setMode('analytics');
-};
-
-document.querySelectorAll('.btn-select-plan').forEach(btn => {
-    btn.onclick = () => {
-        const card = btn.parentElement;
-        selectedPlanData = {
-            plan: card.dataset.plan,
-            amt: card.dataset.amt
-        };
-
-        const planNameEl = document.getElementById('selected-plan-name');
-        if (planNameEl) planNameEl.innerText = selectedPlanData.plan.toUpperCase();
-
-        stepPlans.classList.add('hidden');
-        stepPay.classList.remove('hidden');
-
-        // Generate UPI QR
-        generateUpiQR(selectedPlanData.amt);
-    };
-});
-
-function generateUpiQR(amount) {
-    if (!upiQrContainer) return;
-    upiQrContainer.innerHTML = 'Loading QR...';
-
-    const upiId = "9996445592@ibl";
-    const upiUrl = `upi://pay?pa=${upiId}&pn=CognitoAttend&cu=INR&am=${amount}`;
-
-    const qrEngine = window.QRCode || (typeof QRCode !== 'undefined' ? QRCode : null);
-    if (qrEngine && qrEngine.toDataURL) {
-        qrEngine.toDataURL(upiUrl, {
-            width: 200,
-            margin: 0,
-            errorCorrectionLevel: 'H'
-        }, (err, url) => {
-            if (err) {
-                upiQrContainer.innerHTML = 'QR Error';
-                return;
-            }
-            upiQrContainer.innerHTML = `<img src="${url}" style="width:100%; height:auto;">`;
-        });
-    } else {
-        const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiUrl)}`;
-        upiQrContainer.innerHTML = `<img src="${qrApi}" style="width:100%; height:auto;">`;
-    }
-}
-
-if (btnVerifyPay) {
-    btnVerifyPay.onclick = async () => {
-        if (!currentSpace || !selectedPlanData) return;
-
-        btnVerifyPay.innerText = "Verifying Transaction...";
-        btnVerifyPay.disabled = true;
-
-        try {
-            // Simulated transaction verification delay
-            await new Promise(r => setTimeout(r, 2000));
-
-            await updateDoc(doc(db, COLL_SPACES, currentSpace.id), {
-                premium: true,
-                subscriptionPlan: selectedPlanData.plan,
-                subscriptionAmount: selectedPlanData.amt,
-                subscriptionDate: new Date().toISOString(),
-                upiRef: "UPI_" + Math.random().toString(36).substring(2, 10).toUpperCase()
-            });
-
-            currentSpace.premium = true;
-            updatePremiumUI(true);
-            premiumModal.classList.add('hidden');
-            successModal.classList.remove('hidden');
-            showToast("UPI Payment Verified! Premium Unlocked.");
-        } catch (e) {
-            showToast("Verification failed: " + e.message, "error");
-            btnVerifyPay.innerText = "Verify & Activate Premium";
-            btnVerifyPay.disabled = false;
-        }
-    };
-}
-
-const btnCopyUpi = document.getElementById('btn-copy-upi');
-if (btnCopyUpi) {
-    btnCopyUpi.onclick = () => {
-        navigator.clipboard.writeText("9996445592@ibl");
-        showToast("UPI ID Copied!");
-    };
-}
-
-// --- QR Timer Settings Handlers ---
-document.querySelectorAll('.btn-timer-opt').forEach(btn => {
-    btn.onclick = () => {
-        if (btn.id === 'btn-timer-custom-trigger') {
-            document.querySelectorAll('.btn-timer-opt').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            document.getElementById('custom-timer-controls').classList.remove('hidden');
-            return;
-        }
-
-        document.getElementById('custom-timer-controls').classList.add('hidden');
-        document.querySelectorAll('.btn-timer-opt').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-
-        const sec = parseInt(btn.dataset.sec);
-        if (sec && !isNaN(sec)) {
-            qrRefreshInterval = sec;
-            showToast(`Rotation timer set to ${sec}s`);
-            startQRRotation(); // Restart with new timer
-        }
-    };
-});
-
-const btnApplyCustomTimer = document.getElementById('btn-apply-custom-timer');
-if (btnApplyCustomTimer) {
-    btnApplyCustomTimer.onclick = () => {
-        const input = document.getElementById('input-custom-sec');
-        const sec = parseInt(input.value);
-
-        if (sec && sec >= 10) {
-            qrRefreshInterval = sec;
-            showToast(`Custom timer set to ${sec}s`);
-            startQRRotation();
-        } else {
-            showToast("Minimum 10 seconds required", "error");
-        }
-    };
-}
