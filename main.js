@@ -120,6 +120,51 @@ const editPersonNameTitle = document.getElementById('edit-person-name-title');
 
 let editingPersonId = null;
 
+function openEditModal(uid) {
+    const userData = allUsersData.find(u => u.id === uid);
+    if (!userData) return;
+
+    editingPersonId = uid;
+    editModal.classList.remove('hidden');
+    editNameInput.value = userData.name || '';
+    editRegNoInput.value = userData.regNo || '';
+    editCourseInput.value = userData.course || '';
+    editPersonNameTitle.innerText = userData.name;
+
+    // Setup delete button in edit modal too
+    btnDeletePerson.onclick = () => {
+        editModal.classList.add('hidden');
+        confirmDeletePerson(uid, userData.name);
+    }
+}
+
+function confirmDeletePerson(uid, name) {
+    confirmModal.classList.remove('hidden');
+    confirmMessage.innerHTML = `Are you sure you want to delete <b>${name}</b>?<br>This cannot be undone.`;
+
+    // Clean up old listeners
+    const newYes = btnConfirmYes.cloneNode(true);
+    const newNo = btnConfirmNo.cloneNode(true);
+    btnConfirmYes.parentNode.replaceChild(newYes, btnConfirmYes);
+    btnConfirmNo.parentNode.replaceChild(newNo, btnConfirmNo);
+
+    newYes.addEventListener('click', async () => {
+        confirmModal.classList.add('hidden');
+        try {
+            await deleteDoc(doc(db, COLL_USERS, uid));
+            showToast(`${name} deleted successfully.`);
+        } catch (e) {
+            console.error(e);
+            alert("Delete failed: " + e.message);
+        }
+    });
+
+    newNo.addEventListener('click', () => {
+        confirmModal.classList.add('hidden');
+    });
+}
+
+
 const confirmModal = document.getElementById('confirm-modal');
 const confirmMessage = document.getElementById('confirm-message');
 const btnConfirmYes = document.getElementById('btn-confirm-yes');
@@ -145,13 +190,6 @@ const lastSpoken = {};
 // Device Detection for Performance
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 const DETECTION_INTERVAL = isMobile ? 250 : 100;
-
-let hourlyChart = null;
-let trendChart = null;
-let genderChart = null;
-let trafficChart = null;
-let moodChart = null;
-let moodHistory = [];
 
 // Advanced Detection State
 const VALIDATION_THRESHOLD = 3; // Reduced from 5 for faster attendance
@@ -325,41 +363,28 @@ async function handleCreate() {
     }
 }
 
-function enterSpace(id, data) {
-    currentSpace = { id, ...data };
-    currentSpaceTitle.innerText = currentSpace.name;
-    portalError.innerText = "";
-    showView('view-operation');
+currentSpace = { id, ...data };
+currentSpaceTitle.innerText = currentSpace.name;
+portalError.innerText = "";
+showView('view-operation');
 
-    updatePremiumUI(currentSpace.premium);
+// Premium features unlocked for everyone
+document.querySelectorAll('.premium-dashboard').forEach(el => {
+    el.style.display = 'block';
+});
+document.querySelectorAll('.btn-upgrade-premium-trigger').forEach(btn => btn.style.display = 'none');
 
-    const face3D = document.getElementById('face-3d-container');
-    if (face3D) {
-        face3D.classList.remove('fade-out');
-        face3D.style.display = 'block';
-    }
-
-    initSystem();
-    startDbListener();
-    updateRegistrationForm();
-    init3DFace('face-3d-container');
+const face3D = document.getElementById('face-3d-container');
+if (face3D) {
+    face3D.classList.remove('fade-out');
+    face3D.style.display = 'block';
 }
 
-function updatePremiumUI(isPremium) {
-    document.querySelectorAll('.btn-upgrade-premium-trigger').forEach(btn => {
-        btn.style.display = isPremium ? 'none' : 'flex';
-    });
+initSystem();
+startDbListener();
+updateRegistrationForm();
+init3DFace('face-3d-container');
 
-    document.querySelectorAll('.premium-dashboard').forEach(el => {
-        el.style.display = isPremium ? 'block' : 'none';
-    });
-
-    if (isPremium) {
-        document.querySelectorAll('.premium-badge-v2').forEach(b => b.innerText = 'ACTIVE');
-    } else {
-        document.querySelectorAll('.premium-badge-v2').forEach(b => b.innerText = 'PRO');
-    }
-}
 
 // QR Logic
 let qrRefreshInterval = 30; // Seconds
@@ -396,7 +421,7 @@ async function startQRRotation() {
                         if (err) throw err;
                         qrImage.src = url;
                         qrImage.style.opacity = "1";
-                        qrStatus.innerHTML = "[PRO] Code is live. Scan now.";
+                        qrStatus.innerHTML = "Code is live. Scan now.";
                         resetTimer(qrRefreshInterval);
                     });
                 } else {
@@ -405,7 +430,7 @@ async function startQRRotation() {
                     qrImage.src = qrApiUrl;
                     qrImage.onload = () => {
                         qrImage.style.opacity = "1";
-                        qrStatus.innerHTML = "[PRO] Live (API Fallback)";
+                        qrStatus.innerHTML = "Live (API Fallback)";
                         resetTimer(qrRefreshInterval);
                     };
                 }
@@ -1111,164 +1136,58 @@ function startDbListener() {
         // Render based on active tab
         renderAttendanceList();
         renderPeopleManagement();
-        updateExecutiveKPIs();
-    });
-
-    if (unsubscribeAttendance) unsubscribeAttendance();
-    const qAttend = query(collection(db, COLL_ATTENDANCE), where("spaceId", "==", currentSpace.id));
-    unsubscribeAttendance = onSnapshot(qAttend, (snapshot) => {
-        const attendanceData = snapshot.docs.map(doc => doc.data());
-        updateExecutiveDashboard(attendanceData);
     });
 }
 
-function updateExecutiveKPIs() {
-    const totalReg = document.getElementById('kpi-total-reg');
-    const avgPunctuality = document.getElementById('kpi-avg-punctuality');
-    if (!totalReg) return;
+// --- People Management Helpers ---
 
-    totalReg.innerText = allUsersData.length;
+function openEditModal(uid) {
+    const userData = allUsersData.find(u => u.id === uid);
+    if (!userData) return;
 
-    // Simulate punctuality based on avg attendance count vs possible days
-    const maxAttendance = Math.max(...allUsersData.map(u => u.attendanceCount || 0), 0);
-    const avg = allUsersData.length > 0 ? (allUsersData.reduce((acc, u) => acc + (u.attendanceCount || 0), 0) / (allUsersData.length * (maxAttendance || 1))) * 100 : 0;
-    avgPunctuality.innerText = Math.round(avg) + '%';
+    editingPersonId = uid;
+    editModal.classList.remove('hidden');
+    editNameInput.value = userData.name || '';
+    editRegNoInput.value = userData.regNo || '';
+    editCourseInput.value = userData.course || '';
+    editPersonNameTitle.innerText = userData.name;
+
+    // Setup delete button in edit modal too
+    if (btnDeletePerson) {
+        btnDeletePerson.onclick = () => {
+            editModal.classList.add('hidden');
+            confirmDeletePerson(uid, userData.name);
+        };
+    }
 }
 
-function updateExecutiveDashboard(attendanceData) {
-    if (!attendanceData || attendanceData.length === 0) return;
+function confirmDeletePerson(uid, name) {
+    confirmModal.classList.remove('hidden');
+    confirmMessage.innerHTML = `Are you sure you want to delete <b>${name}</b>?<br>This cannot be undone.`;
 
-    // 1. Process Trend Data (Last 7 Days)
-    const last7Days = [...Array(7)].map((_, i) => {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        return d.toISOString().split('T')[0];
-    }).reverse();
+    // Clean up old listeners
+    const newYes = btnConfirmYes.cloneNode(true);
+    const newNo = btnConfirmNo.cloneNode(true);
+    btnConfirmYes.parentNode.replaceChild(newYes, btnConfirmYes);
+    btnConfirmNo.parentNode.replaceChild(newNo, btnConfirmNo);
 
-    const trendCounts = last7Days.map(date => attendanceData.filter(a => a.date === date).length);
-
-    // 2. Process Gender Split
-    const genders = { male: 0, female: 0, other: 0 };
-    allUsersData.forEach(u => {
-        if (genders[u.gender] !== undefined) genders[u.gender]++;
-        else genders.other++;
-    });
-
-    // 3. Process Hourly Traffic
-    const hourlyDistribution = Array(24).fill(0);
-    attendanceData.forEach(a => {
-        if (a.timestamp) {
-            const hour = new Date(a.timestamp.seconds * 1000).getHours();
-            hourlyDistribution[hour]++;
+    newYes.addEventListener('click', async () => {
+        confirmModal.classList.add('hidden');
+        try {
+            await deleteDoc(doc(db, COLL_USERS, uid));
+            showToast(`${name} deleted successfully.`);
+        } catch (e) {
+            console.error(e);
+            alert("Delete failed: " + e.message);
         }
     });
 
-    // Update Peak Hour KPI
-    const peakHour = hourlyDistribution.indexOf(Math.max(...hourlyDistribution));
-    const peakTimeEl = document.getElementById('kpi-peak-hour');
-    if (peakTimeEl) peakTimeEl.innerText = `${peakHour}:00`;
-
-    // 4. Process Mood Data
-    const moods = { happy: 0, neutral: 0, sad: 0, angry: 0, surprised: 0, relaxed: 0 };
-    attendanceData.forEach(a => {
-        if (a.mood) {
-            if (moods[a.mood] !== undefined) moods[a.mood]++;
-            else moods.neutral++;
-        }
-    });
-
-    // Update Happiness Score KPI
-    const totalMoods = Object.values(moods).reduce((a, b) => a + b, 0);
-    const positiveMoods = moods.happy + moods.relaxed + (moods.surprised * 0.5);
-    const happinessScore = totalMoods > 0 ? (positiveMoods / totalMoods) * 100 : 85; // Default to 85% for vibe
-    const happinessEl = document.getElementById('kpi-happiness-score');
-    if (happinessEl) happinessEl.innerText = `${Math.round(happinessScore)}%`;
-
-    renderCharts(last7Days, trendCounts, genders, hourlyDistribution, moods);
-}
-
-function renderCharts(labels, trendData, genderData, trafficData, moodData) {
-    const ctxTrend = document.getElementById('attendanceTrendChart')?.getContext('2d');
-    const ctxGender = document.getElementById('genderDistributionChart')?.getContext('2d');
-    const ctxTraffic = document.getElementById('peakHourChart')?.getContext('2d');
-    const ctxMood = document.getElementById('moodDistributionChart')?.getContext('2d');
-
-    if (!ctxTrend || !ctxGender || !ctxTraffic || !ctxMood) return;
-
-    const chartConfig = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: { display: false }
-        },
-        scales: {
-            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } },
-            x: { grid: { display: false }, ticks: { color: '#888' } }
-        }
-    };
-
-    // Trends Chart
-    if (trendChart) trendChart.destroy();
-    trendChart = new Chart(ctxTrend, {
-        type: 'line',
-        data: {
-            labels: labels.map(l => l.split('-').slice(1).join('/')),
-            datasets: [{
-                label: 'Attendance',
-                data: trendData,
-                borderColor: '#00f2ff',
-                backgroundColor: 'rgba(0, 242, 255, 0.1)',
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: chartConfig
-    });
-
-    // Gender Split
-    if (genderChart) genderChart.destroy();
-    genderChart = new Chart(ctxGender, {
-        type: 'doughnut',
-        data: {
-            labels: ['Male', 'Female', 'Unknown'],
-            datasets: [{
-                data: [genderData.male, genderData.female, genderData.other],
-                backgroundColor: ['#00f2ff', '#ff00f2', '#333'],
-                borderWidth: 0
-            }]
-        },
-        options: { ...chartConfig, scales: {} }
-    });
-
-    // Peak Hour
-    if (trafficChart) trafficChart.destroy();
-    trafficChart = new Chart(ctxTraffic, {
-        type: 'bar',
-        data: {
-            labels: Array.from({ length: 24 }, (_, i) => `${i}h`),
-            datasets: [{
-                data: trafficData,
-                backgroundColor: '#00f2ff'
-            }]
-        },
-        options: chartConfig
-    });
-
-    // Mood Distribution
-    if (moodChart) moodChart.destroy();
-    moodChart = new Chart(ctxMood, {
-        type: 'doughnut',
-        data: {
-            labels: ['Happy', 'Neutral', 'Sad', 'Angry', 'Surprised'],
-            datasets: [{
-                data: [moodData.happy, moodData.neutral, moodData.sad, moodData.angry, moodData.surprised],
-                backgroundColor: ['#00f2ff', '#10b981', '#94a3b8', '#ef4444', '#ff00f2'],
-                borderWidth: 0
-            }]
-        },
-        options: { ...chartConfig, scales: {} }
+    newNo.addEventListener('click', () => {
+        confirmModal.classList.add('hidden');
     });
 }
+
+
 
 function renderAttendanceList() {
     if (!todayListContainer) return;
@@ -1331,12 +1250,17 @@ if (peopleSearchInput) {
 }
 
 async function renderPeopleManagement() {
+    renderPeopleList();
+}
+
+async function renderPeopleList() {
     if (!peopleListContainer) return;
 
     // Filter by search query
-    const filteredUsers = allUsersData.filter(user =>
-        user.name.toLowerCase().includes(peopleSearchQuery) ||
-        (user.regNo && user.regNo.toLowerCase().includes(peopleSearchQuery))
+    const term = peopleSearchInput ? peopleSearchInput.value.toLowerCase() : '';
+    const filtered = allUsersData.filter(u =>
+        u.name.toLowerCase().includes(term) ||
+        (u.regNo && u.regNo.toLowerCase().includes(term))
     );
 
     if (filteredUsers.length === 0) {

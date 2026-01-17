@@ -206,8 +206,7 @@
                 <div class="sidebar-section">
                     <h4>Actions</h4>
                     <button id="side-btn-qr" class="nav-item">📱 QR Presence</button>
-                    <button class="nav-item btn-upgrade-premium-trigger" style="color: #ff00f2; font-weight: 800;">✨ Get
-                        Premium</button>
+
                     <button id="side-btn-history" class="nav-item">📜 History</button>
                     <button id="side-btn-export" class="nav-item">📥 Export CSV</button>
                 </div>
@@ -351,68 +350,14 @@
 
                 <div id="analytics-panel" class="hidden">
                     <div class="list-header">
-                        <span>📊 Executive Dashboard</span>
-                        <div class="premium-status">PREMIUM ACTIVE</div>
+                        <span>👥 People Directory</span>
                     </div>
 
-                    <div class="premium-dashboard">
-                        <!-- KPI Row -->
-                        <div class="kpi-grid">
-                            <div class="kpi-card">
-                                <div class="kpi-icon">👥</div>
-                                <div class="kpi-data">
-                                    <div class="kpi-value" id="kpi-total-reg">0</div>
-                                    <div class="kpi-label">Registered</div>
-                                </div>
-                            </div>
-                            <div class="kpi-card">
-                                <div class="kpi-icon">⚡</div>
-                                <div class="kpi-data">
-                                    <div class="kpi-value" id="kpi-avg-punctuality">0%</div>
-                                    <div class="kpi-label">Punctuality</div>
-                                </div>
-                            </div>
-                            <div class="kpi-card">
-                                <div class="kpi-icon">🔥</div>
-                                <div class="kpi-data">
-                                    <div class="kpi-value" id="kpi-peak-hour">--:--</div>
-                                    <div class="kpi-label">Peak Time</div>
-                                </div>
-                            </div>
-                            <div class="kpi-card premium-accent">
-                                <div class="kpi-icon">✨</div>
-                                <div class="kpi-data">
-                                    <div class="kpi-value" id="kpi-happiness-score">--%</div>
-                                    <div class="kpi-label">Office Vibe</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Charts Grid -->
-                        <div class="charts-grid">
-                            <div class="chart-container-wrapper main-chart">
-                                <h4>Attendance Trends (7 Days)</h4>
-                                <canvas id="attendanceTrendChart"></canvas>
-                            </div>
-                            <div class="chart-container-wrapper">
-                                <h4>Mood Distribution</h4>
-                                <canvas id="moodDistributionChart"></canvas>
-                            </div>
-                            <div class="chart-container-wrapper">
-                                <h4>Gender Split</h4>
-                                <canvas id="genderDistributionChart"></canvas>
-                            </div>
-                            <div class="chart-container-wrapper">
-                                <h4>Hourly Traffic</h4>
-                                <canvas id="peakHourChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="list-header" style="margin-top: 25px;"><span>👥 People Management</span></div>
+                    <div class="list-header" style="margin-top: 0;"><span>👥 People Management</span></div>
                     <div class="form-group" style="margin-bottom: 15px;">
-                        <input type="text" id="people-search" placeholder="Search people...">
+                        <input type="text" id="people-search" placeholder="Search people (name, reg no)...">
                     </div>
+
                     <div id="people-list-container" class="scrollable-list" style="max-height: 350px;"></div>
                 </div>
             </div>
@@ -545,88 +490,7 @@
         </div>
     </div>
 
-    <!-- Premium Upgrade Modal -->
-    <div id="premium-modal" class="qr-modal-container hidden">
-        <div class="qr-modal-content premium-modal-content">
-            <div id="premium-step-plans">
-                <div class="modal-header">
-                    <h2>✨ Upgrade to Premium</h2>
-                    <button id="btn-close-premium" class="btn-close" aria-label="Close Upgrade Modal">&times;</button>
-                </div>
-                <div class="premium-benefits">
-                    <div class="benefit-item">📊 Executive Analytics Dashboard</div>
-                    <div class="benefit-item">🧠 AI Mood & Expression Tracking</div>
-                    <div class="benefit-item">📂 Unlimited Attendance Logs</div>
-                    <div class="benefit-item">🔒 Advanced Bio-Liveness Security</div>
-                    <div class="benefit-item">Customized qr timer</div>
-                </div
 
-                <div class="pricing-grid">
-                    <div class="pricing-card" data-plan="monthly" data-amt="5">
-                        <div class="plan-name">Monthly</div>
-                        <div class="plan-price">₹300<span>/mo</span></div>
-                        <button class="btn-primary btn-select-plan" style="width: 100%;">Select Monthly</button>
-                    </div>
-                    <div class="pricing-card highlighted" data-plan="yearly" data-amt="50">
-                        <div class="plan-name">Yearly</div>
-                        <div class="plan-price">₹3000<span>/yr</span></div>
-                        <div class="plan-save">Save 20%</div>
-                        <button class="btn-primary btn-select-plan" style="width: 100%;">Select Yearly</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- UPI Payment Section -->
-            <div id="premium-step-pay" class="hidden">
-                <div class="modal-header">
-                    <button id="btn-back-plans"
-                        style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1.2rem;">←</button>
-                    <h2 style="flex:1; text-align:center;">UPI Payment</h2>
-                    <button id="btn-close-premium-2" class="btn-close">&times;</button>
-                </div>
-
-                <div class="upi-pay-container" style="text-align: center; padding: 20px 0;">
-                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px;">Scan to pay for <span
-                            id="selected-plan-name" style="color: #fff; font-weight: 800;">Yearly</span> plan</p>
-
-                    <div id="upi-qr-wrapper"
-                        style="background: #fff; padding: 15px; border-radius: 20px; display: inline-block; margin-bottom: 20px; box-shadow: 0 0 30px rgba(0, 242, 255, 0.2);">
-                        <div id="upi-qr-code"></div>
-                    </div>
-
-                    <div class="upi-id-box"
-                        style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px;">
-                        <small style="color: var(--text-muted); display: block; margin-bottom: 5px;">UPI ID</small>
-                        <strong style="font-size: 1.1rem; color: var(--accent);">9996445592@ibl</strong>
-                        <button id="btn-copy-upi"
-                            style="margin-left: 10px; background: none; border: none; cursor: pointer;">📋</button>
-                    </div>
-
-                    <button id="btn-verify-payment" class="btn-primary" style="width: 100%;">Verify & Activate
-                        Premium</button>
-                    <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 15px;">
-                        After payment, click verify. Instant activation.
-                    </p>
-                </div>
-            </div>
-
-            <p id="premium-modal-footer"
-                style="font-size: 0.7rem; color: var(--text-muted); text-align: center; margin-top: 15px;">
-                One-time subscription per workspace. Non-refundable.
-            </p>
-        </div>
-    </div>
-
-    <!-- Success Modal -->
-    <div id="upgrade-success-modal" class="qr-modal-container hidden">
-        <div class="qr-modal-content" style="text-align: center; border-color: var(--success);">
-            <div style="font-size: 4rem; margin-bottom: 20px;">🏆</div>
-            <h2 style="color: var(--success);">Premium Activated!</h2>
-            <p>Your workspace now has full access to all elite features.</p>
-            <button id="btn-success-close" class="btn-primary" style="margin-top: 20px; width: 100%;">Launch
-                Dashboard</button>
-        </div>
-    </div>
 
     <script type="module" src="main.js?v=1736862985"></script>
 </body>
