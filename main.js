@@ -105,6 +105,8 @@ const qrTimerDisplay = document.getElementById('qr-timer');
 const qrStatus = document.getElementById('qr-status');
 const qrScanCountDisplay = document.getElementById('qr-scan-count');
 const configQrRefresh = document.getElementById('config-qr-refresh');
+const qrExpiredOverlay = document.getElementById('qr-expired-overlay');
+const btnRefreshQr = document.getElementById('btn-refresh-qr');
 
 
 const analyticsPanel = document.getElementById('analytics-panel');
@@ -367,6 +369,7 @@ async function startQRRotation() {
     stopQRRotation();
 
     const refreshQR = async () => {
+        if (!currentSpace) return;
         currentNonce = Math.random().toString(36).substring(2, 12);
         const spaceRef = doc(db, COLL_SPACES, currentSpace.id);
         const refreshMs = parseInt(currentSpace.config.qrRefreshInterval || 30000);
@@ -374,6 +377,8 @@ async function startQRRotation() {
         try {
             qrStatus.innerText = "Syncing with cloud...";
             qrImage.style.opacity = "0.5";
+            qrExpiredOverlay.classList.add('hidden');
+            btnRefreshQr.classList.add('hidden');
 
             await updateDoc(spaceRef, { qrNonce: currentNonce, qrScanCount: 0 });
 
@@ -419,14 +424,17 @@ async function startQRRotation() {
                 <small style="color:#ff6666;">Reason: ${e.message.split('(')[0]}</small><br>
                 <button onclick="window.location.reload()" style="margin-top:10px; background:var(--accent); color:#000; border:none; padding:5px 10px; border-radius:5px; font-size:11px; cursor:pointer;">⚠️ Hard Refresh Page</button>
             `;
-
-            setTimeout(refreshQR, 10000);
         }
     };
 
+    // Store refresh function on the button
+    btnRefreshQr.onclick = refreshQR;
+
     await refreshQR();
-    const intervalMs = parseInt(currentSpace.config.qrRefreshInterval || 30000);
-    qrInterval = setInterval(refreshQR, intervalMs);
+
+    // Remove automatic setInterval refresh
+    // const intervalMs = parseInt(currentSpace.config.qrRefreshInterval || 30000);
+    // qrInterval = setInterval(refreshQR, intervalMs);
 
     // Listen for scan count updates
     const unsubscribeQr = onSnapshot(doc(db, COLL_SPACES, currentSpace.id), (doc) => {
@@ -459,7 +467,13 @@ function resetTimer(seconds) {
     qrTimerInterval = setInterval(() => {
         timeLeft--;
         qrTimerDisplay.innerText = timeLeft;
-        if (timeLeft <= 0) clearInterval(qrTimerInterval);
+        if (timeLeft <= 0) {
+            clearInterval(qrTimerInterval);
+            qrStatus.innerHTML = "<span style='color:var(--danger); font-weight:700;'>QR CODE EXPIRED</span>";
+            qrExpiredOverlay.classList.remove('hidden');
+            btnRefreshQr.classList.remove('hidden');
+            qrImage.style.opacity = "0.3";
+        }
     }, 1000);
 }
 
