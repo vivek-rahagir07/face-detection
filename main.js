@@ -363,27 +363,29 @@ async function handleCreate() {
     }
 }
 
-currentSpace = { id, ...data };
-currentSpaceTitle.innerText = currentSpace.name;
-portalError.innerText = "";
-showView('view-operation');
+function enterSpace(id, data) {
+    currentSpace = { id, ...data };
+    currentSpaceTitle.innerText = currentSpace.name;
+    portalError.innerText = "";
+    showView('view-operation');
 
-// Premium features unlocked for everyone
-document.querySelectorAll('.premium-dashboard').forEach(el => {
-    el.style.display = 'block';
-});
-document.querySelectorAll('.btn-upgrade-premium-trigger').forEach(btn => btn.style.display = 'none');
+    // Premium features unlocked for everyone
+    document.querySelectorAll('.premium-dashboard').forEach(el => {
+        el.style.display = 'block';
+    });
+    document.querySelectorAll('.btn-upgrade-premium-trigger').forEach(btn => btn.style.display = 'none');
 
-const face3D = document.getElementById('face-3d-container');
-if (face3D) {
-    face3D.classList.remove('fade-out');
-    face3D.style.display = 'block';
+    const face3D = document.getElementById('face-3d-container');
+    if (face3D) {
+        face3D.classList.remove('fade-out');
+        face3D.style.display = 'block';
+    }
+
+    initSystem();
+    startDbListener();
+    updateRegistrationForm();
+    init3DFace('face-3d-container');
 }
-
-initSystem();
-startDbListener();
-updateRegistrationForm();
-init3DFace('face-3d-container');
 
 
 // QR Logic
