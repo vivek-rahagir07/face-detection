@@ -4,6 +4,7 @@
     --primary-dark: #94a3b8;
     --secondary: #475569;
     --success: #00f2ff;
+    /* Using vibrant blue for success/primary accents */
     --accent: #00f2ff;
     --danger: #ff4444;
     --warning: #cbd5e1;
@@ -20,18 +21,6 @@
         0 8px 10px -6px rgb(0 0 0 / 0.5);
     --transition: 0.3s ease;
     --nav-height: 80px;
-}
-
-.sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border-width: 0;
 }
 
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
@@ -142,6 +131,7 @@ h1 {
     width: 100%;
     height: auto;
     filter: none;
+    /* Removed glow effect to improve scannability */
 }
 
 .camera-wrapper {
@@ -2002,6 +1992,7 @@ input:focus {
         padding: 8px 12px;
     }
 
+    /* Full width modals on mobile */
     .qr-modal-content {
         width: 95% !important;
         max-width: none !important;
@@ -2009,6 +2000,7 @@ input:focus {
         padding: 24px 16px;
     }
 
+    /* Typography Polish */
     h1 {
         font-size: 2.2rem;
     }
@@ -2022,6 +2014,7 @@ input:focus {
     }
 }
 
+/* Enhanced Tap Feedback */
 button:active,
 .list-item:active,
 .management-person-card:active {
@@ -2030,11 +2023,13 @@ button:active,
     transition: transform 0.1s ease;
 }
 
+/* Smooth scrolling for modal content */
 .qr-modal-content {
     max-height: 90vh;
     overflow-y: auto;
 }
 
+/* Touch-friendly Scrollbars */
 ::-webkit-scrollbar {
     width: 4px;
     height: 4px;
@@ -2045,6 +2040,7 @@ button:active,
     border-radius: 10px;
 }
 
+/* Mobile Sidebar System */
 .sidebar-container {
     position: fixed;
     top: 0;
@@ -2191,11 +2187,13 @@ button:active,
         box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.8);
     }
 
+    /* Zoom fix for inputs */
     input {
         font-size: 16px !important;
     }
 }
 
+/* Magic Link UI */
 #magic-link-container {
     animation: slide-up 0.3s ease;
 }
@@ -2207,6 +2205,8 @@ button:active,
     color: var(--accent);
     border-radius: 8px;
 }
+
+/* --- Phase 3: Admin Approval & Voice UI --- */
 
 .badge-pending {
     background: #fefce8;
@@ -2247,6 +2247,8 @@ button:active,
     cursor: pointer;
 }
 
+
+/* Configuration Panel Fixes */
 .toggle-group {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -2279,8 +2281,8 @@ button:active,
         grid-template-columns: 1fr;
     }
 }
-
 @keyframes blink {
+<<<<<<< HEAD
 
     0%,
     100% {
@@ -2455,3 +2457,8 @@ button:active,
         max-width: 600px;
     }
 }
+=======
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+>>>>>>> parent of 0c94c13 (commit)
