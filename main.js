@@ -1208,6 +1208,7 @@ async function renderPeopleManagement() {
     }
 
     peopleListContainer.innerHTML = '';
+    const fragment = document.createDocumentFragment();
 
     filteredUsers.sort((a, b) => a.name.localeCompare(b.name));
 
@@ -1557,62 +1558,73 @@ video.addEventListener('play', () => {
     video.addEventListener('loadedmetadata', () => { displaySize = updateDisplaySize(); });
     window.addEventListener('resize', () => { displaySize = updateDisplaySize(); });
 
-    setInterval(async () => {
-        if (!isModelsLoaded || !video.srcObject || video.paused || video.ended || isAIPaused) return;
-        if (currentMode === 'registration' || document.hidden) return;
-
-
-        if (!canvas.width || canvas.width !== video.videoWidth) {
-            updateDisplaySize();
+    async function detectionLoop() {
+        if (!isModelsLoaded || !video.srcObject || video.paused || video.ended || isAIPaused || currentMode === 'registration' || document.hidden) {
+            setTimeout(detectionLoop, DETECTION_INTERVAL);
+            return;
         }
-        const detections = await faceapi.detectAllFaces(video)
-            .withFaceLandmarks()
-            .withFaceDescriptors();
 
-        if (detections && detections.length > 0) {
-            const results = detections.map(d => {
-                return faceMatcher ? faceMatcher.findBestMatch(d.descriptor) : { label: 'unknown', distance: 1.0 };
-            });
-
-
-            if (!wasFaceDetected) {
-                CyberAudio.playLock();
-                wasFaceDetected = true;
+        try {
+            if (!canvas.width || canvas.width !== video.videoWidth) {
+                updateDisplaySize();
             }
 
-            window.lastDetections = detections;
-            window.lastResults = results;
+            const detections = await faceapi.detectAllFaces(video)
+                .withFaceLandmarks()
+                .withFaceDescriptors();
 
-            if (scanIndicator) scanIndicator.style.display = 'block';
+            if (detections && detections.length > 0) {
+                const results = detections.map(d => {
+                    return faceMatcher ? faceMatcher.findBestMatch(d.descriptor) : { label: 'unknown', distance: 1.0 };
+                });
 
+                if (!wasFaceDetected) {
+                    CyberAudio.playLock();
+                    wasFaceDetected = true;
+                }
 
-            detections.forEach((detection, i) => {
-                const result = results[i];
-                const isMatch = result.label !== 'unknown' && result.distance <= 0.6;
-                if (isMatch) {
-                    detectionHistory[result.label] = (detectionHistory[result.label] || 0) + 1;
-                    if (detectionHistory[result.label] >= VALIDATION_THRESHOLD) {
-                        markAttendance(result.label);
-                        detectionHistory[result.label] = 0;
+                window.lastDetections = detections;
+                window.lastResults = results;
+
+                if (scanIndicator) scanIndicator.style.display = 'block';
+
+                detections.forEach((detection, i) => {
+                    const result = results[i];
+                    const isMatch = result.label !== 'unknown' && result.distance <= 0.6;
+                    if (isMatch) {
+                        detectionHistory[result.label] = (detectionHistory[result.label] || 0) + 1;
+                        if (detectionHistory[result.label] >= VALIDATION_THRESHOLD) {
+                            markAttendance(result.label);
+                            detectionHistory[result.label] = 0;
+                        }
+                    }
+                });
+
+                const activeMatchLabels = results.filter(r => r.label !== 'unknown').map(r => r.label);
+                for (let k in detectionHistory) {
+                    if (!activeMatchLabels.includes(k)) {
+                        detectionHistory[k] = Math.max(0, detectionHistory[k] - 1);
                     }
                 }
-            });
+            } else {
+                window.lastDetections = [];
+                window.lastResults = [];
+                wasFaceDetected = false;
+                if (scanIndicator) scanIndicator.style.display = 'none';
 
-
-            const activeMatchLabels = results.filter(r => r.label !== 'unknown').map(r => r.label);
-            for (let k in detectionHistory) {
-                if (!activeMatchLabels.includes(k)) {
-                    detectionHistory[k] = Math.max(0, detectionHistory[k] - 1);
+                // Slowly decay history only when nothing is detected to keep it stable
+                for (let k in detectionHistory) {
+                    detectionHistory[k] = Math.max(0, detectionHistory[k] - 0.5);
                 }
             }
-
-        } else {
-            window.lastDetections = [];
-            window.lastResults = [];
-            wasFaceDetected = false;
-            if (scanIndicator) scanIndicator.style.display = 'none';
+        } catch (err) {
+            console.warn("Detection cycle skipped:", err);
         }
-    }, DETECTION_INTERVAL);
+
+        setTimeout(detectionLoop, DETECTION_INTERVAL);
+    }
+
+    detectionLoop();
 
     // --- Drawing Loop (requestAnimationFrame) ---
     function animate() {
