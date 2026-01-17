@@ -2291,6 +2291,7 @@ button:active,
         opacity: 0.3;
     }
 }
+
 /* --- Executive Premium Dashboard --- */
 .premium-dashboard {
     background: rgba(255, 255, 255, 0.02);
@@ -2425,9 +2426,11 @@ button:active,
     .kpi-grid {
         grid-template-columns: 1fr;
     }
+
     .charts-grid {
         grid-template-columns: 1fr;
     }
+
     .chart-container-wrapper.main-chart {
         grid-column: auto;
         grid-row: auto;
@@ -2442,16 +2445,43 @@ button:active,
 }
 
 @keyframes upgrade-pulse {
-    0% { box-shadow: 0 0 0 0 rgba(255, 0, 242, 0.4); }
-    70% { box-shadow: 0 0 0 10px rgba(255, 0, 242, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(255, 0, 242, 0); }
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 0, 242, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(255, 0, 242, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 0, 242, 0);
+    }
 }
 
 .premium-modal-content {
-    max-width: 600px;
+    width: 95%;
+    max-width: 700px;
     background: rgba(10, 10, 10, 0.95);
     border: 1px solid rgba(255, 0, 242, 0.3);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 0 50px rgba(255, 0, 242, 0.1);
+    padding: 30px;
+    position: relative;
+    overflow: hidden;
 }
+
+/* Glassmorphism gradient border effect */
+.premium-modal-content::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 0, 242, 0.8), transparent);
+}
+
 
 .premium-benefits {
     display: grid;
@@ -2484,20 +2514,29 @@ button:active,
     border-radius: 20px;
     padding: 24px;
     text-align: center;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
     position: relative;
+    overflow: hidden;
 }
 
 .pricing-card:hover {
     border-color: rgba(255, 255, 255, 0.3);
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.06);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
 .pricing-card.highlighted {
     border-color: #ff00f2;
-    background: rgba(255, 0, 242, 0.05);
+    background: linear-gradient(135deg, rgba(255, 0, 242, 0.1), rgba(10, 10, 10, 0.8));
     transform: scale(1.05);
+    box-shadow: 0 15px 40px rgba(255, 0, 242, 0.2);
+}
+
+.pricing-card.highlighted:hover {
+    transform: scale(1.08) translateY(-5px);
+    box-shadow: 0 20px 50px rgba(255, 0, 242, 0.3);
 }
 
 .plan-name {
@@ -2540,9 +2579,38 @@ button:active,
 }
 
 @media (max-width: 600px) {
-    .premium-benefits { grid-template-columns: 1fr; }
-    .pricing-grid { flex-direction: column; }
-    .pricing-card.highlighted { transform: none; margin: 10px 0; }
+    .premium-benefits {
+        grid-template-columns: 1fr;
+    }
+
+    .pricing-grid {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .pricing-card.highlighted {
+        transform: none;
+        margin: 10px 0;
+        order: -1;
+        /* Show popular plan first on mobile */
+    }
+
+    .premium-modal-content {
+        padding: 20px;
+        width: 100%;
+        height: 100%;
+        max-height: 100%;
+        border-radius: 0;
+        border: none;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        overflow-y: auto;
+    }
+
+    .premium-modal-content .modal-header h2 {
+        font-size: 1.5rem;
+    }
 }
 
 /* --- UPI Payment UI --- */
@@ -2634,7 +2702,8 @@ button:active,
     opacity: 1 !important;
     visibility: visible !important;
     background: rgba(15, 15, 15, 0.98) !important;
-    transform: none !important; /* Reset transform in case of animation conflict */
+    transform: none !important;
+    /* Reset transform in case of animation conflict */
     animation: fadeInPortal 0.5s ease-out forwards !important;
 }
 

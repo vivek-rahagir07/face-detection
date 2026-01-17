@@ -154,7 +154,7 @@ let moodChart = null;
 let moodHistory = [];
 
 // Advanced Detection State
-const VALIDATION_THRESHOLD = 5;
+const VALIDATION_THRESHOLD = 3; // Reduced from 5 for faster attendance
 const detectionHistory = {};
 
 // Set Live Date & Time
@@ -752,6 +752,7 @@ async function loadModels(url) {
 
         await Promise.all([
             faceapi.nets.ssdMobilenetv1.loadFromUri(url),
+            faceapi.nets.tinyFaceDetector.loadFromUri(url), // Load TinyFace for mobile logic
             faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
             faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
             faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL)
@@ -1741,50 +1742,81 @@ video.addEventListener('play', () => {
         if (!canvas.width || canvas.width !== video.videoWidth) {
             updateDisplaySize();
         }
-        const detections = await faceapi.detectAllFaces(video)
-            .withFaceLandmarks()
-            .withFaceDescriptors()
-            .withFaceExpressions();
 
-        if (detections && detections.length > 0) {
-            const results = detections.map(d => {
-                return faceMatcher ? faceMatcher.findBestMatch(d.descriptor) : { label: 'unknown', distance: 1.0 };
-            });
+        try {
+            let detections;
 
-            if (!wasFaceDetected) {
-                CyberAudio.playLock();
-                wasFaceDetected = true;
+            // MOBILE OPTIMIZATION: Use TinyFaceDetector for phones (much faster)
+            if (isMobile) {
+                // Use TinyFaceDetector with 0.3 score threshold (balance of speed/accuracy)
+                // Note: TinyFace is less accurate but way faster. 
+                const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.3 });
+                detections = await faceapi.detectAllFaces(video, options)
+                    .withFaceLandmarks()
+                    .withFaceDescriptors()
+                    .withFaceExpressions();
+            } else {
+                // DESKTOP: Use SSD MobileNet with 0.2 threshold (high accuracy)
+                const options = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.2 });
+                detections = await faceapi.detectAllFaces(video, options)
+                    .withFaceLandmarks()
+                    .withFaceDescriptors()
+                    .withFaceExpressions();
             }
 
-            window.lastDetections = detections;
-            window.lastResults = results;
+            if (detections && detections.length > 0) {
+                const results = detections.map(d => {
+                    return faceMatcher ? faceMatcher.findBestMatch(d.descriptor) : { label: 'unknown', distance: 1.0 };
+                });
 
-            if (scanIndicator) scanIndicator.style.display = 'block';
+                if (!wasFaceDetected) {
+                    CyberAudio.playLock();
+                    wasFaceDetected = true;
+                }
 
-            detections.forEach((detection, i) => {
-                const result = results[i];
-                const isMatch = result.label !== 'unknown' && result.distance <= 0.6;
-                if (isMatch) {
-                    detectionHistory[result.label] = (detectionHistory[result.label] || 0) + 1;
-                    if (detectionHistory[result.label] >= VALIDATION_THRESHOLD) {
-                        markAttendance(result.label, topExpression);
-                        detectionHistory[result.label] = 0;
+                window.lastDetections = detections;
+                window.lastResults = results;
+
+                if (scanIndicator) scanIndicator.style.display = 'block';
+
+                detections.forEach((detection, i) => {
+                    const result = results[i];
+                    // On mobile, loose distance slightly to 0.65 as TinyFace descriptors vary more
+                    const matchThreshold = isMobile ? 0.65 : 0.6;
+                    const isMatch = result.label !== 'unknown' && result.distance <= matchThreshold;
+
+                    if (isMatch) {
+                        detectionHistory[result.label] = (detectionHistory[result.label] || 0) + 1;
+
+                        // SPEED OPTIMIZATION: Faster validation (2 frames for mobile/fast, 3 for desktop)
+                        const speedThreshold = isMobile ? 2 : 3;
+
+                        if (detectionHistory[result.label] >= speedThreshold) {
+                            // Extract top expression
+                            const expressions = detection.expressions;
+                            const topExpression = Object.entries(expressions).reduce((a, b) => a[1] > b[1] ? a : b)[0];
+                            markAttendance(result.label, topExpression);
+                            detectionHistory[result.label] = 0;
+                        }
+                    }
+                });
+
+                const activeMatchLabels = results.filter(r => r.label !== 'unknown').map(r => r.label);
+                for (let k in detectionHistory) {
+                    if (!activeMatchLabels.includes(k)) {
+                        detectionHistory[k] = Math.max(0, detectionHistory[k] - 1);
                     }
                 }
-            });
 
-            const activeMatchLabels = results.filter(r => r.label !== 'unknown').map(r => r.label);
-            for (let k in detectionHistory) {
-                if (!activeMatchLabels.includes(k)) {
-                    detectionHistory[k] = Math.max(0, detectionHistory[k] - 1);
-                }
+            } else {
+                window.lastDetections = [];
+                window.lastResults = [];
+                wasFaceDetected = false;
+                if (scanIndicator) scanIndicator.style.display = 'none';
             }
-
-        } else {
-            window.lastDetections = [];
-            window.lastResults = [];
-            wasFaceDetected = false;
-            if (scanIndicator) scanIndicator.style.display = 'none';
+        } catch (err) {
+            console.warn("Detection Loop Error:", err);
+            // Non-blocking error, allow loop to retry
         }
     }, DETECTION_INTERVAL);
 
