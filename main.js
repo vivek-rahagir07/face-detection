@@ -165,7 +165,7 @@ const DETECTION_INTERVAL = isMobile ? 250 : 100;
 let hourlyChart = null;
 
 // Advanced Detection State
-const VALIDATION_THRESHOLD = 5;
+const VALIDATION_THRESHOLD = 3;
 const detectionHistory = {};
 
 // Set Live Date & Time
@@ -191,13 +191,12 @@ function speak(text, gender = 'male') {
 
 
 
+        let selectedVoice = null;
         if (gender === 'female') {
-
             selectedVoice = voices.find(v => v.name.includes('Samantha') || v.name.includes('Google US English') || v.name.includes('Victoria') || v.name.includes('Female'));
             utterance.pitch = 1.1;
             utterance.rate = 1.0;
         } else {
-
             selectedVoice = voices.find(v => v.name.includes('Alex') || v.name.includes('Google UK English Male') || v.name.includes('Daniel') || v.name.includes('Male'));
             utterance.pitch = 0.9;
             utterance.rate = 1.0;
@@ -1163,7 +1162,7 @@ function startDbListener() {
                 const uid = item.dataset.uid;
                 const name = item.dataset.name;
                 if (uid && name) {
-                    markAttendance(name, uid);
+                    markAttendance(name);
                 }
             }
         });
@@ -1301,7 +1300,7 @@ async function renderPeopleManagement() {
             card.querySelector('.edit-btn').onclick = () => openEditModal(user.id, user);
             const markBtn = card.querySelector('.mark-present-today-btn');
             if (markBtn) {
-                markBtn.onclick = () => markAttendance(user.name, user.id);
+                markBtn.onclick = () => markAttendance(user.name);
             }
         }
         fragment.appendChild(card);
@@ -1639,10 +1638,7 @@ video.addEventListener('play', () => {
                     if (isMatch) {
                         detectionHistory[result.label] = (detectionHistory[result.label] || 0) + 1;
                         if (detectionHistory[result.label] >= VALIDATION_THRESHOLD) {
-                            const docId = nameToDocId[result.label];
-                            if (docId) {
-                                markAttendance(result.label, docId);
-                            }
+                            markAttendance(result.label);
                             detectionHistory[result.label] = 0;
                         }
                     }
@@ -1835,15 +1831,14 @@ function resetRegistrationForm() {
     inputs.forEach(i => i.value = "");
 }
 
-async function markAttendance(name, docId) {
+async function markAttendance(name) {
+    const docId = nameToDocId[name];
     if (!docId) return;
+
     const now = Date.now();
     const lastMarked = attendanceCooldowns[name] || 0;
-
-    // 1 minute cooldown per person
+    // 1 minute cooldown to prevent duplicate triggers
     if (now - lastMarked < 60000) return;
-
-    attendanceCooldowns[name] = now;
 
     try {
         const userDocRef = doc(db, COLL_USERS, docId);
@@ -1853,12 +1848,18 @@ async function markAttendance(name, docId) {
         if (!userSnap.exists()) return;
         const userData = userSnap.data();
 
-        const alreadyAttendedToday = userData.lastAttendance === todayDate;
+        // If already attended today, silently return (no locking out)
+        if (userData.lastAttendance === todayDate) return;
 
-        // If already attended today, we don't need to do anything further
-        if (alreadyAttendedToday) return;
+        // Perform the update first to ensure data integrity
+        await updateDoc(userDocRef, {
+            lastAttendance: todayDate,
+            attendanceCount: increment(1)
+        });
 
-        // Perform side effects ONLY if it's a new attendance for today
+        // ONLY AFTER SUCCESS: Mark cooldown and perform side effects
+        attendanceCooldowns[name] = now;
+
         if (navigator.vibrate) navigator.vibrate(100);
         CyberAudio.playMatch();
         showToast(`Attendance marked: ${name}`);
@@ -1868,20 +1869,15 @@ async function markAttendance(name, docId) {
 
         const nowSpoken = Date.now();
         const lastTimeSpoken = lastSpoken[name] || 0;
-        if (nowSpoken - lastTimeSpoken > 10000) {
+        // 2 second buffer for the same person to avoid accidental double-speak
+        if (nowSpoken - lastTimeSpoken > 2000) {
             const gender = userData.gender || 'male';
-            speak(`Welcome ${name}`, gender);
+            speak(`${name} present`, gender);
             lastSpoken[name] = nowSpoken;
         }
 
-        await updateDoc(userDocRef, {
-            lastAttendance: todayDate,
-            attendanceCount: increment(1)
-        });
-
         // Save to History Collection
-        const dateId = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-
+        const dateId = new Date().toISOString().split('T')[0];
         await addDoc(collection(db, COLL_ATTENDANCE), {
             spaceId: currentSpace.id,
             userId: docId,
@@ -1892,22 +1888,18 @@ async function markAttendance(name, docId) {
             timestamp: new Date()
         });
 
-        // Track unique dates for this space
         await updateDoc(doc(db, COLL_SPACES, currentSpace.id), {
             [`historyDates.${dateId}`]: true
         });
 
-        // Visual Success Feedback (throttled)
         const wrapper = document.querySelector('.camera-wrapper');
-        if (wrapper && !wrapper.classList.contains('success-pulse')) {
+        if (wrapper) {
             wrapper.classList.add('success-pulse');
             setTimeout(() => wrapper.classList.remove('success-pulse'), 400);
         }
 
     } catch (err) {
         console.error("Attendance Update Error:", err);
-        // Clear cooldown on error so we can retry
-        delete attendanceCooldowns[name];
     }
 }
 

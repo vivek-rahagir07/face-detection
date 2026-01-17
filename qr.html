@@ -308,6 +308,15 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, updateDoc, doc, getDoc, getDocs, query, where, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        const firebaseConfig = {
+            apiKey: "AIzaSyAf9xAmQtFZcvE8tvxpI-tU5teS89Dc6II",
+            authDomain: "live-face-attendence-detection.firebaseapp.com",
+            projectId: "live-face-attendence-detection",
+            storageBucket: "live-face-attendence-detection.firebasestorage.app",
+            messagingSenderId: "67072118378",
+            appId: "1:67072118378:web:a988976e9233434b3fc413",
+            measurementId: "G-RWGQV273WH"
+        };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -516,7 +525,7 @@
 
         function finishSubmit(name, gender, spaceData) {
             if (spaceData.config && spaceData.config.voiceEnabled) {
-                speak(`Welcome ${name}`, gender, true);
+                speak(`${name} present`, gender, true);
             }
             formView.style.display = 'none';
             successView.style.display = 'block';
