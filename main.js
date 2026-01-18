@@ -479,6 +479,8 @@ function resetTimer(seconds) {
 btnPortalJoin.addEventListener('click', handleJoin);
 btnPortalCreate.addEventListener('click', handleCreate);
 btnExitWorkspace.addEventListener('click', () => {
+    stopVideo();
+    unsubscribeUsers && unsubscribeUsers();
     stopQRRotation();
     currentSpace = null;
     showView('view-portal');
@@ -841,6 +843,7 @@ async function initSystem() {
 // initSystem();
 
 function startVideo() {
+    if (video.srcObject) return; // Already running
     statusBadge.innerText = "Accessing Camera...";
 
     const constraints = {
@@ -904,6 +907,17 @@ function startVideo() {
             helpBtn.onclick = () => alert("1. Click the lock icon in the address bar.\n2. Ensure Camera is set to 'Allow'.\n3. Refresh the page.");
             loadingOverlay.appendChild(helpBtn);
         });
+}
+
+function stopVideo() {
+    if (video.srcObject) {
+        console.log("Stopping camera...");
+        const tracks = video.srcObject.getTracks();
+        tracks.forEach(track => track.stop());
+        video.srcObject = null;
+        statusBadge.innerText = "Camera Off";
+        statusBadge.className = "status-badge status-loading";
+    }
 }
 
 
@@ -2042,20 +2056,24 @@ function setMode(mode) {
         document.getElementById('btn-mode-reg').classList.add('active');
         statusBadge.innerText = "Registration Mode";
         updateRegistrationForm(); // Ensure fields are fresh
+        startVideo();
     } else if (mode === 'config') {
         configForm.classList.remove('hidden');
         document.getElementById('btn-mode-config').classList.add('active');
         statusBadge.innerText = "Configuration Mode";
         syncConfigToggles();
+        stopVideo();
     } else if (mode === 'analytics') {
         analyticsPanel.classList.remove('hidden');
         document.getElementById('btn-mode-analytics').classList.add('active');
         statusBadge.innerText = "Analytics Mode";
         renderPeopleManagement();
+        stopVideo();
     } else {
         attendInfo.classList.remove('hidden');
         document.getElementById('btn-mode-attend').classList.add('active');
         statusBadge.innerText = "Attendance Mode";
+        startVideo();
     }
 }
 
