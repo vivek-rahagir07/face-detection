@@ -2097,10 +2097,10 @@ async function exportToExcel() {
         );
         const attendSnap = await getDocs(attendQuery);
 
-        // 2. Map data: userId -> date -> time (HH:MM:SS AM/PM)
+        // 2. Map data: userId -> date -> time
         const attendanceMap = {};
         const uniqueDates = new Set();
-        const dateTotals = {}; // For the bottom summary row
+        const dateTotals = {};
 
         attendSnap.forEach(snap => {
             const data = snap.data();
@@ -2108,7 +2108,6 @@ async function exportToExcel() {
 
             const timeStr = data.timestamp ? new Date(data.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'P';
 
-            // Only keep the first sighting of the day if there are multiples
             if (!attendanceMap[data.userId][data.date]) {
                 attendanceMap[data.userId][data.date] = `P (${timeStr})`;
                 dateTotals[data.date] = (dateTotals[data.date] || 0) + 1;
@@ -2119,15 +2118,16 @@ async function exportToExcel() {
         const sortedDates = Array.from(uniqueDates).sort();
         const totalDatesCount = sortedDates.length;
 
-        // 3. Build Headers
+        // 3. Build CSV Header
         const headers = ["Name", "Reg No", "Course", "Phone", "Days Present", "Attendance %", ...sortedDates];
+        let csvContent = headers.map(h => `"${h}"`).join(",") + "\n";
 
-        // 4. Build Rows
-        const rows = allUsersData.map(user => {
+        // 4. Build CSV Rows (Students)
+        allUsersData.forEach(user => {
             const presentDays = Object.keys(attendanceMap[user.id] || {}).length;
             const percentage = totalDatesCount > 0 ? ((presentDays / totalDatesCount) * 100).toFixed(1) + '%' : '0%';
 
-            const userRow = [
+            const row = [
                 user.name || 'Unknown',
                 user.regNo || 'N/A',
                 user.course || 'N/A',
@@ -2136,64 +2136,26 @@ async function exportToExcel() {
                 percentage
             ];
 
-            // Add "P (time)" or nothing for each date
             sortedDates.forEach(date => {
-                userRow.push(attendanceMap[user.id]?.[date] || '-');
+                row.push(attendanceMap[user.id]?.[date] || '-');
             });
 
-            return userRow;
+            csvContent += row.map(cell => `"${cell}"`).join(",") + "\n";
         });
 
-        // 5. Build Summary Row (Daily Totals)
+        // 5. Build CSV Summary Row (Daily Totals)
         const summaryRow = ["DAILY TOTALS", "", "", "", "", ""];
         sortedDates.forEach(date => {
             summaryRow.push(dateTotals[date] || 0);
         });
+        csvContent += summaryRow.map(cell => `"${cell}"`).join(",") + "\n";
 
-        // 6. Generate Styled HTML for Excel
-        let html = `
-            <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-            <head>
-                <meta charset="UTF-8">
-                <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Master Attendance</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
-                <style>
-                    th { background-color: #00f2ff; color: #000; font-weight: bold; border: 1pt solid #000; padding: 12px; }
-                    td { border: 0.5pt solid #ccc; text-align: center; vertical-align: middle; }
-                    .summary-row td { background-color: #f1f5f9; font-weight: bold; border-top: 2pt solid #000; }
-                </style>
-            </head>
-            <body>
-                <h2 style="text-align: center; color: #00f2ff; font-family: sans-serif;">${currentSpace.name} - Master Attendance Report</h2>
-                <table border="1">
-                    <thead>
-                        <tr>
-                            ${headers.map(h => `<th>${h}</th>`).join('')}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rows.map(r => `
-                            <tr>
-                                ${r.map((c, idx) => {
-            const isPresent = String(c).startsWith('P (');
-            const style = isPresent ? 'background-color: #dcfce7; color: #166534; font-weight: bold;' : '';
-            return `<td style="${style} padding: 8px;">${c}</td>`;
-        }).join('')}
-                            </tr>
-                        `).join('')}
-                        <tr class="summary-row">
-                            ${summaryRow.map(c => `<td style="background-color: #f1f5f9; font-weight: bold; padding: 10px;">${c}</td>`).join('')}
-                        </tr>
-                    </tbody>
-                </table>
-            </body>
-            </html>
-        `;
-
-        const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+        // 6. Trigger Download as .csv (Excel compatible)
+        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = `Master_Attendance_${currentSpace.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xls`;
+        link.download = `Master_Attendance_${currentSpace.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
         link.click();
 
         showToast("Master Report Exported!");
