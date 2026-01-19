@@ -2,6 +2,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, updateDoc, doc, getDoc, onSnapshot, increment, query, where, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { firebaseConfig } from "./firebase-config.js";
+
 
 
 // --- PWA Service Worker Registration ---
@@ -214,18 +216,9 @@ function speak(text, gender = 'male') {
     }
 }
 
+
 // Firebase
 
-
-const firebaseConfig = {
-    apiKey: "AIzaSyAf9xAmQtFZcvE8tvxpI-tU5teS89Dc6II",
-    authDomain: "live-face-attendence-detection.firebaseapp.com",
-    projectId: "live-face-attendence-detection",
-    storageBucket: "live-face-attendence-detection.firebasestorage.app",
-    messagingSenderId: "67072118378",
-    appId: "1:67072118378:web:a988976e9233434b3fc413",
-    measurementId: "G-RWGQV273WH"
-};
 
 try {
     const app = initializeApp(firebaseConfig);
