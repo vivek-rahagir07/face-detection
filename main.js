@@ -2122,8 +2122,14 @@ async function exportToExcel() {
         const headers = ["Name", "Reg No", "Course", "Phone", "Days Present", "Attendance %", ...sortedDates];
         let csvContent = headers.map(h => `"${h}"`).join(",") + "\n";
 
-        // 4. Build CSV Rows (Students)
-        allUsersData.forEach(user => {
+        // 4. Build CSV Rows (Students - Sorted Alphabetically)
+        const sortedUsers = [...allUsersData].sort((a, b) => {
+            const nameA = (a.name || '').toLowerCase();
+            const nameB = (b.name || '').toLowerCase();
+            return nameA.localeCompare(nameB);
+        });
+
+        sortedUsers.forEach(user => {
             const presentDays = Object.keys(attendanceMap[user.id] || {}).length;
             const percentage = totalDatesCount > 0 ? ((presentDays / totalDatesCount) * 100).toFixed(1) + '%' : '0%';
 
