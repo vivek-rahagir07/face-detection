@@ -2088,7 +2088,7 @@ async function exportToExcel() {
     }
 
     try {
-        showToast("Generating report...", "info");
+        showToast("Generating Master Report...", "info");
 
         // 1. Fetch all attendance records for this space
         const attendQuery = query(
@@ -2100,6 +2100,7 @@ async function exportToExcel() {
         // 2. Map data: userId -> date -> time (HH:MM:SS AM/PM)
         const attendanceMap = {};
         const uniqueDates = new Set();
+        const dateTotals = {}; // For the bottom summary row
 
         attendSnap.forEach(snap => {
             const data = snap.data();
@@ -2110,23 +2111,29 @@ async function exportToExcel() {
             // Only keep the first sighting of the day if there are multiples
             if (!attendanceMap[data.userId][data.date]) {
                 attendanceMap[data.userId][data.date] = `P (${timeStr})`;
+                dateTotals[data.date] = (dateTotals[data.date] || 0) + 1;
             }
             uniqueDates.add(data.date);
         });
 
         const sortedDates = Array.from(uniqueDates).sort();
+        const totalDatesCount = sortedDates.length;
 
         // 3. Build Headers
-        const headers = ["Name", "Reg No", "Course", "Phone", "Total Records", ...sortedDates];
+        const headers = ["Name", "Reg No", "Course", "Phone", "Days Present", "Attendance %", ...sortedDates];
 
         // 4. Build Rows
         const rows = allUsersData.map(user => {
+            const presentDays = Object.keys(attendanceMap[user.id] || {}).length;
+            const percentage = totalDatesCount > 0 ? ((presentDays / totalDatesCount) * 100).toFixed(1) + '%' : '0%';
+
             const userRow = [
                 user.name || 'Unknown',
                 user.regNo || 'N/A',
                 user.course || 'N/A',
                 user.phone || 'N/A',
-                user.attendanceCount || 0
+                presentDays,
+                percentage
             ];
 
             // Add "P (time)" or nothing for each date
@@ -2137,35 +2144,45 @@ async function exportToExcel() {
             return userRow;
         });
 
-        // 5. Generate Styled HTML for Excel
+        // 5. Build Summary Row (Daily Totals)
+        const summaryRow = ["DAILY TOTALS", "", "", "", "", ""];
+        sortedDates.forEach(date => {
+            summaryRow.push(dateTotals[date] || 0);
+        });
+
+        // 6. Generate Styled HTML for Excel
         let html = `
             <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
             <head>
                 <meta charset="UTF-8">
-                <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Attendance Matrix</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+                <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Master Attendance</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
                 <style>
-                    th { background-color: #00f2ff; color: #000; font-weight: bold; border: 1pt solid #000; }
-                    td { border: 0.5pt solid #ccc; text-align: center; }
-                    .header-cell { background-color: #111; color: #fff; }
+                    th { background-color: #00f2ff; color: #000; font-weight: bold; border: 1pt solid #000; padding: 12px; }
+                    td { border: 0.5pt solid #ccc; text-align: center; vertical-align: middle; }
+                    .summary-row td { background-color: #f1f5f9; font-weight: bold; border-top: 2pt solid #000; }
                 </style>
             </head>
             <body>
+                <h2 style="text-align: center; color: #00f2ff; font-family: sans-serif;">${currentSpace.name} - Master Attendance Report</h2>
                 <table border="1">
                     <thead>
                         <tr>
-                            ${headers.map(h => `<th style="background-color: #00f2ff; color: black; padding: 10px;">${h}</th>`).join('')}
+                            ${headers.map(h => `<th>${h}</th>`).join('')}
                         </tr>
                     </thead>
                     <tbody>
                         ${rows.map(r => `
                             <tr>
                                 ${r.map((c, idx) => {
-            const isPresent = c.startsWith('P (');
+            const isPresent = String(c).startsWith('P (');
             const style = isPresent ? 'background-color: #dcfce7; color: #166534; font-weight: bold;' : '';
             return `<td style="${style} padding: 8px;">${c}</td>`;
         }).join('')}
                             </tr>
                         `).join('')}
+                        <tr class="summary-row">
+                            ${summaryRow.map(c => `<td style="background-color: #f1f5f9; font-weight: bold; padding: 10px;">${c}</td>`).join('')}
+                        </tr>
                     </tbody>
                 </table>
             </body>
@@ -2176,10 +2193,10 @@ async function exportToExcel() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = `attendance_matrix_${currentSpace.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xls`;
+        link.download = `Master_Attendance_${currentSpace.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xls`;
         link.click();
 
-        showToast("Excel Exported!");
+        showToast("Master Report Exported!");
     } catch (err) {
         console.error("Export Error:", err);
         alert("Failed to export: " + err.message);
