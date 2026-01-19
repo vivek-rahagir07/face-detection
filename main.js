@@ -167,7 +167,7 @@ const DETECTION_INTERVAL = isMobile ? 250 : 100;
 let hourlyChart = null;
 
 // Advanced Detection State
-const VALIDATION_THRESHOLD = 1; // Immediate marking
+const VALIDATION_THRESHOLD = 3; // Requires 3 frames of verification
 const detectionHistory = {};
 
 // Set Live Date & Time
@@ -1137,7 +1137,7 @@ function startDbListener() {
         allUsersData = tempAllData;
 
         if (labeledDescriptors.length > 0) {
-            faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.8); // 20% match threshold
+            faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.6); // Stricter match threshold
         }
 
         todayCountDisplay.innerText = presentTodayCount;
@@ -1646,7 +1646,7 @@ video.addEventListener('play', () => {
 
                 detections.forEach((detection, i) => {
                     const result = results[i];
-                    const isAttendanceMatch = result.label !== 'unknown' && result.distance <= 0.8;
+                    const isAttendanceMatch = result.label !== 'unknown' && result.distance <= 0.6;
                     if (isAttendanceMatch) {
                         detectionHistory[result.label] = (detectionHistory[result.label] || 0) + 1;
                         if (detectionHistory[result.label] >= VALIDATION_THRESHOLD) {
@@ -1702,8 +1702,8 @@ video.addEventListener('play', () => {
 
                 const box = detection.detection.box;
                 const confidence = Math.round((1 - result.distance) * 100);
-                const isAttendanceMatch = result.label !== 'unknown' && result.distance <= 0.8;
-                const isPotentialMatch = result.label !== 'unknown' && result.distance <= 0.8;
+                const isAttendanceMatch = result.label !== 'unknown' && result.distance <= 0.6;
+                const isPotentialMatch = result.label !== 'unknown' && result.distance <= 0.6;
                 const displayLabel = isPotentialMatch ? result.label : 'SEARCHING...';
 
                 const isUnknown = result.label === 'unknown';
