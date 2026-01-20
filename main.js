@@ -2256,6 +2256,10 @@ function setMode(mode) {
         isAIPaused = true; // Deactivate all background biometric processing
         startSurveillanceMonitor();
     } else {
+        if (surveillanceUnsubscribe) {
+            surveillanceUnsubscribe();
+            surveillanceUnsubscribe = null;
+        }
         document.body.classList.remove('sentry-fullscreen-mode');
         isAIPaused = false; // Reactivate background processing
         attendInfo.classList.remove('hidden');

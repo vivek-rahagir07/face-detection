@@ -497,8 +497,11 @@
 
         const surveillanceContainer = document.getElementById('surveillance-container');
         const video = document.getElementById('surveillance-video');
+        const canvas = document.getElementById('surveillance-overlay');
+        const poseBadge = document.getElementById('pose-badge');
         const integrityBar = document.getElementById('integrity-bar');
         const integrityPercent = document.getElementById('integrity-percent');
+        const alertOverlay = document.getElementById('alert-overlay');
 
         let isReady = false;
         let currentSpaceData = null;
