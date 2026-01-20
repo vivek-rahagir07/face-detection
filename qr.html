@@ -715,7 +715,7 @@
             leafletMap.invalidateSize();
         }
 
-        async function activateSentry() {
+        async function submitAttendance() {
             if (!isReady) return;
 
             const nameInput = document.getElementById('name');
@@ -725,7 +725,7 @@
             if (!spaceId || !nonce) return showStatus("Invalid CognitoAttend Link.", "error");
 
             btnSubmit.disabled = true;
-            showStatus("Activating Biometric Link<span class=\"loading-dots\"></span>", "");
+            showStatus("Verifying Identity<span class=\"loading-dots\"></span>", "");
 
             try {
                 // 1. Verify Space and Nonce
@@ -799,24 +799,7 @@
 
                     await recordAttendanceHistory(userDoc.id, name, regNo || userData.regNo || '', course || userData.course || '', gender);
                 } else {
-                    const newUserDoc = await addDoc(collection(db, 'users'), {
-                        name: name,
-                        spaceId: spaceId,
-                        lastAttendance: todayStr,
-                        attendanceCount: 1,
-                        gender: gender,
-                        regNo: regNo,
-                        course: course,
-                        email: email,
-                        phone: phone,
-                        bloodGroup: bloodGroup,
-                        weight: weight,
-                        descriptor: null,
-                        createdAt: new Date().toISOString(),
-                        type: 'qr-manual'
-                    });
-
-                    await recordAttendanceHistory(newUserDoc.id, name, regNo, course, gender);
+                    throw new Error("You are not registered. Please talk to an admin.");
                 }
 
                 finishSubmit(name, gender, spaceData);
@@ -869,9 +852,9 @@
             statusDiv.className = type;
         }
 
-        btnSubmit.addEventListener('click', activateSentry);
+        btnSubmit.addEventListener('click', submitAttendance);
         document.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') activateSentry();
+            if (e.key === 'Enter') submitAttendance();
         });
 
         initSystem();
