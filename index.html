@@ -243,10 +243,11 @@
             <div style="display: flex; gap: 8px; align-items: center;" class="mobile-hidden">
                 <button id="btn-mode-surveillance-top" class="btn-secondary btn-sm"
                     style="border-color: var(--accent); color: var(--accent);">🛰️ Exam Surveillance</button>
-                <button id="btn-history" class="btn-secondary btn-sm" aria-label="Open Attendance History">📜
+                <button id="btn-history" class="btn-secondary btn-sm" aria-label="Open History">📜
                     History</button>
             </div>
             <div id="system-status" class="status-badge status-loading" aria-live="polite">Initializing System...</div>
+            <button id="btn-exit-sentry" class="btn-exit-sentry">CLOSE SURVEILLANCE</button>
         </div>
 
         <!-- Mobile Side Navigation -->
@@ -258,11 +259,11 @@
             <div class="sidebar-content">
                 <div class="sidebar-section">
                     <h4>Navigation</h4>
-                    <button class="nav-item active" data-mode="attend">🕒 Attendance</button>
+                    <button class="nav-item active" data-mode="attend">🕒 Attendance Monitor</button>
                     <button class="nav-item" data-mode="surveillance">🛰️ Exam Surveillance</button>
-                    <button class="nav-item" data-mode="reg">👤 Registration</button>
-                    <button class="nav-item" data-mode="analytics">👥 People Stats</button>
-                    <button class="nav-item" data-mode="config">⚙️ Settings</button>
+                    <button class="nav-item" data-mode="reg">👤 Student Registration</button>
+                    <button class="nav-item" data-mode="analytics">👥 Analytics & Logs</button>
+                    <button class="nav-item" data-mode="config">⚙️ System Config</button>
                 </div>
                 <div class="sidebar-section">
                     <h4>Actions</h4>
@@ -305,7 +306,7 @@
                 <div id="loading-overlay" class="loading-screen">
                     <div class="spinner"></div>
                     <h3 id="loading-text">Loading AI Models...</h3>
-                    <p>Please ensure camera access is granted</p>
+                    <p>Securing camera feed & biometric links</p>
                 </div>
                 <div id="scan-indicator"
                     style="display: none; position: absolute; top: 20px; left: 20px; background: rgba(0, 242, 255, 0.8); color: black; padding: 5px 12px; border-radius: 20px; font-weight: 800; font-size: 0.7rem; z-index: 10; animation: blink 1s infinite;">
@@ -321,17 +322,17 @@
                     </div>
                     <div class="stat-box">
                         <div class="stat-value" id="today-count">0</div>
-                        <div class="stat-label">Present Today</div>
+                        <div class="stat-label">Students Present</div>
                     </div>
                 </div>
 
 
                 <div class="mode-toggle">
-                    <button id="btn-mode-attend" class="btn-secondary active" title="Mark Attendance">🕒</button>
-                    <button id="btn-mode-surveillance" class="btn-secondary" title="Surveillance Mode">🛰️</button>
-                    <button id="btn-mode-reg" class="btn-secondary" title="Add New User">👤</button>
-                    <button id="btn-mode-analytics" class="btn-secondary" title="View Stats">👥</button>
-                    <button id="btn-mode-config" class="btn-secondary" title="Settings">⚙️</button>
+                    <button id="btn-mode-attend" class="btn-secondary active" title="Presence Monitor">🕒</button>
+                    <button id="btn-mode-surveillance" class="btn-secondary" title="Tactical HUD">🛰️</button>
+                    <button id="btn-mode-reg" class="btn-secondary" title="Unit Onboarding">👤</button>
+                    <button id="btn-mode-analytics" class="btn-secondary" title="Division Stats">👥</button>
+                    <button id="btn-mode-config" class="btn-secondary" title="System Config">⚙️</button>
                 </div>
 
 
@@ -379,15 +380,15 @@
                         <label
                             style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
                             <span>
-                                <span style="display: block; font-weight: 600; color: #fff;">Exam Surveillance</span>
-                                <small style="color: var(--text-muted); font-size: 0.65rem;">Enable AI proctoring & live
-                                    monitoring</small>
+                                <span style="display: block; font-weight: 600; color: #fff;">Sentry Protocol</span>
+                                <small style="color: var(--text-muted); font-size: 0.65rem;">Enable AI behavioral
+                                    proctoring & HUD telemetry</small>
                             </span>
                             <input type="checkbox" id="config-exam-mode">
                         </label>
                     </div>
 
-                    <h3 style="margin-top: 15px;">Geofencing Settings</h3>
+                    <h3 style="margin-top: 15px;">Perimeter Security</h3>
                     <div class="form-group"
                         style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 12px; border: 1px solid var(--border);">
                         <label style="display: flex; align-items: center; gap: 8px;">
@@ -415,7 +416,7 @@
                         </div>
                     </div>
 
-                    <h3 style="margin-top: 15px;">Auto-Onboarding</h3>
+                    <h3 style="margin-top: 15px;">Fleet Link Activation</h3>
                     <div class="form-group"
                         style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 12px; border: 1px solid var(--border);">
                         <button id="btn-generate-magic" class="btn-secondary btn-sm" style="width: 100%;">🔗 Generate
@@ -456,7 +457,7 @@
                         <!-- Live session cards will appear here -->
                         <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">
                             <div style="font-size: 2rem; margin-bottom: 10px;">🛡️</div>
-                            <p>No active proctoring sessions.<br><small>Students must enable Exam Mode in their
+                            <p>No active surveillance sessions.<br><small>Students must enable Exam Mode in their
                                     link.</small></p>
                         </div>
                     </div>

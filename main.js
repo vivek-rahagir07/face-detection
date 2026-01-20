@@ -2163,6 +2163,11 @@ document.getElementById('btn-mode-reg').addEventListener('click', () => setMode(
 document.getElementById('btn-mode-analytics').addEventListener('click', () => setMode('analytics'));
 document.getElementById('btn-mode-config').addEventListener('click', () => setMode('config'));
 
+const btnExitSentry = document.getElementById('btn-exit-sentry');
+if (btnExitSentry) {
+    btnExitSentry.addEventListener('click', () => setMode('attendance'));
+}
+
 const mobileNavItems = document.querySelectorAll('.nav-item');
 mobileNavItems.forEach(item => {
     item.addEventListener('click', () => {
@@ -2231,27 +2236,29 @@ function setMode(mode) {
     if (mode === 'registration') {
         regForm.classList.remove('hidden');
         document.getElementById('btn-mode-reg').classList.add('active');
-        statusBadge.innerText = "Registration Mode";
+        statusBadge.innerText = "Student Registration";
         updateRegistrationForm();
     } else if (mode === 'config') {
         configForm.classList.remove('hidden');
         document.getElementById('btn-mode-config').classList.add('active');
-        statusBadge.innerText = "Configuration Mode";
+        statusBadge.innerText = "Configuration";
         syncConfigToggles();
     } else if (mode === 'analytics') {
         analyticsPanel.classList.remove('hidden');
         document.getElementById('btn-mode-analytics').classList.add('active');
-        statusBadge.innerText = "Analytics Mode";
+        statusBadge.innerText = "Analytics & Logs";
         renderPeopleManagement();
     } else if (mode === 'surveillance') {
         surveillanceModePanel.classList.remove('hidden');
         document.getElementById('btn-mode-surveillance').classList.add('active');
-        statusBadge.innerText = "Command Center";
+        statusBadge.innerText = "Exam Surveillance";
+        document.body.classList.add('sentry-fullscreen-mode');
         startSurveillanceMonitor();
     } else {
+        document.body.classList.remove('sentry-fullscreen-mode');
         attendInfo.classList.remove('hidden');
         document.getElementById('btn-mode-attend').classList.add('active');
-        statusBadge.innerText = "Attendance Mode";
+        statusBadge.innerText = "Attendance Monitor";
     }
 }
 
@@ -2277,7 +2284,7 @@ function startSurveillanceMonitor() {
         countBadge.innerText = `${activeIds.length} Active`;
 
         if (activeIds.length === 0) {
-            grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);"><div style="font-size: 2rem; margin-bottom: 10px;">🛡️</div><p>No active proctoring sessions.<br><small>Students must enable Exam Mode in their link.</small></p></div>`;
+            grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);"><div style="font-size: 2rem; margin-bottom: 10px;">🛡️</div><p>No active surveillance sessions.<br><small>Participants must activate Surveillance Mode in their link.</small></p></div>`;
             return;
         }
 

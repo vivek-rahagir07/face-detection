@@ -437,15 +437,15 @@
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
-                <button id="btn-submit" aria-label="Mark Presence">✅ Submit Attendance</button>
+                <button id="btn-submit" aria-label="Activate Presence">🚀 Activate CognitoAttend HUD</button>
             </div>
-            <div id="status" aria-live="polite">Ready to submit.</div>
+            <div id="status" aria-live="polite">Ready to link.</div>
         </div>
 
         <div id="success-view" style="display: none;">
-            <div style="font-size: 4rem; color: var(--success); margin-bottom: 20px;">✔</div>
-            <h2 style="color: var(--success); margin-bottom: 10px;">Presence Marked!</h2>
-            <p>Your attendance has been recorded successfully. You can close this window now.</p>
+            <div style="font-size: 4rem; color: var(--success); margin-bottom: 20px;">⚡</div>
+            <h2 style="color: var(--success); margin-bottom: 10px;">Presence Session Active!</h2>
+            <p>Your biometric data is being securely verified. Keep this window open.</p>
         </div>
 
         <div id="error-view" style="display: none;">
@@ -463,6 +463,7 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, updateDoc, doc, getDoc, getDocs, query, where, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { firebaseConfig } from "./firebase-config.js";
+        import { SentryCore } from "./sentry/sentry-core.js";
 
 
         const app = initializeApp(firebaseConfig);
@@ -496,9 +497,6 @@
 
         const surveillanceContainer = document.getElementById('surveillance-container');
         const video = document.getElementById('surveillance-video');
-        const canvas = document.getElementById('surveillance-overlay');
-        const poseBadge = document.getElementById('pose-badge');
-        const alertOverlay = document.getElementById('alert-overlay');
         const integrityBar = document.getElementById('integrity-bar');
         const integrityPercent = document.getElementById('integrity-percent');
 
@@ -510,11 +508,9 @@
             localStorage.setItem('cognito_device_id', deviceID);
         }
 
-        let isSuspicious = false;
-        let suspiciousStartTime = null;
+        let sentry = null;
         let surveillanceActive = false;
         let sessionStartTime = Date.now();
-        let integrityScore = 100;
 
         async function initSystem() {
             try {
@@ -567,14 +563,21 @@
         async function startSurveillance() {
             try {
                 showStatus("Initializing Proctoring AI...", "");
-                await faceapi.nets.tinyFaceDetector.loadFromUri('https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights');
-                await faceapi.nets.faceLandmark68TinyNet.loadFromUri('https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights');
+
+                sentry = new SentryCore(video, canvas, {
+                    badge: poseBadge,
+                    bar: integrityBar,
+                    percent: integrityPercent,
+                    overlay: alertOverlay
+                });
+
+                await sentry.initModels();
 
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
                 video.srcObject = stream;
                 surveillanceActive = true;
 
-                detectPose();
+                sentry.start();
                 startHeartbeat();
             } catch (e) {
                 console.error("Surveillance Error:", e);
@@ -582,95 +585,7 @@
             }
         }
 
-        let currentBehavior = "SECURE";
-
-        async function detectPose() {
-            if (!surveillanceActive) return;
-
-            const displaySize = { width: video.videoWidth, height: video.videoHeight };
-            if (displaySize.width === 0) {
-                requestAnimationFrame(detectPose);
-                return;
-            }
-
-            faceapi.matchDimensions(canvas, displaySize);
-            const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks(true);
-
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            if (detection) {
-                // Draw Mesh HUD
-                const resizedLandmarks = faceapi.resizeResults(detection, displaySize).landmarks;
-                ctx.strokeStyle = isSuspicious ? '#ef4444' : 'rgba(0, 242, 255, 0.4)';
-                ctx.lineWidth = 1;
-
-                // Sketchy Mesh effect
-                const points = resizedLandmarks.positions;
-                ctx.beginPath();
-                points.forEach((p, i) => {
-                    if (i % 2 === 0) ctx.moveTo(p.x, p.y);
-                    else ctx.lineTo(p.x, p.y);
-                });
-                ctx.stroke();
-
-                const landmarks = detection.landmarks.relativePositions;
-                const nose = landmarks[30];
-                const leftEye = landmarks[36];
-                const rightEye = landmarks[45];
-                const mouth = landmarks[66];
-
-                // Precise Head Pose Estimation
-                const eyeDist = rightEye.x - leftEye.x;
-                const noseOffset = nose.x - (leftEye.x + eyeDist / 2);
-                const yaw = (noseOffset / eyeDist) * 100;
-
-                const eyeLevel = (leftEye.y + rightEye.y) / 2;
-                const noseToMouth = mouth.y - nose.y;
-                const pitch = (nose.y - eyeLevel) / noseToMouth; // Looking up (low) vs down (high)
-
-                let behaviorDetected = "SECURE";
-                if (Math.abs(yaw) > 40) behaviorDetected = "ROTATING";
-                if (pitch > 0.8 || pitch < 0.2) behaviorDetected = "DISTRACTED";
-
-                if (behaviorDetected !== "SECURE") {
-                    if (!suspiciousStartTime) suspiciousStartTime = Date.now();
-                    currentBehavior = behaviorDetected;
-                    integrityScore = Math.max(0, integrityScore - 0.5); // Fast drop
-                } else {
-                    suspiciousStartTime = null;
-                    currentBehavior = "SECURE";
-                    integrityScore = Math.min(100, integrityScore + 0.1); // Slow recovery
-                }
-
-                if (suspiciousStartTime && (Date.now() - suspiciousStartTime > 1000)) {
-                    isSuspicious = true;
-                    poseBadge.innerText = "🚨 SUSPICIOUS: " + currentBehavior;
-                    poseBadge.style.color = "#ff4444";
-                    alertOverlay.style.display = 'block';
-                } else {
-                    isSuspicious = false;
-                    poseBadge.innerText = "🛡️ AI LOCK: " + currentBehavior;
-                    poseBadge.style.color = "var(--accent)";
-                    alertOverlay.style.display = 'none';
-                }
-            } else {
-                isSuspicious = true;
-                currentBehavior = "OFF-SCREEN";
-                poseBadge.innerText = "🚫 CRITICAL: " + currentBehavior;
-                integrityScore = Math.max(0, integrityScore - 1);
-                alertOverlay.style.display = 'block';
-            }
-
-            // Update Integrity HUD
-            integrityBar.style.width = integrityScore + "%";
-            integrityPercent.innerText = Math.round(integrityScore) + "%";
-            if (integrityScore < 50) integrityBar.style.background = "#ef4444";
-            else if (integrityScore < 80) integrityBar.style.background = "#fbbf24";
-            else integrityBar.style.background = "var(--accent)";
-
-            requestAnimationFrame(detectPose);
-        }
+        // Local detectPose logic is now handled by SentryCore module.
 
         function startHeartbeat() {
             const userName = document.getElementById('name');
@@ -678,13 +593,15 @@
                 if (!surveillanceActive || !currentUser) return;
 
                 const sessionId = `${spaceId}_${deviceID}`;
+                const state = sentry ? sentry.getState() : { isSuspicious: false, behavior: 'SECURE', integrity: 100 };
+
                 try {
                     await updateDoc(doc(db, 'spaces', spaceId), {
                         [`liveSessions.${deviceID}`]: {
                             name: userName.value || "Anonymous Student",
-                            isSuspicious: isSuspicious,
-                            behavior: currentBehavior,
-                            integrity: Math.round(integrityScore),
+                            isSuspicious: state.isSuspicious,
+                            behavior: state.behavior,
+                            integrity: state.integrity,
                             lastSeen: new Date(),
                             startTime: sessionStartTime
                         }
@@ -883,17 +800,17 @@
             leafletMap.invalidateSize();
         }
 
-        async function markPresence() {
+        async function activateSentry() {
             if (!isReady) return;
 
             const nameInput = document.getElementById('name');
             const name = nameInput ? nameInput.value.trim() : '';
 
             if (!name) return showStatus("Please enter your name.", "error");
-            if (!spaceId || !nonce) return showStatus("Invalid QR code.", "error");
+            if (!spaceId || !nonce) return showStatus("Invalid CognitoAttend Link.", "error");
 
             btnSubmit.disabled = true;
-            showStatus("Submitting attendance<span class=\"loading-dots\"></span>", "");
+            showStatus("Activating Biometric Link<span class=\"loading-dots\"></span>", "");
 
             try {
                 // 1. Verify Space and Nonce
@@ -902,13 +819,13 @@
 
                 if (!spaceSnap.exists()) throw new Error("Workspace not found.");
                 const spaceData = spaceSnap.data();
-                if (spaceData.qrNonce !== nonce) throw new Error("QR code expired. Please scan again.");
+                if (spaceData.qrNonce !== nonce) throw new Error("Link expired. Please scan again.");
 
                 // Check Geofencing
                 if (spaceData.geofencing && spaceData.geofencing.enabled && spaceData.geofencing.center) {
                     showStatus("Calibrating High-Precision GPS...", "");
                     const pos = await getHighPrecisionLocation(5000).catch(err => {
-                        throw new Error("Location access required for this workspace. Please move to a clear area.");
+                        throw new Error("Location access required. Please move to a clear area.");
                     });
 
                     const dist = getDistance(
@@ -916,7 +833,6 @@
                         spaceData.geofencing.center.lat, spaceData.geofencing.center.lng
                     );
 
-                    // Show visual feedback on map
                     updateMapPreview(
                         pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy,
                         spaceData.geofencing.center.lat, spaceData.geofencing.center.lng,
@@ -924,18 +840,20 @@
                     );
 
                     if (dist > (spaceData.geofencing.radius || 100)) {
-                        const diff = dist - spaceData.geofencing.radius;
-                        if (pos.coords.accuracy > spaceData.geofencing.radius) {
-                            throw new Error(`Out of range. Your GPS signal is too blurry (±${pos.coords.accuracy.toFixed(0)}m). Please move closer to a window.`);
-                        }
-                        throw new Error(`Out of range. You are ${(dist).toFixed(1)}m away. Move closer to the classroom.`);
+                        throw new Error(`Out of range. Move closer to the classroom.`);
                     }
                 }
 
-                // Increment QR Scan Count
+                // SENTRY MODE OVERRIDE: Focus purely on monitoring
+                if (spaceData.config && spaceData.config.examMode) {
+                    showStatus("Tactical Connection Established.", "success");
+                    finishSubmit(name, document.getElementById('gender').value, spaceData);
+                    return;
+                }
+
+                // Standard Mode: Process Attendance
                 await updateDoc(spaceRef, { qrScanCount: increment(1) });
 
-                // 2. Collect all form data
                 const config = spaceData.config || {};
                 const gender = document.getElementById('gender').value;
                 const regNo = config.regNo ? document.getElementById('regNo').value.trim() : '';
@@ -945,7 +863,6 @@
                 const bloodGroup = config.bloodGroup ? document.getElementById('bloodGroup').value.trim() : '';
                 const weight = config.weight ? document.getElementById('weight').value.trim() : '';
 
-                // 3. Find or Create User Record
                 const q = query(collection(db, 'users'), where("spaceId", "==", spaceId), where("name", "==", name));
                 const userSnap = await getDocs(q);
                 const todayStr = new Date().toDateString();
@@ -955,7 +872,7 @@
                     const userData = userDoc.data();
 
                     if (userData.lastAttendance === todayStr) {
-                        showStatus("You've already marked presence today.", "success");
+                        showStatus("Identity verified. Presence already logged.", "success");
                         finishSubmit(name, gender, spaceData);
                         return;
                     }
@@ -995,7 +912,6 @@
                 }
 
                 finishSubmit(name, gender, spaceData);
-
             } catch (err) {
                 showStatus(err.message, "error");
                 btnSubmit.disabled = false;
@@ -1029,7 +945,6 @@
                 const usedNonces = JSON.parse(localStorage.getItem(`used_nonces_${spaceId}`) || '[]');
                 if (!usedNonces.includes(nonce)) {
                     usedNonces.push(nonce);
-                    // Keep only last 10 nonces to save space
                     if (usedNonces.length > 10) usedNonces.shift();
                     localStorage.setItem(`used_nonces_${spaceId}`, JSON.stringify(usedNonces));
                 }
@@ -1046,10 +961,9 @@
             statusDiv.className = type;
         }
 
-
-        btnSubmit.addEventListener('click', () => markPresence());
+        btnSubmit.addEventListener('click', activateSentry);
         document.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') markPresence();
+            if (e.key === 'Enter') activateSentry();
         });
 
         initSystem();

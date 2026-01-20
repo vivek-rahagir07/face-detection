@@ -2417,3 +2417,55 @@ body.perf-battery .status-badge::before {
         background: rgba(239, 68, 68, 0.1);
     }
 }
+
+/* Fullscreen Tactical HUD */
+.sentry-fullscreen-mode .main-content {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 9999 !important;
+    background: #000 !important;
+    padding: 20px !important;
+    height: 100vh !important;
+    width: 100vw !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+}
+
+.sentry-fullscreen-mode .sidebar,
+.sentry-fullscreen-mode .workspace-header {
+    display: none !important;
+}
+
+.sentry-fullscreen-mode #mode-surveillance {
+    display: flex !important;
+    flex-direction: column;
+    height: 100%;
+}
+
+.sentry-fullscreen-mode #surveillance-grid {
+    flex: 1;
+    max-height: none !important;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+}
+
+.btn-exit-sentry {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    background: #ef4444;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 50px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+    display: none;
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+}
+
+.sentry-fullscreen-mode .btn-exit-sentry {
+    display: block;
+}
