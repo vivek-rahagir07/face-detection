@@ -155,7 +155,7 @@ h1 {
         0 30px 60px rgba(0, 0, 0, 0.9),
         0 0 80px rgba(0, 242, 255, 0.1),
         0 0 120px rgba(255, 0, 242, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
     aspect-ratio: 16/9;
     width: 100%;
     height: auto;
@@ -237,7 +237,7 @@ h1 {
         0 0 120px rgba(255, 0, 242, 0.05);
     backdrop-filter: blur(40px);
     -webkit-backdrop-filter: blur(40px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
     display: flex;
     flex-direction: column;
     gap: 28px;
@@ -312,7 +312,7 @@ h1 {
     background: rgba(10, 10, 10, 0.8);
     padding: 20px;
     border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -393,7 +393,7 @@ h1 {
     cursor: pointer;
     transition: none;
     box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.15);
 }
 
 .btn-primary:hover {
@@ -435,7 +435,7 @@ h1 {
 input {
     padding: 14px 20px;
     background: #111;
-    border: 1px solid var(--border);
+    border: 2px solid var(--border);
     border-radius: 16px;
     font-size: 1rem;
     color: var(--text);
@@ -465,7 +465,7 @@ input:focus {
     overflow-y: auto;
     overflow-x: auto;
     background: #111;
-    border: 1px solid var(--border);
+    border: 2px solid var(--border);
     border-radius: 20px;
     box-shadow: var(--shadow-sm);
     -webkit-overflow-scrolling: touch;
@@ -524,7 +524,7 @@ input:focus {
     font-size: 0.75rem;
     background: #111;
     color: #fff;
-    border: 1px solid var(--border);
+    border: 2px solid var(--border);
     border-radius: 10px;
     cursor: pointer;
     font-weight: 600;
@@ -550,7 +550,7 @@ input:focus {
     background: rgba(0, 0, 0, 0.95);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 2px solid rgba(255, 255, 255, 0.1);
     z-index: 9999;
     box-shadow: 0 -20px 40px rgba(0, 0, 0, 0.8);
 }
@@ -831,7 +831,7 @@ input:focus {
     text-align: center;
     backdrop-filter: blur(40px);
     -webkit-backdrop-filter: blur(40px);
-    border: 1px solid rgba(0, 242, 255, 0.1);
+    border: 2px solid rgba(0, 242, 255, 0.2);
     box-shadow:
         0 30px 60px rgba(0, 0, 0, 0.9),
         0 0 100px rgba(0, 242, 255, 0.1),
@@ -1136,7 +1136,7 @@ input:focus {
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
     flex-wrap: wrap;
     gap: 15px;
 }
@@ -1192,6 +1192,7 @@ input:focus {
     padding: 8px 12px;
     background: #111;
     border-radius: 12px;
+    border: 1.5px solid rgba(255, 255, 255, 0.05);
     transition: background 0.2s;
 }
 
@@ -1427,7 +1428,7 @@ input:focus {
     background: rgba(15, 15, 15, 0.95);
     padding: 40px;
     border-radius: 40px;
-    border: 1px solid rgba(0, 242, 255, 0.1);
+    border: 2px solid rgba(0, 242, 255, 0.2);
     box-shadow:
         0 40px 100px rgba(0, 0, 0, 0.8),
         0 0 100px rgba(0, 242, 255, 0.15);
@@ -1571,7 +1572,7 @@ input:focus {
 .btn-date {
     background: #1a1a1a;
     color: var(--text-muted);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
     padding: 8px 16px;
     border-radius: 12px;
     cursor: pointer;
@@ -1712,7 +1713,7 @@ input:focus {
 /* People Management Styles */
 .management-person-card {
     padding: 15px 20px;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 2px solid var(--border);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1813,7 +1814,7 @@ input:focus {
 /* UX Refinements */
 #people-search {
     background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(0, 242, 255, 0.2);
+    border: 2px solid rgba(0, 242, 255, 0.2);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -1826,7 +1827,7 @@ input:focus {
 .toast {
     background: rgba(15, 15, 15, 0.95);
     backdrop-filter: blur(10px);
-    border: 1px solid var(--accent);
+    border: 2px solid var(--accent);
     color: #fff;
     padding: 12px 25px;
     border-radius: 12px;
@@ -2094,7 +2095,7 @@ button:active,
     backdrop-filter: blur(40px);
     -webkit-backdrop-filter: blur(40px);
     z-index: 3000;
-    border-right: 1px solid rgba(0, 242, 255, 0.1);
+    border-right: 2px solid rgba(0, 242, 255, 0.1);
     display: flex;
     flex-direction: column;
     transform: translateX(0);
@@ -2113,7 +2114,7 @@ button:active,
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 2px solid rgba(255, 255, 255, 0.05);
 }
 
 .sidebar-header h3 {
@@ -2387,13 +2388,14 @@ button:active,
         background: rgba(239, 68, 68, 0.1);
     }
 }
+
 /* Profile Modal Styles */
 .profile-modal-content {
     max-width: 500px;
     padding: 40px 30px;
     text-align: center;
     background: rgba(0, 0, 0, 0.95);
-    border: 1px solid rgba(0, 242, 255, 0.2);
+    border: 2px solid rgba(0, 242, 255, 0.2);
     box-shadow: 0 0 50px rgba(0, 242, 255, 0.1);
 }
 
@@ -2451,7 +2453,8 @@ button:active,
     justify-content: center;
 }
 
-.badge-reg, .badge-dept {
+.badge-reg,
+.badge-dept {
     padding: 4px 12px;
     border-radius: 20px;
     font-size: 0.8rem;
@@ -2462,20 +2465,20 @@ button:active,
 .badge-reg {
     background: rgba(0, 242, 255, 0.1);
     color: var(--accent);
-    border: 1px solid rgba(0, 242, 255, 0.3);
+    border: 1.5px solid rgba(0, 242, 255, 0.3);
 }
 
 .badge-dept {
     background: rgba(255, 255, 255, 0.05);
     color: #888;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
 }
 
 .profile-history-section {
     text-align: left;
     margin-top: 20px;
     padding-top: 20px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 2px solid rgba(255, 255, 255, 0.1);
 }
 
 .profile-history-section h3 {
@@ -2488,7 +2491,7 @@ button:active,
 
 .profile-history-list {
     max-height: 250px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.05);
 }
 
 .history-item-minimal {
@@ -2496,7 +2499,7 @@ button:active,
     justify-content: space-between;
     align-items: center;
     padding: 12px 15px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 2px solid rgba(255, 255, 255, 0.05);
     transition: background 0.2s;
 }
 
@@ -2516,7 +2519,8 @@ button:active,
 }
 
 /* Make names clickable in lists */
-.list-item, .management-person-card {
+.list-item,
+.management-person-card {
     cursor: pointer;
 }
 
