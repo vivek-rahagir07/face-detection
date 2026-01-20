@@ -584,13 +584,36 @@
             feedback.innerText = "Saving profile...";
 
             try {
-                await processRegistration(name, lastDetection.descriptor);
+                const photoBase64 = captureFacePhoto(video, lastDetection.detection.box);
+                await processRegistration(name, lastDetection.descriptor, photoBase64);
             } catch (err) {
                 alert(err.message);
                 btnSnap.disabled = false;
                 feedback.innerText = "Error: " + err.message;
             }
         };
+
+        function captureFacePhoto(source, box) {
+            try {
+                const canvas = document.createElement('canvas');
+                const buffer = 0.2; // 20% margin
+                const ctx = canvas.getContext('2d');
+                canvas.width = 150;
+                canvas.height = 150;
+
+                const { x, y, width, height } = box;
+                const bx = Math.max(0, x - width * buffer);
+                const by = Math.max(0, y - height * buffer);
+                const bw = width * (1 + buffer * 2);
+                const bh = height * (1 + buffer * 2);
+
+                ctx.drawImage(source, bx, by, bw, bh, 0, 0, 150, 150);
+                return canvas.toDataURL('image/jpeg', 0.8);
+            } catch (e) {
+                console.error("Capture Error:", e);
+                return null;
+            }
+        }
 
         btnGallery.onclick = () => inputGallery.click();
 
@@ -613,7 +636,8 @@
                 const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
 
                 if (detection) {
-                    await processRegistration(name, detection.descriptor);
+                    const photoBase64 = captureFacePhoto(img, detection.detection.box);
+                    await processRegistration(name, detection.descriptor, photoBase64);
                 } else {
                     alert("No face detected in the uploaded photo. Please try another one.");
                     feedback.innerText = "No face detected in upload";
@@ -627,7 +651,7 @@
             e.target.value = '';
         };
 
-        async function processRegistration(name, descriptor) {
+        async function processRegistration(name, descriptor, photoBase64) {
             // Check if name exists in space
             const q = query(collection(db, 'users'), where("spaceId", "==", spaceId), where("name", "==", name));
             const snap = await getDocs(q);
@@ -647,6 +671,7 @@
                 name: name,
                 ...metadata,
                 descriptor: Array.from(descriptor),
+                photo: photoBase64,
                 attendanceCount: 0,
                 lastAttendance: null,
                 approved: false, // Portals always require approval

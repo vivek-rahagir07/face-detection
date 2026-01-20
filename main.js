@@ -1168,9 +1168,12 @@ function startDbListener() {
             if (data.lastAttendance === todayStr) {
                 const itemHTML = `
                     <div class="list-item list-item-new" data-uid="${uid}" data-name="${data.name}">
-                        <div>
-                            <strong>${data.name}</strong>
-                            <span class="badge-course">${data.course || data.regNo || ''}</span>
+                        <div class="item-main-content">
+                            ${data.photo ? `<img src="${data.photo}" class="student-avatar" alt="${data.name}">` : `<div class="student-avatar-placeholder">${data.name.charAt(0)}</div>`}
+                            <div>
+                                <strong>${data.name}</strong>
+                                <span class="badge-course">${data.course || data.regNo || ''}</span>
+                            </div>
                         </div>
                         <div style="display: flex; gap: 8px; align-items: center;">
                             <div style="color:var(--success)">✔</div>
@@ -1183,9 +1186,12 @@ function startDbListener() {
             } else {
                 const itemHTML = `
                     <div class="list-item list-item-new" data-uid="${uid}" data-name="${data.name}">
-                        <div>
-                            <strong>${data.name}</strong>
-                            <span class="badge-course">${data.course || data.regNo || ''}</span>
+                        <div class="item-main-content">
+                            ${data.photo ? `<img src="${data.photo}" class="student-avatar" alt="${data.name}">` : `<div class="student-avatar-placeholder">${data.name.charAt(0)}</div>`}
+                            <div>
+                                <strong>${data.name}</strong>
+                                <span class="badge-course">${data.course || data.regNo || ''}</span>
+                            </div>
                         </div>
                         <button class="btn-mark-present" style="padding: 4px 8px; font-size: 0.7rem; background: var(--accent); color: #000; border: none; border-radius: 4px; cursor: pointer;">Mark</button>
                     </div>
@@ -1332,9 +1338,12 @@ async function renderPeopleManagement() {
         const card = document.createElement('div');
         card.className = 'management-person-card';
         card.innerHTML = `
-            <div class="person-primary-info">
-                <strong>${user.name} ${isPending ? '<span class="badge-pending">Pending Approval</span>' : ''}</strong>
-                <small style="color:var(--text-muted)">${user.regNo || 'No Reg No'}</small>
+            <div class="item-main-content">
+                ${user.photo ? `<img src="${user.photo}" class="student-avatar" alt="${user.name}">` : `<div class="student-avatar-placeholder">${user.name.charAt(0)}</div>`}
+                <div class="person-primary-info">
+                    <strong>${user.name} ${isPending ? '<span class="badge-pending">Pending Approval</span>' : ''}</strong>
+                    <small style="color:var(--text-muted)">${user.regNo || 'No Reg No'}</small>
+                </div>
             </div>
             <div class="person-stats-row">
                 ${isPending ? `
@@ -1814,7 +1823,8 @@ async function handleCameraRegistration() {
         .withFaceDescriptor();
 
     if (detection) {
-        await finalizeRegistration(name, metadata, Array.from(detection.descriptor));
+        const photoBase64 = captureFacePhoto(video, detection.detection.box);
+        await finalizeRegistration(name, metadata, Array.from(detection.descriptor), photoBase64);
     } else {
         alert("No face detected in camera. Please align your face and try again.");
         regFeedback.innerText = "No face detected in camera.";
@@ -1845,7 +1855,8 @@ async function handlePhotoUpload(e) {
             .withFaceDescriptor();
 
         if (detection) {
-            await finalizeRegistration(name, metadata, Array.from(detection.descriptor));
+            const photoBase64 = captureFacePhoto(img, detection.detection.box);
+            await finalizeRegistration(name, metadata, Array.from(detection.descriptor), photoBase64);
         } else {
             alert("No face detected in uploaded photo. Please try another image.");
             regFeedback.innerText = "No face detected in uploaded photo.";
@@ -1853,9 +1864,31 @@ async function handlePhotoUpload(e) {
         }
     } catch (err) {
         console.error("Upload Error:", err);
-        regFeedback.innerText = "Error processing image.";
+        alert("Error processing image: " + err.message);
     }
     e.target.value = '';
+}
+
+function captureFacePhoto(source, box) {
+    try {
+        const canvas = document.createElement('canvas');
+        const buffer = 0.2; // 20% margin
+        const ctx = canvas.getContext('2d');
+        canvas.width = 150;
+        canvas.height = 150;
+
+        const { x, y, width, height } = box;
+        const bx = Math.max(0, x - width * buffer);
+        const by = Math.max(0, y - height * buffer);
+        const bw = width * (1 + buffer * 2);
+        const bh = height * (1 + buffer * 2);
+
+        ctx.drawImage(source, bx, by, bw, bh, 0, 0, 150, 150);
+        return canvas.toDataURL('image/jpeg', 0.8);
+    } catch (e) {
+        console.error("Capture Error:", e);
+        return null;
+    }
 }
 
 function collectRegistrationMetadata() {
@@ -1867,8 +1900,7 @@ function collectRegistrationMetadata() {
     });
     return metadata;
 }
-
-async function finalizeRegistration(name, metadata, descriptorArray) {
+async function finalizeRegistration(name, metadata, descriptorArray, photoBase64) {
     if (nameToDocId[name]) {
         alert("A user with this name already exists.");
         regFeedback.innerText = "Name taken.";
@@ -1881,6 +1913,7 @@ async function finalizeRegistration(name, metadata, descriptorArray) {
             name: name,
             ...metadata,
             descriptor: descriptorArray,
+            photo: photoBase64,
             attendanceCount: 0,
             lastAttendance: null,
             approved: !isMagicLinkSession,
