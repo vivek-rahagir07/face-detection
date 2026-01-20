@@ -167,7 +167,7 @@ let configRadiusCircle = null;
 // Device Detection for Performance
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 let DETECTION_INTERVAL = isMobile ? 250 : 100;
-let DETECTOR_OPTIONS = isMobile ? new faceapi.TinyFaceDetectorOptions() : new faceapi.SsdMobilenetv1Options();
+let DETECTOR_OPTIONS = new faceapi.TinyFaceDetectorOptions({ inputSize: 320 });
 
 // System Preferences
 let appSettings = {
@@ -195,14 +195,14 @@ function saveSettings() {
 function applySettings() {
     document.body.classList.toggle('perf-battery', appSettings.performanceMode === 'battery');
     if (appSettings.performanceMode === 'battery') {
-        DETECTION_INTERVAL = isMobile ? 1000 : 500;
+        DETECTION_INTERVAL = isMobile ? 800 : 400;
         DETECTOR_OPTIONS = new faceapi.TinyFaceDetectorOptions({ inputSize: 160 });
     } else if (appSettings.performanceMode === 'high') {
-        DETECTION_INTERVAL = isMobile ? 150 : 60;
-        DETECTOR_OPTIONS = isMobile ? new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }) : new faceapi.SsdMobilenetv1Options();
+        DETECTION_INTERVAL = 80; // High speed for all platforms
+        DETECTOR_OPTIONS = new faceapi.TinyFaceDetectorOptions({ inputSize: 320 });
     } else {
-        DETECTION_INTERVAL = isMobile ? 250 : 100;
-        DETECTOR_OPTIONS = isMobile ? new faceapi.TinyFaceDetectorOptions() : new faceapi.SsdMobilenetv1Options();
+        DETECTION_INTERVAL = isMobile ? 200 : 100;
+        DETECTOR_OPTIONS = new faceapi.TinyFaceDetectorOptions({ inputSize: 320 });
     }
 }
 loadSettings();
@@ -210,7 +210,7 @@ loadSettings();
 let hourlyChart = null;
 
 // Advanced Detection State
-const VALIDATION_THRESHOLD = 6; // Requires 6 frames of verification (Increased from 3 to prevent false positives)
+const VALIDATION_THRESHOLD = 3; // Reduced from 6 to make scanning feel faster
 const detectionHistory = {};
 
 // Set Live Date & Time
