@@ -2253,9 +2253,11 @@ function setMode(mode) {
         document.getElementById('btn-mode-surveillance').classList.add('active');
         statusBadge.innerText = "Exam Surveillance";
         document.body.classList.add('sentry-fullscreen-mode');
+        isAIPaused = true; // Deactivate all background biometric processing
         startSurveillanceMonitor();
     } else {
         document.body.classList.remove('sentry-fullscreen-mode');
+        isAIPaused = false; // Reactivate background processing
         attendInfo.classList.remove('hidden');
         document.getElementById('btn-mode-attend').classList.add('active');
         statusBadge.innerText = "Attendance Monitor";

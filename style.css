@@ -2433,7 +2433,8 @@ body.perf-battery .status-badge::before {
 }
 
 .sentry-fullscreen-mode .sidebar,
-.sentry-fullscreen-mode .workspace-header {
+.sentry-fullscreen-mode .workspace-header,
+.sentry-fullscreen-mode .camera-wrapper {
     display: none !important;
 }
 
@@ -2447,6 +2448,27 @@ body.perf-battery .status-badge::before {
     flex: 1;
     max-height: none !important;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+}
+
+/* Student Portal Immersive HUD */
+.sentry-active #surveillance-container {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 10000 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    border: none !important;
+}
+
+.sentry-active .header-logo-container,
+.sentry-active h1,
+.sentry-active p,
+.sentry-active .form-container,
+.sentry-active #operation-view,
+.sentry-active .bottom-strip {
+    display: none !important;
 }
 
 .btn-exit-sentry {

@@ -576,6 +576,7 @@
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
                 video.srcObject = stream;
                 surveillanceActive = true;
+                document.body.classList.add('sentry-active');
 
                 sentry.start();
                 startHeartbeat();
