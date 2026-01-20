@@ -2157,6 +2157,8 @@ if (configGeoRadius) {
 
 document.getElementById('btn-mode-attend').addEventListener('click', () => setMode('attendance'));
 document.getElementById('btn-mode-surveillance').addEventListener('click', () => setMode('surveillance'));
+const btnSurvTop = document.getElementById('btn-mode-surveillance-top');
+if (btnSurvTop) btnSurvTop.addEventListener('click', () => setMode('surveillance'));
 document.getElementById('btn-mode-reg').addEventListener('click', () => setMode('registration'));
 document.getElementById('btn-mode-analytics').addEventListener('click', () => setMode('analytics'));
 document.getElementById('btn-mode-config').addEventListener('click', () => setMode('config'));
@@ -2217,10 +2219,14 @@ function setMode(mode) {
     [
         document.getElementById('btn-mode-attend'),
         document.getElementById('btn-mode-surveillance'),
+        document.getElementById('btn-mode-surveillance-top'),
         document.getElementById('btn-mode-reg'),
         document.getElementById('btn-mode-config'),
         document.getElementById('btn-mode-analytics')
     ].forEach(btn => btn && btn.classList.remove('active'));
+
+    const btnSurvTop = document.getElementById('btn-mode-surveillance-top');
+    if (mode === 'surveillance' && btnSurvTop) btnSurvTop.classList.add('active');
 
     if (mode === 'registration') {
         regForm.classList.remove('hidden');
