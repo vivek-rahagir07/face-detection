@@ -420,7 +420,8 @@ async function startQRRotation() {
             let baseUrl = window.location.href.split('?')[0].split('#')[0].replace('index.html', '');
             if (!baseUrl.endsWith('/')) baseUrl += '/';
 
-            const attendanceUrl = `${baseUrl}qr.html?s=${currentSpace.id}&n=${currentNonce}`;
+            const expiryTime = Date.now() + refreshMs;
+            const attendanceUrl = `${baseUrl}qr.html?s=${currentSpace.id}&n=${currentNonce}&exp=${expiryTime}`;
 
             const generateQR = () => {
                 const qrEngine = window.QRCode || (typeof QRCode !== 'undefined' ? QRCode : null);

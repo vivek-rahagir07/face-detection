@@ -343,6 +343,15 @@
             <h2 style="color: var(--success); margin-bottom: 10px;">Presence Marked!</h2>
             <p>Your attendance has been recorded successfully. You can close this window now.</p>
         </div>
+
+        <div id="error-view" style="display: none;">
+            <div style="font-size: 4rem; color: #ef4444; margin-bottom: 20px;">⚠</div>
+            <h2 id="error-title" style="color: #ef4444; margin-bottom: 10px;">Invalid Link</h2>
+            <p id="error-message">This session has expired or the link is invalid. Please scan the latest QR code from
+                the dashboard.</p>
+            <a href="index.html" class="btn-home"
+                style="position:static; display:inline-flex; width:auto; margin-top:20px;">🏠 Back to Home</a>
+        </div>
     </div>
 
     <script type="module">
@@ -372,6 +381,7 @@
         const params = new URLSearchParams(window.location.search);
         const spaceId = params.get('s');
         const nonce = params.get('n');
+        const expiryTime = params.get('exp');
 
         const btnSubmit = document.getElementById('btn-submit');
         const statusDiv = document.getElementById('status');
@@ -383,22 +393,22 @@
         const loadingOverlay = document.getElementById('loading-overlay');
         const loadingText = document.getElementById('loading-text');
 
-        let isReady = false;
-        let currentSpaceData = null;
-        let deviceID = localStorage.getItem('cognito_device_id');
-        if (!deviceID) {
-            deviceID = 'dev_' + Math.random().toString(36).substring(2, 15);
-            localStorage.setItem('cognito_device_id', deviceID);
-        }
+        const errorView = document.getElementById('error-view');
 
         async function initSystem() {
             try {
-                if (!spaceId) {
-                    showStatus("Error: Workspace ID missing.", "error");
+                if (!spaceId || !nonce) {
+                    showErrorScreen("Missing Parameters", "This link is missing identification tokens. Please scan the QR code again.");
                     return;
                 }
 
-                // Check if this specific QR (nonce) was already used on this device
+                // 1. Strict Expiration Check
+                if (expiryTime && Date.now() > parseInt(expiryTime)) {
+                    showErrorScreen("Link Expired", "This QR code session has expired. The dashboard has likely generated a fresh one.");
+                    return;
+                }
+
+                // 2. Already Used Check
                 const usedNonces = JSON.parse(localStorage.getItem(`used_nonces_${spaceId}`) || '[]');
                 if (usedNonces.includes(nonce)) {
                     formView.style.display = 'none';
@@ -408,14 +418,21 @@
                     return;
                 }
 
-                showStatus("Loading workspace config...", "");
+                showStatus("Verifying session...", "");
                 const spaceSnap = await getDoc(doc(db, 'spaces', spaceId));
                 if (!spaceSnap.exists()) {
-                    showStatus("Error: Workspace not found.", "error");
+                    showErrorScreen("Invalid Workspace", "The workspace associated with this QR code no longer exists.");
                     return;
                 }
 
                 currentSpaceData = spaceSnap.data();
+
+                // 3. Nonce Cloud Verification
+                if (currentSpaceData.qrNonce !== nonce) {
+                    showErrorScreen("Invalid Code", "This QR code is out of sync. Please scan the latest code displayed on the screen.");
+                    return;
+                }
+
                 updateFormFields(currentSpaceData.config);
 
                 isReady = true;
@@ -424,6 +441,14 @@
                 console.error(err);
                 showStatus("Initialization error: " + err.message, "error");
             }
+        }
+
+        function showErrorScreen(title, message) {
+            formView.style.display = 'none';
+            successView.style.display = 'none';
+            errorView.style.display = 'block';
+            document.getElementById('error-title').innerText = title;
+            document.getElementById('error-message').innerText = message;
         }
 
         function updateFormFields(config = {}) {

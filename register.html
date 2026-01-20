@@ -421,8 +421,8 @@
 
         async function startPortal() {
             try {
-                if (!spaceId || !expiryTime) {
-                    showError("Invalid or Missing Parameters", "The registration link you used is missing critical identification tokens.");
+                if (!spaceId || isNaN(expiryTime)) {
+                    showError("Invalid Parameters", "The registration link you used is missing critical identification tokens.");
                     return;
                 }
 
