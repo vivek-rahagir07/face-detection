@@ -548,6 +548,32 @@
         </div>
     </div>
 
+    <!-- Profile Popup Modal -->
+    <div id="profile-modal" class="qr-modal-container hidden" role="dialog" aria-labelledby="profile-name">
+        <div class="qr-modal-content profile-modal-content">
+            <button id="btn-close-profile" class="btn-close" aria-label="Close Profile">&times;</button>
+
+            <div class="profile-header">
+                <div class="profile-photo-container">
+                    <img id="profile-photo" src="" alt="Profile Photo" class="profile-photo-large">
+                    <div id="profile-photo-placeholder" class="profile-photo-placeholder-large hidden"></div>
+                </div>
+                <h2 id="profile-name">Student Name</h2>
+                <div class="profile-badges">
+                    <span id="profile-regNo" class="badge-reg">REG_0000</span>
+                    <span id="profile-course" class="badge-dept">COURSE_NAME</span>
+                </div>
+            </div>
+
+            <div class="profile-history-section">
+                <h3>Attendance History</h3>
+                <div id="profile-history-list" class="scrollable-list profile-history-list">
+                    <!-- History items will be injected here -->
+                </div>
+                <div id="profile-history-status" class="qr-status">Loading history...</div>
+            </div>
+        </div>
+    </div>
 
     <div id="toast-container"
         style="position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 10002; display: flex; flex-direction: column; gap: 10px; pointer-events: none;">

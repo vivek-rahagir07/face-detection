@@ -134,6 +134,16 @@ const btnSaveEdit = document.getElementById('btn-save-edit');
 const btnDeletePerson = document.getElementById('btn-delete-person');
 const editPersonNameTitle = document.getElementById('edit-person-name-title');
 
+const profileModal = document.getElementById('profile-modal');
+const btnCloseProfile = document.getElementById('btn-close-profile');
+const profilePhoto = document.getElementById('profile-photo');
+const profilePhotoPlaceholder = document.getElementById('profile-photo-placeholder');
+const profileName = document.getElementById('profile-name');
+const profileRegNo = document.getElementById('profile-regNo');
+const profileCourse = document.getElementById('profile-course');
+const profileHistoryList = document.getElementById('profile-history-list');
+const profileHistoryStatus = document.getElementById('profile-history-status');
+
 let editingPersonId = null;
 
 
@@ -1200,6 +1210,18 @@ function startDbListener() {
             }
         });
 
+        // Add click delegation for opening profile from list items
+        if (!todayListContainer._profileListenerAdded) {
+            todayListContainer.addEventListener('click', (e) => {
+                const listItem = e.target.closest('.list-item');
+                if (listItem && !e.target.closest('button')) {
+                    const uid = listItem.dataset.uid;
+                    if (uid) openProfileModal(uid);
+                }
+            });
+            todayListContainer._profileListenerAdded = true;
+        }
+
         labeledDescriptors = descriptors;
         nameToDocId = tempMap;
         allUsersData = tempAllData;
@@ -1383,7 +1405,91 @@ async function renderPeopleManagement() {
     });
 
     peopleListContainer.appendChild(fragment);
+
+    // Add click event for details popup
+    peopleListContainer.querySelectorAll('.management-person-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+            // Don't open profile if clicking on buttons
+            if (e.target.closest('button')) return;
+
+            const avatar = card.querySelector('.student-avatar, .student-avatar-placeholder');
+            const uid = card.querySelector('.edit-btn')?.dataset.id || card.querySelector('.btn-approve')?.dataset.id;
+
+            if (uid) openProfileModal(uid);
+        });
+    });
 }
+
+async function openProfileModal(uid) {
+    const userData = allUsersData.find(u => u.id === uid);
+    if (!userData) return;
+
+    profileName.innerText = userData.name;
+    profileRegNo.innerText = userData.regNo || 'No Reg No';
+    profileCourse.innerText = userData.course || 'No Course';
+
+    if (userData.photo) {
+        profilePhoto.src = userData.photo;
+        profilePhoto.classList.remove('hidden');
+        profilePhotoPlaceholder.classList.add('hidden');
+    } else {
+        profilePhoto.classList.add('hidden');
+        profilePhotoPlaceholder.innerText = userData.name.charAt(0).toUpperCase();
+        profilePhotoPlaceholder.classList.remove('hidden');
+    }
+
+    profileHistoryList.innerHTML = '';
+    profileHistoryStatus.innerText = 'Fetching records...';
+    profileHistoryStatus.classList.remove('hidden');
+    profileModal.classList.remove('hidden');
+
+    try {
+        const q = query(
+            collection(db, COLL_ATTENDANCE),
+            where("spaceId", "==", currentSpace.id),
+            where("userId", "==", uid)
+        );
+
+        const querySnapshot = await getDocs(q);
+        const records = [];
+        querySnapshot.forEach(doc => records.push(doc.data()));
+
+        // Sort by timestamp desc
+        records.sort((a, b) => {
+            const dateA = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(a.date);
+            const dateB = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(b.date);
+            return dateB - dateA;
+        });
+
+        if (records.length === 0) {
+            profileHistoryStatus.innerText = 'No attendance history found.';
+        } else {
+            profileHistoryStatus.classList.add('hidden');
+            records.forEach(rec => {
+                const date = new Date(rec.date).toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+                const time = rec.timestamp?.toDate ? rec.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A';
+
+                const item = document.createElement('div');
+                item.className = 'history-item-minimal';
+                item.innerHTML = `
+                    <span class="date">${date}</span>
+                    <span class="time">${time}</span>
+                `;
+                profileHistoryList.appendChild(item);
+            });
+        }
+    } catch (err) {
+        console.error("Profile History Error:", err);
+        profileHistoryStatus.innerText = 'Failed to load history.';
+    }
+}
+
+if (btnCloseProfile) btnCloseProfile.onclick = () => profileModal.classList.add('hidden');
+
+// Close profile modal on outside click
+profileModal.addEventListener('click', (e) => {
+    if (e.target === profileModal) profileModal.classList.add('hidden');
+});
 
 function openEditModal(uid, userData) {
     editingPersonId = uid;

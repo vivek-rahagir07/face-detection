@@ -2387,3 +2387,140 @@ button:active,
         background: rgba(239, 68, 68, 0.1);
     }
 }
+/* Profile Modal Styles */
+.profile-modal-content {
+    max-width: 500px;
+    padding: 40px 30px;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.95);
+    border: 1px solid rgba(0, 242, 255, 0.2);
+    box-shadow: 0 0 50px rgba(0, 242, 255, 0.1);
+}
+
+.profile-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.profile-photo-container {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    margin-bottom: 20px;
+    padding: 4px;
+    background: linear-gradient(45deg, var(--accent), #ff00f2);
+    position: relative;
+    box-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
+}
+
+.profile-photo-large {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #000;
+}
+
+.profile-photo-placeholder-large {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: #222;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--accent);
+    border: 3px solid #000;
+}
+
+.profile-header h2 {
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+    background: linear-gradient(90deg, #fff, var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.profile-badges {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.badge-reg, .badge-dept {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.badge-reg {
+    background: rgba(0, 242, 255, 0.1);
+    color: var(--accent);
+    border: 1px solid rgba(0, 242, 255, 0.3);
+}
+
+.badge-dept {
+    background: rgba(255, 255, 255, 0.05);
+    color: #888;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.profile-history-section {
+    text-align: left;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.profile-history-section h3 {
+    font-size: 1rem;
+    color: var(--text-muted);
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.profile-history-list {
+    max-height: 250px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.history-item-minimal {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background 0.2s;
+}
+
+.history-item-minimal:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.history-item-minimal .date {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.history-item-minimal .time {
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+}
+
+/* Make names clickable in lists */
+.list-item, .management-person-card {
+    cursor: pointer;
+}
+
+.item-main-content strong:hover {
+    color: var(--accent);
+    text-decoration: underline;
+}
