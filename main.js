@@ -166,46 +166,7 @@ let configRadiusCircle = null;
 
 // Device Detection for Performance
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-let DETECTION_INTERVAL = isMobile ? 250 : 100;
-let DETECTOR_OPTIONS = isMobile ? new faceapi.TinyFaceDetectorOptions() : new faceapi.SsdMobilenetv1Options();
-
-// System Preferences
-let appSettings = {
-    performanceMode: 'balanced', // high, balanced, battery
-    voiceGender: 'male',
-    voiceEnabled: true,
-    hapticEnabled: true,
-    detectionThreshold: 0.6,
-    preferredCamera: 'user'
-};
-
-function loadSettings() {
-    const saved = localStorage.getItem('cognito_settings');
-    if (saved) {
-        appSettings = { ...appSettings, ...JSON.parse(saved) };
-        applySettings();
-    }
-}
-
-function saveSettings() {
-    localStorage.setItem('cognito_settings', JSON.stringify(appSettings));
-    applySettings();
-}
-
-function applySettings() {
-    document.body.classList.toggle('perf-battery', appSettings.performanceMode === 'battery');
-    if (appSettings.performanceMode === 'battery') {
-        DETECTION_INTERVAL = isMobile ? 1000 : 500;
-        DETECTOR_OPTIONS = new faceapi.TinyFaceDetectorOptions({ inputSize: 160 });
-    } else if (appSettings.performanceMode === 'high') {
-        DETECTION_INTERVAL = isMobile ? 150 : 60;
-        DETECTOR_OPTIONS = isMobile ? new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }) : new faceapi.SsdMobilenetv1Options();
-    } else {
-        DETECTION_INTERVAL = isMobile ? 250 : 100;
-        DETECTOR_OPTIONS = isMobile ? new faceapi.TinyFaceDetectorOptions() : new faceapi.SsdMobilenetv1Options();
-    }
-}
-loadSettings();
+const DETECTION_INTERVAL = isMobile ? 250 : 100;
 
 let hourlyChart = null;
 
@@ -393,6 +354,7 @@ function enterSpace(id, data) {
     }
 
     initSystem();
+    setMode('attendance');
     startDbListener();
     updateRegistrationForm();
     init3DFace('face-3d-container');
@@ -630,52 +592,6 @@ if (btnCopyQrLink) {
         });
     });
 }
-
-// Device Settings Listeners
-const perfModeSelect = document.getElementById('setting-perf-mode');
-const voiceGenderSelect = document.getElementById('setting-voice-gender');
-const hapticToggle = document.getElementById('setting-haptic-enabled');
-const btnSwitchCamera = document.getElementById('btn-switch-camera');
-
-if (perfModeSelect) {
-    perfModeSelect.addEventListener('change', (e) => {
-        appSettings.performanceMode = e.target.value;
-        saveSettings();
-    });
-}
-if (voiceGenderSelect) {
-    voiceGenderSelect.addEventListener('change', (e) => {
-        appSettings.voiceGender = e.target.value;
-        saveSettings();
-    });
-}
-if (hapticToggle) {
-    hapticToggle.addEventListener('change', (e) => {
-        appSettings.hapticEnabled = e.target.checked;
-        saveSettings();
-    });
-}
-if (btnSwitchCamera) {
-    btnSwitchCamera.addEventListener('click', () => {
-        appSettings.preferredCamera = appSettings.preferredCamera === 'user' ? 'environment' : 'user';
-        saveSettings();
-        startVideo(); // Restart video with new constraints
-    });
-}
-
-function updateSettingsUI() {
-    if (perfModeSelect) perfModeSelect.value = appSettings.performanceMode;
-    if (voiceGenderSelect) voiceGenderSelect.value = appSettings.voiceGender;
-    if (hapticToggle) hapticToggle.checked = appSettings.hapticEnabled;
-}
-
-// Override loadSettings to also update UI
-const originalLoadSettings = loadSettings;
-loadSettings = function () {
-    originalLoadSettings();
-    updateSettingsUI();
-};
-loadSettings();
 
 // Attendance Tab Switching
 if (tabPresent && tabAbsent) {
@@ -931,7 +847,7 @@ function startVideo() {
             width: { ideal: 1280 },
             height: { ideal: 720 },
             aspectRatio: 1.777777778,
-            facingMode: appSettings.preferredCamera || "user"
+            facingMode: "user"
         }
     };
 
@@ -1768,7 +1684,7 @@ video.addEventListener('play', () => {
                 updateDisplaySize();
             }
 
-            const detections = await faceapi.detectAllFaces(video, DETECTOR_OPTIONS)
+            const detections = await faceapi.detectAllFaces(video)
                 .withFaceLandmarks()
                 .withFaceDescriptors();
 
@@ -2026,7 +1942,7 @@ async function markAttendance(name) {
         // ONLY AFTER SUCCESS: Mark cooldown and perform side effects
         attendanceCooldowns[name] = now;
 
-        if (appSettings.hapticEnabled && navigator.vibrate) navigator.vibrate(100);
+        if (navigator.vibrate) navigator.vibrate(100);
         CyberAudio.playMatch();
         showToast(`Attendance marked: ${name}`);
 
@@ -2036,7 +1952,7 @@ async function markAttendance(name) {
         const lastTimeSpoken = lastSpoken[name] || 0;
         // 2 second buffer for the same person to avoid accidental double-speak
         if (nowSpoken - lastTimeSpoken > 2000) {
-            const gender = appSettings.voiceGender || userData.gender || 'male';
+            const gender = userData.gender || 'male';
             speak(`${name} present`, gender);
             lastSpoken[name] = nowSpoken;
         }
@@ -2156,17 +2072,9 @@ if (configGeoRadius) {
 // UI Handlers
 
 document.getElementById('btn-mode-attend').addEventListener('click', () => setMode('attendance'));
-document.getElementById('btn-mode-surveillance').addEventListener('click', () => setMode('surveillance'));
-const btnSurvTop = document.getElementById('btn-mode-surveillance-top');
-if (btnSurvTop) btnSurvTop.addEventListener('click', () => setMode('surveillance'));
 document.getElementById('btn-mode-reg').addEventListener('click', () => setMode('registration'));
 document.getElementById('btn-mode-analytics').addEventListener('click', () => setMode('analytics'));
 document.getElementById('btn-mode-config').addEventListener('click', () => setMode('config'));
-
-const btnExitSentry = document.getElementById('btn-exit-sentry');
-if (btnExitSentry) {
-    btnExitSentry.addEventListener('click', () => setMode('attendance'));
-}
 
 const mobileNavItems = document.querySelectorAll('.nav-item');
 mobileNavItems.forEach(item => {
@@ -2214,24 +2122,19 @@ window.addEventListener('load', async () => {
 });
 
 
-const surveillanceModePanel = document.getElementById('mode-surveillance');
+
 
 function setMode(mode) {
     currentMode = mode;
 
     // UI elements update
-    [regForm, attendInfo, configForm, analyticsPanel, surveillanceModePanel].forEach(el => el && el.classList.add('hidden'));
+    [regForm, attendInfo, configForm, analyticsPanel].forEach(el => el && el.classList.add('hidden'));
     [
         document.getElementById('btn-mode-attend'),
-        document.getElementById('btn-mode-surveillance'),
-        document.getElementById('btn-mode-surveillance-top'),
         document.getElementById('btn-mode-reg'),
         document.getElementById('btn-mode-config'),
         document.getElementById('btn-mode-analytics')
     ].forEach(btn => btn && btn.classList.remove('active'));
-
-    const btnSurvTop = document.getElementById('btn-mode-surveillance-top');
-    if (mode === 'surveillance' && btnSurvTop) btnSurvTop.classList.add('active');
 
     if (mode === 'registration') {
         regForm.classList.remove('hidden');
@@ -2248,95 +2151,12 @@ function setMode(mode) {
         document.getElementById('btn-mode-analytics').classList.add('active');
         statusBadge.innerText = "Analytics & Logs";
         renderPeopleManagement();
-    } else if (mode === 'surveillance') {
-        surveillanceModePanel.classList.remove('hidden');
-        document.getElementById('btn-mode-surveillance').classList.add('active');
-        statusBadge.innerText = "Exam Surveillance";
-        document.body.classList.add('sentry-fullscreen-mode');
-        isAIPaused = true; // Deactivate all background biometric processing
-        startSurveillanceMonitor();
     } else {
-        if (surveillanceUnsubscribe) {
-            surveillanceUnsubscribe();
-            surveillanceUnsubscribe = null;
-        }
-        document.body.classList.remove('sentry-fullscreen-mode');
         isAIPaused = false; // Reactivate background processing
         attendInfo.classList.remove('hidden');
         document.getElementById('btn-mode-attend').classList.add('active');
         statusBadge.innerText = "Attendance Monitor";
     }
-}
-
-let surveillanceUnsubscribe = null;
-function startSurveillanceMonitor() {
-    if (surveillanceUnsubscribe) surveillanceUnsubscribe();
-    if (!currentSpace) return;
-
-    const grid = document.getElementById('surveillance-grid');
-    const countBadge = document.getElementById('surveillance-count');
-
-    // Real-time snapshot of the space document to get liveSessions field
-    surveillanceUnsubscribe = onSnapshot(doc(db, COLL_SPACES, currentSpace.id), (snap) => {
-        const data = snap.data();
-        const sessions = data.liveSessions || {};
-
-        const now = Date.now();
-        const activeIds = Object.keys(sessions).filter(id => {
-            const lastSeen = sessions[id].lastSeen.toDate().getTime();
-            return (now - lastSeen) < 15000; // Heartbeat check (15s timeout)
-        });
-
-        countBadge.innerText = `${activeIds.length} Active`;
-
-        if (activeIds.length === 0) {
-            grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);"><div style="font-size: 2rem; margin-bottom: 10px;">🛡️</div><p>No active surveillance sessions.<br><small>Participants must activate Surveillance Mode in their link.</small></p></div>`;
-            return;
-        }
-
-        grid.innerHTML = '';
-        activeIds.forEach(id => {
-            const session = sessions[id];
-            const behavior = session.behavior || "SECURE";
-            const isCritical = session.isSuspicious || behavior === "OFF-SCREEN";
-
-            const card = document.createElement('div');
-            card.className = 'surveillance-card';
-            card.style.cssText = `
-                background: rgba(255,255,255,0.03);
-                border-radius: 12px;
-                padding: 10px;
-                border: 1px solid ${isCritical ? '#ef4444' : (behavior === "ROTATING" ? '#fbbf24' : 'var(--border)')};
-                text-align: center;
-                animation: ${isCritical ? 'alertPulse 1s infinite' : 'none'};
-                transition: all 0.3s;
-                position: relative;
-                overflow: hidden;
-            `;
-
-            let icon = "👤";
-            if (behavior === "OFF-SCREEN") icon = "🚫";
-            else if (behavior === "DISTRACTED") icon = "🚩";
-            else if (behavior === "ROTATING") icon = "⚠️";
-
-            const integrity = session.integrity || 100;
-            const integrityColor = integrity < 50 ? '#ef4444' : (integrity < 80 ? '#fbbf24' : 'var(--success)');
-
-            card.innerHTML = `
-                <div style="font-size: 1rem; margin-bottom: 2px;">${icon}</div>
-                <div style="font-size: 0.65rem; font-weight: bold; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${session.name}</div>
-                <div style="font-size: 0.5rem; color: ${isCritical ? '#ef4444' : (behavior === "ROTATING" ? '#fbbf24' : 'var(--success)')}; margin-top: 2px; font-weight:800; letter-spacing:0.5px;">
-                    ${behavior}
-                </div>
-                <!-- Integrity Progress -->
-                <div style="width: 100%; height: 3px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 5px; overflow: hidden;">
-                    <div style="width: ${integrity}%; height: 100%; background: ${integrityColor}; transition: width 0.3s;"></div>
-                </div>
-                <div style="position: absolute; bottom: 0; left: 0; height: 1px; background: var(--accent); width: 100%; opacity: 0.05;"></div>
-            `;
-            grid.appendChild(card);
-        });
-    });
 }
 
 

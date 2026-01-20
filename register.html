@@ -235,9 +235,6 @@
                 </div>
                 <p style="margin-top:15px; font-size:0.8rem; color:#10b981;">Starting Camera...</p>
             </div>
-            <!-- Mobile Camera Toggle -->
-            <button id="btn-switch-camera"
-                style="position: absolute; bottom: 15px; right: 15px; background: rgba(0,0,0,0.6); border: 1px solid #10b981; color: #10b981; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; z-index: 20; font-size: 1.2rem; cursor: pointer;">🔄</button>
         </div>
 
         <div class="form-card" id="form-view">
@@ -259,8 +256,7 @@
             <div class="registration-actions"
                 style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
                 <button id="btn-snap" class="btn-register"
-                    style="background: var(--accent); color: #000; margin-top: 0;">📸
-                    Capture & Register</button>
+                    style="background: var(--accent); color: #000; margin-top: 0;">📸 Capture & Register</button>
                 <button id="btn-gallery" class="btn-register"
                     style="background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #fff; margin-top: 0;">🖼️
                     Upload from Gallery</button>
@@ -276,8 +272,7 @@
             <p style="color:#888; line-height:1.6;">Your biometric profile is now pending admin approval. You will be
                 able to mark attendance once verified.</p>
             <a href="index.html" class="btn-register"
-                style="display: block; text-decoration: none; margin-top: 30px;">Back
-                to Home</a>
+                style="display: block; text-decoration: none; margin-top: 30px;">Back to Home</a>
         </div>
 
         <div class="error-screen" id="error-view">
@@ -354,10 +349,6 @@
         const btnSnap = document.getElementById('btn-snap');
         const btnGallery = document.getElementById('btn-gallery');
         const inputGallery = document.getElementById('input-gallery');
-        const btnSwitchCamera = document.getElementById('btn-switch-camera');
-
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        let preferredCamera = 'user';
 
         const params = new URLSearchParams(window.location.search);
         const spaceId = params.get('s');
@@ -449,12 +440,7 @@
                 feedback.innerText = "Initializing Hardware & AI...";
 
                 const cameraPromise = (async () => {
-                    if (video.srcObject) {
-                        video.srcObject.getTracks().forEach(track => track.stop());
-                    }
-                    const stream = await navigator.mediaDevices.getUserMedia({
-                        video: { facingMode: preferredCamera }
-                    });
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
                     video.srcObject = stream;
                     await video.play();
                     video.onloadedmetadata = () => {
@@ -556,19 +542,7 @@
                 feedback.style.color = "#10b981";
             }
 
-            // Performance: More frequent on laptop, less on mobile
-            if (isMobile) {
-                setTimeout(() => requestAnimationFrame(processFrame), 200);
-            } else {
-                requestAnimationFrame(processFrame);
-            }
-        }
-
-        if (btnSwitchCamera) {
-            btnSwitchCamera.onclick = () => {
-                preferredCamera = preferredCamera === 'user' ? 'environment' : 'user';
-                startPortal(); // Re-trigger to restart camera
-            };
+            requestAnimationFrame(processFrame);
         }
 
         function drawHUD(ctx, box, name) {
