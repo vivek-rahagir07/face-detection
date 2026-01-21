@@ -1018,6 +1018,13 @@ function updateRegistrationForm() {
 
 async function saveSpaceConfig() {
     if (!currentSpace) return;
+    const btnSave = document.getElementById('btn-save-config');
+    const originalText = btnSave.innerText;
+
+    // UI Feedback
+    btnSave.innerText = "Saving...";
+    btnSave.disabled = true;
+
     const newConfig = {};
     document.querySelectorAll('.field-toggle').forEach(el => {
         newConfig[el.dataset.field] = el.checked;
@@ -1045,13 +1052,20 @@ async function saveSpaceConfig() {
             },
             qrRefreshInterval: configQrRefresh.value
         });
+
+        // Update local state
         currentSpace.config = { ...newConfig, examMode: examMode };
         currentSpace.config.qrRefreshInterval = configQrRefresh.value;
         currentSpace.geofencing = { enabled: geofenceEnabled, radius: geofenceRadius, center: lat && lng ? { lat, lng } : null };
-        showToast("Settings saved!");
+
+        showToast("Settings saved successfully!");
         setMode('attendance');
     } catch (err) {
-        showToast(err.message, "error");
+        console.error("Save Settings Error:", err);
+        showToast("Failed to save: " + err.message, "error");
+    } finally {
+        btnSave.innerText = originalText;
+        btnSave.disabled = false;
     }
 }
 
