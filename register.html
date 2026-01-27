@@ -253,6 +253,16 @@
                     <option value="other">Other</option>
                 </select>
             </div>
+            <div class="input-group" id="biometric-group" style="display: none;">
+                <label>Device Security</label>
+                <button id="btn-enable-bio" class="btn-register"
+                    style="background: #3b82f6; color: #fff; margin-top: 0; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                    🔒 Enable Device Biometrics
+                </button>
+                <div id="bio-status-msg" style="font-size: 0.75rem; color: #888; margin-top: 8px; text-align: center;">
+                    Optional: Register biometrics for faster, host-authenticated attendance.
+                </div>
+            </div>
             <div class="registration-actions"
                 style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
                 <button id="btn-snap" class="btn-register"
@@ -349,6 +359,10 @@
         const btnSnap = document.getElementById('btn-snap');
         const btnGallery = document.getElementById('btn-gallery');
         const inputGallery = document.getElementById('input-gallery');
+        const btnEnableBio = document.getElementById('btn-enable-bio');
+        const bioStatusMsg = document.getElementById('bio-status-msg');
+
+        let biometricCredentialId = null;
 
         const params = new URLSearchParams(window.location.search);
         const spaceId = params.get('s');
@@ -409,6 +423,69 @@
             update();
             timerInterval = setInterval(update, 1000);
         }
+
+        // WebAuthn Registration
+        async function registerBiometrics() {
+            try {
+                if (!window.PublicKeyCredential) {
+                    throw new Error("Biometrics not supported on this browser.");
+                }
+
+                const challenge = new Uint8Array(32);
+                window.crypto.getRandomValues(challenge);
+
+                const userID = new Uint8Array(16);
+                window.crypto.getRandomValues(userID);
+
+                const publicKeyCredentialCreationOptions = {
+                    challenge: challenge,
+                    rp: {
+                        name: "CognitoAttend",
+                        id: window.location.hostname === 'localhost' ? 'localhost' : window.location.hostname,
+                    },
+                    user: {
+                        id: userID,
+                        name: inputName.value.trim() || "User",
+                        displayName: inputName.value.trim() || "User",
+                    },
+                    pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
+                    authenticatorSelection: {
+                        authenticatorAttachment: "platform",
+                        userVerification: "required",
+                        residentKey: "required",
+                        requireResidentKey: true,
+                    },
+                    timeout: 60000,
+                    attestation: "none"
+                };
+
+                const credential = await navigator.credentials.create({
+                    publicKey: publicKeyCredentialCreationOptions
+                });
+
+                if (credential) {
+                    biometricCredentialId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
+                    btnEnableBio.style.background = "#10b981";
+                    btnEnableBio.innerHTML = "✓ Biometrics Enabled";
+                    bioStatusMsg.innerText = "Biometrics linked successfully.";
+                    CyberAudio.playMatch();
+                }
+            } catch (err) {
+                console.error("Biometric Reg Error:", err);
+                bioStatusMsg.innerText = "Error: " + err.message;
+                bioStatusMsg.style.color = "#ef4444";
+                CyberAudio.playError();
+            }
+        }
+
+        btnEnableBio.onclick = (e) => {
+            e.preventDefault();
+            if (!inputName.value.trim()) {
+                alert("Please enter your name first.");
+                return;
+            }
+            registerBiometrics();
+        };
 
         async function startPortal() {
             try {
@@ -482,6 +559,12 @@
                 feedback.innerText = "Ready to scan face";
                 feedback.style.color = "#10b981";
                 isReady = true;
+
+                // Show biometric button if supported
+                if (window.PublicKeyCredential) {
+                    document.getElementById('biometric-group').style.display = 'block';
+                }
+
                 requestAnimationFrame(processFrame);
 
             } catch (err) {
@@ -672,6 +755,7 @@
                 ...metadata,
                 descriptor: Array.from(descriptor),
                 photo: photoBase64,
+                biometricCredentialId: biometricCredentialId,
                 attendanceCount: 0,
                 lastAttendance: null,
                 approved: false, // Portals always require approval

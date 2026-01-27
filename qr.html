@@ -20,7 +20,6 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap"
         rel="stylesheet">
-    <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
@@ -480,8 +479,6 @@
             localStorage.setItem('cognito_device_id', deviceID);
         }
 
-        let surveillanceActive = false;
-        let sessionStartTime = Date.now();
 
         async function initSystem() {
             try {
@@ -601,6 +598,38 @@
                 synth.onvoiceschanged = performSpeak;
             } else {
                 performSpeak();
+            }
+        }
+
+        async function verifyBiometrics(storedCredentialId) {
+            try {
+                if (!window.PublicKeyCredential) {
+                    throw new Error("Biometrics not supported on this browser.");
+                }
+
+                const challenge = new Uint8Array(32);
+                window.crypto.getRandomValues(challenge);
+
+                const rawId = Uint8Array.from(atob(storedCredentialId), c => c.charCodeAt(0));
+
+                const publicKeyCredentialRequestOptions = {
+                    challenge: challenge,
+                    allowCredentials: [{
+                        id: rawId,
+                        type: "public-key"
+                    }],
+                    timeout: 60000,
+                    userVerification: "required"
+                };
+
+                const assertion = await navigator.credentials.get({
+                    publicKey: publicKeyCredentialRequestOptions
+                });
+
+                return !!assertion;
+            } catch (err) {
+                console.error("Biometric Verification Error:", err);
+                throw new Error("Biometric matching failed: " + err.message);
             }
         }
 
@@ -778,6 +807,14 @@
                 if (!userSnap.empty) {
                     const userDoc = userSnap.docs[0];
                     const userData = userDoc.data();
+
+                    // Check for biometric verification
+                    if (userData.biometricCredentialId) {
+                        showStatus("Biometric Challenge Initiated. Scan device fingerprint/face...", "");
+                        const verified = await verifyBiometrics(userData.biometricCredentialId);
+                        if (!verified) throw new Error("Biometric verification failed.");
+                        showStatus("Biometric Authentication Successful ✓", "success");
+                    }
 
                     if (userData.lastAttendance === todayStr) {
                         showStatus("Identity verified. Presence already logged.", "success");

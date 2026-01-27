@@ -2138,6 +2138,13 @@ async function markAttendance(name) {
             setTimeout(() => wrapper.classList.remove('success-pulse'), 400);
         }
 
+        // Auto-open QR Presence after biometric recognition
+        if (qrModal && qrModal.classList.contains('hidden')) {
+            isAIPaused = true;
+            qrModal.classList.remove('hidden');
+            startQRRotation();
+        }
+
     } catch (err) {
         console.error("Attendance Update Error:", err);
     }
