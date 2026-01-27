@@ -560,8 +560,8 @@
                 feedback.style.color = "#10b981";
                 isReady = true;
 
-                // Show biometric button if supported
-                if (window.PublicKeyCredential) {
+                // Show biometric button if supported and required by workspace
+                if (window.PublicKeyCredential && workspaceConfig.config && workspaceConfig.config.biometricRequired) {
                     document.getElementById('biometric-group').style.display = 'block';
                 }
 
@@ -663,8 +663,8 @@
             if (!name) return alert("Please enter your name.");
             if (!lastDetection) return alert("Please align your face with the camera.");
 
-            // Gating: If biometrics supported and not yet enabled
-            if (window.PublicKeyCredential && !biometricCredentialId) {
+            // Gating: If biometrics supported, required, and not yet enabled
+            if (window.PublicKeyCredential && !biometricCredentialId && workspaceConfig.config && workspaceConfig.config.biometricRequired) {
                 const proceed = confirm("Strongly Recommended: Secure your profile with device biometrics now? This will allow you to mark attendance instantly via TouchID/FaceID later.");
                 if (proceed) {
                     await registerBiometrics();
@@ -728,8 +728,8 @@
                 const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
 
                 if (detection) {
-                    // Gating: If biometrics supported and not yet enabled
-                    if (window.PublicKeyCredential && !biometricCredentialId) {
+                    // Gating: If biometrics supported, required, and not yet enabled
+                    if (window.PublicKeyCredential && !biometricCredentialId && workspaceConfig.config && workspaceConfig.config.biometricRequired) {
                         const proceed = confirm("Strongly Recommended: Secure your profile with device biometrics now? This will allow you to mark attendance instantly via TouchID/FaceID later.");
                         if (proceed) {
                             await registerBiometrics();

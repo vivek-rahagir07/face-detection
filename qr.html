@@ -575,8 +575,9 @@
 
                 isReady = true;
 
-                // Biometric-First Routing
-                if (window.PublicKeyCredential) {
+                // Biometric-First Routing (Respect Workspace Setting)
+                const bioRequired = currentSpaceData.config && currentSpaceData.config.biometricRequired;
+                if (window.PublicKeyCredential && bioRequired) {
                     biometricView.style.display = 'flex';
                     formView.style.display = 'none';
                 } else {
@@ -936,8 +937,8 @@
                     userData = userSnap.docs[0].data();
                     userDocId = userSnap.docs[0].id;
 
-                    // Manual entry still requires biometric check if they have it enabled
-                    if (userData.biometricCredentialId) {
+                    // Manual entry still requires biometric check if they have it enabled AND it's required by workspace
+                    if (userData.biometricCredentialId && spaceData.config && spaceData.config.biometricRequired) {
                         showStatus("Biometric Challenge Initiated. Scan device fingerprint/face...", "");
                         const verified = await verifyBiometrics(userData.biometricCredentialId);
                         if (!verified) throw new Error("Biometric verification failed.");
