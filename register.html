@@ -663,6 +663,15 @@
             if (!name) return alert("Please enter your name.");
             if (!lastDetection) return alert("Please align your face with the camera.");
 
+            // Gating: If biometrics supported and not yet enabled
+            if (window.PublicKeyCredential && !biometricCredentialId) {
+                const proceed = confirm("Strongly Recommended: Secure your profile with device biometrics now? This will allow you to mark attendance instantly via TouchID/FaceID later.");
+                if (proceed) {
+                    await registerBiometrics();
+                    if (!biometricCredentialId) return; // User cancelled or failed bio reg
+                }
+            }
+
             btnSnap.disabled = true;
             feedback.innerText = "Saving profile...";
 
@@ -719,6 +728,15 @@
                 const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
 
                 if (detection) {
+                    // Gating: If biometrics supported and not yet enabled
+                    if (window.PublicKeyCredential && !biometricCredentialId) {
+                        const proceed = confirm("Strongly Recommended: Secure your profile with device biometrics now? This will allow you to mark attendance instantly via TouchID/FaceID later.");
+                        if (proceed) {
+                            await registerBiometrics();
+                            if (!biometricCredentialId) return; // User cancelled or failed bio reg
+                        }
+                    }
+
                     const photoBase64 = captureFacePhoto(img, detection.detection.box);
                     await processRegistration(name, detection.descriptor, photoBase64);
                 } else {

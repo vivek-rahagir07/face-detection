@@ -287,6 +287,50 @@
             filter: brightness(0.6) contrast(1.2) sepia(100%) hue-rotate(140deg) saturate(3);
         }
 
+        .bio-icon-pulse {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 120px;
+            height: 120px;
+            background: rgba(0, 242, 255, 0.05);
+            border-radius: 50%;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(0, 242, 255, 0.2);
+        }
+
+        .bio-icon-pulse::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 1px solid var(--accent);
+            border-radius: 50%;
+            animation: pulse-ring 2s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(1.5);
+                opacity: 0;
+            }
+        }
+
+        #biometric-view h2 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 0.5rem;
+        }
+
         .precision-badge {
             position: absolute;
             top: 10px;
@@ -385,7 +429,23 @@
 
 
 
-        <div id="form-view">
+        <div id="biometric-view"
+            style="display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; text-align: center;">
+            <div class="bio-icon-pulse">
+                <div style="font-size: 5rem; margin-bottom: 20px;">🔐</div>
+            </div>
+            <h2>Biometric Verification</h2>
+            <p style="color: var(--text-muted); margin-bottom: 30px; max-width: 300px;">Secure presence marking via
+                device fingerprint or face recognition.</p>
+            <button id="btn-verify-bio" class="btn-register"
+                style="background: var(--accent); color: #000; width: 100%; max-width: 300px; font-weight: 700; padding: 16px;">🚀
+                Verify & Mark Attendance</button>
+            <button id="btn-manual-fallback"
+                style="background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #fff; margin-top: 20px; padding: 10px 20px; border-radius: 8px; cursor: pointer;">⌨️
+                Use Manual Entry</button>
+        </div>
+
+        <div id="form-view" style="display: none;">
             <div id="dynamic-fields-container">
                 <div class="input-group">
                     <label for="name">Your Name</label>
@@ -468,6 +528,9 @@
         const successView = document.getElementById('success-view');
         const dynamicFieldsContainer = document.getElementById('dynamic-fields-container');
         const errorView = document.getElementById('error-view');
+        const biometricView = document.getElementById('biometric-view');
+        const btnVerifyBio = document.getElementById('btn-verify-bio');
+        const btnManualFallback = document.getElementById('btn-manual-fallback');
 
 
 
@@ -515,7 +578,17 @@
                 updateFormFields(currentSpaceData.config);
 
                 isReady = true;
-                showStatus("Ready to submit.", "success");
+
+                // Biometric-First Routing
+                if (window.PublicKeyCredential) {
+                    biometricView.style.display = 'flex';
+                    formView.style.display = 'none';
+                } else {
+                    biometricView.style.display = 'none';
+                    formView.style.display = 'block';
+                }
+
+                showStatus("System Ready", "success");
             } catch (err) {
                 console.error(err);
                 showStatus("Initialization error: " + err.message, "error");
@@ -598,6 +671,60 @@
                 synth.onvoiceschanged = performSpeak;
             } else {
                 performSpeak();
+            }
+        }
+
+        async function verifyBiometricsFast() {
+            try {
+                if (!window.PublicKeyCredential) {
+                    throw new Error("Biometrics not supported.");
+                }
+
+                showStatus("Scanning biometrics...", "");
+
+                const challenge = new Uint8Array(32);
+                window.crypto.getRandomValues(challenge);
+
+                // We don't provide allowCredentials to trigger "Discoverable Credentials" (Passkey selection)
+                const publicKeyCredentialRequestOptions = {
+                    challenge: challenge,
+                    timeout: 60000,
+                    userVerification: "required"
+                };
+
+                const assertion = await navigator.credentials.get({
+                    publicKey: publicKeyCredentialRequestOptions
+                });
+
+                if (!assertion) throw new Error("No credential selected.");
+
+                const credentialIdRaw = new Uint8Array(assertion.rawId);
+                const credentialIdB64 = btoa(String.fromCharCode(...credentialIdRaw));
+
+                // Find user in Firestore with this credential ID
+                showStatus("Identifying user...", "");
+                const q = query(collection(db, 'users'),
+                    where("spaceId", "==", spaceId),
+                    where("biometricCredentialId", "==", credentialIdB64)
+                );
+
+                const userSnap = await getDocs(q);
+                if (userSnap.empty) {
+                    throw new Error("Device not recognized. Please register first or use manual entry.");
+                }
+
+                const userDoc = userSnap.docs[0];
+                const userData = userDoc.data();
+                userData.id = userDoc.id; // Crucial for Firestore updates
+
+                showStatus("Authenticated as " + userData.name, "success");
+
+                // Directly trigger attendance marking
+                await submitAttendance(userData.name, userData);
+
+            } catch (err) {
+                console.error("Biometric Identification Error:", err);
+                showStatus(err.message, "error");
             }
         }
 
@@ -744,16 +871,16 @@
             leafletMap.invalidateSize();
         }
 
-        async function submitAttendance() {
+        async function submitAttendance(autoName = null, autoData = null) {
             if (!isReady) return;
 
-            const nameInput = document.getElementById('name');
-            const name = nameInput ? nameInput.value.trim() : '';
+            const name = autoName || (document.getElementById('name') ? document.getElementById('name').value.trim() : '');
 
             if (!name) return showStatus("Please enter your name.", "error");
             if (!spaceId || !nonce) return showStatus("Invalid CognitoAttend Link.", "error");
 
             btnSubmit.disabled = true;
+            btnVerifyBio.disabled = true;
             showStatus("Verifying Identity<span class=\"loading-dots\"></span>", "");
 
             try {
@@ -792,57 +919,62 @@
                 await updateDoc(spaceRef, { qrScanCount: increment(1) });
 
                 const config = spaceData.config || {};
-                const gender = document.getElementById('gender').value;
-                const regNo = config.regNo ? document.getElementById('regNo').value.trim() : '';
-                const course = config.course ? document.getElementById('course').value.trim() : '';
-                const email = config.email ? document.getElementById('email').value.trim() : '';
-                const phone = config.phone ? document.getElementById('phone').value.trim() : '';
-                const bloodGroup = config.bloodGroup ? document.getElementById('bloodGroup').value.trim() : '';
-                const weight = config.weight ? document.getElementById('weight').value.trim() : '';
+                const genderInput = document.getElementById('gender');
+                const gender = autoData ? (autoData.gender || 'male') : (genderInput ? genderInput.value : 'male');
 
-                const q = query(collection(db, 'users'), where("spaceId", "==", spaceId), where("name", "==", name));
-                const userSnap = await getDocs(q);
-                const todayStr = new Date().toDateString();
+                const regNo = autoData ? (autoData.regNo || '') : (config.regNo ? document.getElementById('regNo').value.trim() : '');
+                const course = autoData ? (autoData.course || '') : (config.course ? document.getElementById('course').value.trim() : '');
+                const email = autoData ? (autoData.email || '') : (config.email ? document.getElementById('email').value.trim() : '');
+                const phone = autoData ? (autoData.phone || '') : (config.phone ? document.getElementById('phone').value.trim() : '');
+                const bloodGroup = autoData ? (autoData.bloodGroup || '') : (config.bloodGroup ? document.getElementById('bloodGroup').value.trim() : '');
+                const weight = autoData ? (autoData.weight || '') : (config.weight ? document.getElementById('weight').value.trim() : '');
 
-                if (!userSnap.empty) {
-                    const userDoc = userSnap.docs[0];
-                    const userData = userDoc.data();
+                let userData = autoData;
+                let userDocId = autoData ? autoData.id : null;
 
-                    // Check for biometric verification
+                if (!userData) {
+                    const q = query(collection(db, 'users'), where("spaceId", "==", spaceId), where("name", "==", name));
+                    const userSnap = await getDocs(q);
+                    if (userSnap.empty) throw new Error("You are not registered. Please talk to an admin.");
+
+                    userData = userSnap.docs[0].data();
+                    userDocId = userSnap.docs[0].id;
+
+                    // Manual entry still requires biometric check if they have it enabled
                     if (userData.biometricCredentialId) {
                         showStatus("Biometric Challenge Initiated. Scan device fingerprint/face...", "");
                         const verified = await verifyBiometrics(userData.biometricCredentialId);
                         if (!verified) throw new Error("Biometric verification failed.");
                         showStatus("Biometric Authentication Successful ✓", "success");
                     }
-
-                    if (userData.lastAttendance === todayStr) {
-                        showStatus("Identity verified. Presence already logged.", "success");
-                        finishSubmit(name, gender, spaceData);
-                        return;
-                    }
-
-                    await updateDoc(doc(db, 'users', userDoc.id), {
-                        lastAttendance: todayStr,
-                        attendanceCount: increment(1),
-                        gender: gender,
-                        regNo: regNo || userData.regNo || '',
-                        course: course || userData.course || '',
-                        email: email || userData.email || '',
-                        phone: phone || userData.phone || '',
-                        bloodGroup: bloodGroup || userData.bloodGroup || '',
-                        weight: weight || userData.weight || ''
-                    });
-
-                    await recordAttendanceHistory(userDoc.id, name, regNo || userData.regNo || '', course || userData.course || '', gender);
-                } else {
-                    throw new Error("You are not registered. Please talk to an admin.");
                 }
 
+                const todayStr = new Date().toDateString();
+
+                if (userData.lastAttendance === todayStr) {
+                    showStatus("Identity verified. Presence already logged.", "success");
+                    finishSubmit(name, gender, spaceData);
+                    return;
+                }
+
+                await updateDoc(doc(db, 'users', userDocId), {
+                    lastAttendance: todayStr,
+                    attendanceCount: increment(1),
+                    gender: gender,
+                    regNo: regNo || userData.regNo || '',
+                    course: course || userData.course || '',
+                    email: email || userData.email || '',
+                    phone: phone || userData.phone || '',
+                    bloodGroup: bloodGroup || userData.bloodGroup || '',
+                    weight: weight || userData.weight || ''
+                });
+
+                await recordAttendanceHistory(userDocId, name, regNo || userData.regNo || '', course || userData.course || '', gender);
                 finishSubmit(name, gender, spaceData);
             } catch (err) {
                 showStatus(err.message, "error");
                 btnSubmit.disabled = false;
+                btnVerifyBio.disabled = false;
             }
         }
 
@@ -889,9 +1021,17 @@
             statusDiv.className = type;
         }
 
-        btnSubmit.addEventListener('click', submitAttendance);
+        btnSubmit.addEventListener('click', () => submitAttendance());
+        btnVerifyBio.addEventListener('click', verifyBiometricsFast);
+        btnManualFallback.addEventListener('click', () => {
+            biometricView.style.display = 'none';
+            formView.style.display = 'block';
+        });
+
         document.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') submitAttendance();
+            if (e.key === 'Enter') {
+                if (formView.style.display !== 'none') submitAttendance();
+            }
         });
 
         initSystem();
