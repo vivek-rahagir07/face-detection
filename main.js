@@ -362,11 +362,13 @@ async function handleCreate() {
         const docRef = await addDoc(collection(db, COLL_SPACES), {
             name: name,
             password: password,
+            isMaster: true, // All new root workspaces are masters by default
             createdAt: new Date(),
             config: { regNo: true, course: true, phone: false }
         });
 
-        enterSpace(docRef.id, { name, password, config: { regNo: true, course: true, phone: false } });
+        enterSpace(docRef.id, { name, password, isMaster: true, config: { regNo: true, course: true, phone: false } });
+
     } catch (err) {
         portalError.innerText = "Create Error: " + err.message;
         btnPortalCreate.innerText = originalText;
@@ -379,13 +381,14 @@ function enterSpace(id, data) {
     currentSpaceTitle.innerText = currentSpace.name;
     portalError.innerText = "";
 
-    // If Master account, show selector hub
-    if (currentSpace.isMaster) {
+    // If Master account (or any root workspace), show selector hub
+    if (currentSpace.isMaster || !currentSpace.parentSpaceId) {
         masterSpace = { ...currentSpace }; // Always update master context when entering a master
         showView('view-selector');
         renderClassroomHub();
         return;
     }
+
 
     // Standard entry flow
     showView('view-operation');
@@ -2787,7 +2790,8 @@ function init3DFace(containerId) {
 // --- Hierarchical Classroom Hub Logic ---
 
 async function renderClassroomHub() {
-    if (!currentSpace || !currentSpace.isMaster) return;
+    if (!currentSpace || (!currentSpace.isMaster && currentSpace.parentSpaceId)) return;
+
     masterSpace = { ...currentSpace }; // Store master context
     hubClassroomList.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">Syncing Hub...</div>';
 
@@ -2835,7 +2839,8 @@ window.enterClassroom = async function (id) {
 };
 
 async function createHubSpace() {
-    if (!currentSpace || !currentSpace.isMaster) return;
+    if (!currentSpace || (!currentSpace.isMaster && currentSpace.parentSpaceId)) return;
+
     const name = inputHubNewSpace.value.trim();
     if (!name) return alert("Enter classroom name");
 
@@ -2880,7 +2885,31 @@ async function checkForAutoMigration() {
             createdAt: new Date(),
             config: { regNo: true, course: true, phone: true }
         });
+    } else {
+        // Ensure requested classrooms exist
+        const vivekDoc = snap.docs[0];
+        const vivekId = vivekDoc.id;
+        const requiredClassrooms = ["classhub test", "divya sharma", "navodya prep"];
+
+        for (const classroomName of requiredClassrooms) {
+            const cq = query(collection(db, COLL_SPACES),
+                where("parentSpaceId", "==", vivekId),
+                where("name", "==", classroomName));
+            const cSnap = await getDocs(cq);
+
+            if (cSnap.empty) {
+                console.log(`Auto-creating classroom: ${classroomName}`);
+                await addDoc(collection(db, COLL_SPACES), {
+                    name: classroomName,
+                    parentSpaceId: vivekId,
+                    password: vivekDoc.data().password,
+                    createdAt: new Date(),
+                    config: { ...vivekDoc.data().config }
+                });
+            }
+        }
     }
+
 
     // Migration for Divya Sharma, Navodya Prep, Test
     const targets = ["Divya Sharma", "Navodya Prep", "Test"];
