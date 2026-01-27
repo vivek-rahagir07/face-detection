@@ -261,6 +261,7 @@
                     <button class="nav-item active" data-mode="attend">🕒 Attendance Monitor</button>
                     <button class="nav-item" data-mode="reg">👤 Student Registration</button>
                     <button class="nav-item" data-mode="analytics">👥 Analytics & Logs</button>
+                    <button class="nav-item" data-mode="subspaces">🏢 Sub-Workspaces</button>
                     <button class="nav-item" data-mode="config">⚙️ System Config</button>
                 </div>
                 <div class="sidebar-section">
@@ -328,6 +329,8 @@
                         Reg</button>
                     <button id="btn-mode-analytics" class="btn-secondary" title="Analytics & Logs"><span>👥</span>
                         Logs</button>
+                    <button id="btn-mode-subspaces" class="btn-secondary" title="Sub-Workspaces"><span>🏢</span>
+                        Spaces</button>
                     <button id="btn-mode-config" class="btn-secondary" title="Configuration"><span>⚙️</span>
                         Config</button>
                 </div>
@@ -458,6 +461,22 @@
                         <input type="text" id="people-search" placeholder="Search people...">
                     </div>
                     <div id="people-list-container" class="scrollable-list" style="max-height: 350px;"></div>
+                </div>
+
+                <div id="subspaces-panel" class="hidden">
+                    <div class="list-header"><span>🏢 Your Classroom Workspaces</span></div>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin: 10px 0;">Create and switch between
+                        your classrooms instantly.</p>
+                    <div class="form-group"
+                        style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 12px; border: 1px solid var(--border);">
+                        <input type="text" id="input-subspace-name"
+                            placeholder="New Classroom Name (e.g. Morning Batch)">
+                        <button id="btn-create-subspace" class="btn-primary" style="margin-top: 10px;">➕ Create New
+                            Classroom</button>
+                    </div>
+                    <div id="subspaces-list" class="scrollable-list" style="margin-top: 15px; max-height: 250px;">
+                        <div style="padding:10px; text-align:center; color:#888;">No sub-workspaces found.</div>
+                    </div>
                 </div>
             </div>
         </div>

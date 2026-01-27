@@ -71,14 +71,15 @@ const historyTableBody = document.getElementById('history-table-body');
 const historyStatus = document.getElementById('history-status');
 const historySearchInput = document.getElementById('history-search');
 const btnExportHistory = document.getElementById('btn-export-history');
-const tabPresent = document.getElementById('tab-present');
 const tabAbsent = document.getElementById('tab-absent');
-
+const analyticsPanel = document.getElementById('analytics-panel');
+const subspacesPanel = document.getElementById('subspaces-panel');
+const subspacesList = document.getElementById('subspaces-list');
+const inputSubspaceName = document.getElementById('input-subspace-name');
+const btnCreateSubspace = document.getElementById('btn-create-subspace');
 
 let currentHistoryRecords = [];
 let currentHistoryDate = '';
-
-
 
 let currentMode = 'attendance';
 let currentSpace = null;
@@ -96,7 +97,6 @@ let lastPresentHTML = '';
 let lastAbsentHTML = '';
 
 const smoothBoxes = {};
-
 const LERP_FACTOR = 0.4;
 
 const qrModal = document.getElementById('qr-modal');
@@ -106,15 +106,11 @@ const qrImage = document.getElementById('qr-image');
 const qrTimerDisplay = document.getElementById('qr-timer');
 const qrStatus = document.getElementById('qr-status');
 const qrScanCountDisplay = document.getElementById('qr-scan-count');
-const configQrRefresh = document.getElementById('config-qr-refresh');
 const qrExpiredOverlay = document.getElementById('qr-expired-overlay');
 const btnRefreshQr = document.getElementById('btn-refresh-qr');
 
-
-const analyticsPanel = document.getElementById('analytics-panel');
 const peopleListContainer = document.getElementById('people-list-container');
 const peopleSearchInput = document.getElementById('people-search');
-
 
 let isMagicLinkSession = false;
 let isAIPaused = false;
@@ -123,7 +119,11 @@ const configGeoEnabled = document.getElementById('config-geo-enabled');
 const configGeoRadius = document.getElementById('config-geo-radius');
 const btnSetLocation = document.getElementById('btn-set-location');
 const geoStatus = document.getElementById('geo-status');
-
+const configQrRefresh = document.getElementById('config-qr-refresh');
+const btnGenerateMagic = document.getElementById('btn-generate-magic');
+const btnCopyMagic = document.getElementById('btn-copy-magic');
+const magicLinkInput = document.getElementById('magic-link-input');
+const magicLinkContainer = document.getElementById('magic-link-container');
 
 const editModal = document.getElementById('edit-modal');
 const btnCloseEdit = document.getElementById('btn-close-edit');
@@ -146,13 +146,11 @@ const profileHistoryStatus = document.getElementById('profile-history-status');
 
 let editingPersonId = null;
 
-
 const confirmModal = document.getElementById('confirm-modal');
 const confirmMessage = document.getElementById('confirm-message');
 const btnConfirmYes = document.getElementById('btn-confirm-yes');
 const btnConfirmNo = document.getElementById('btn-confirm-no');
 const toastContainer = document.getElementById('toast-container');
-
 
 const mobileSidebar = document.getElementById('mobile-sidebar');
 const btnMobileMenu = document.getElementById('btn-mobile-menu');
@@ -308,6 +306,12 @@ async function handleJoin() {
             btnPortalJoin.innerText = originalText;
             btnPortalJoin.disabled = false;
         }
+
+        // --- ACCOUNT AUTOMATION: Ensure 'vivek' exists and handle auto-migration ---
+        if (name === 'vivek' && password === 'Test123456' && found) {
+            checkForAutoMigration();
+        }
+
     } catch (err) {
         portalError.innerText = "Error: " + err.message;
         btnPortalJoin.innerText = originalText;
@@ -2264,11 +2268,6 @@ const btnExportHistoryPdf = document.getElementById('btn-export-history-pdf');
 if (btnExportHistoryPdf) btnExportHistoryPdf.addEventListener('click', exportHistoryToPDF);
 
 // Magic Link Event Listeners
-const btnGenerateMagic = document.getElementById('btn-generate-magic');
-const magicLinkContainer = document.getElementById('magic-link-container');
-const magicLinkInput = document.getElementById('magic-link-input');
-const btnCopyMagic = document.getElementById('btn-copy-magic');
-
 if (btnGenerateMagic) {
     btnGenerateMagic.addEventListener('click', () => {
         if (!currentSpace) return alert("Enter a workspace first");
@@ -2319,11 +2318,11 @@ function setMode(mode) {
         document.getElementById('btn-mode-config').classList.add('active');
         statusBadge.innerText = "Configuration";
         syncConfigToggles();
-    } else if (mode === 'analytics') {
-        analyticsPanel.classList.remove('hidden');
-        document.getElementById('btn-mode-analytics').classList.add('active');
-        statusBadge.innerText = "Analytics & Logs";
-        renderPeopleManagement();
+    } else if (mode === 'subspaces') {
+        subspacesPanel.classList.remove('hidden');
+        document.getElementById('btn-mode-subspaces').classList.add('active');
+        statusBadge.innerText = "Sub-Workspaces";
+        renderSubspaces();
     } else {
         isAIPaused = false; // Reactivate background processing
         attendInfo.classList.remove('hidden');
@@ -2751,3 +2750,186 @@ function init3DFace(containerId) {
     });
 }
 
+// --- Hierarchical Workspace & Migration Logic ---
+
+async function createSubspace() {
+    if (!currentSpace) return;
+    const name = inputSubspaceName.value.trim();
+    if (!name) return alert("Enter classroom name");
+
+    btnCreateSubspace.disabled = true;
+    btnCreateSubspace.innerText = "Creating...";
+
+    try {
+        await addDoc(collection(db, COLL_SPACES), {
+            name: name,
+            parentSpaceId: currentSpace.id,
+            password: currentSpace.password, // Inherit password for ease of navigation
+            createdAt: new Date(),
+            config: { ...currentSpace.config }
+        });
+        inputSubspaceName.value = '';
+        showToast(`Created sub-workspace: ${name}`);
+        renderSubspaces();
+    } catch (err) {
+        alert("Error creating sub-workspace: " + err.message);
+    } finally {
+        btnCreateSubspace.disabled = false;
+        btnCreateSubspace.innerText = "➕ Create New Classroom";
+    }
+}
+
+async function renderSubspaces() {
+    if (!currentSpace) return;
+    subspacesList.innerHTML = '<div style="padding:10px; text-align:center;">Loading classrooms...</div>';
+
+    try {
+        const q = query(collection(db, COLL_SPACES), where("parentSpaceId", "==", currentSpace.id));
+        const snap = await getDocs(q);
+        subspacesList.innerHTML = '';
+
+        if (snap.empty) {
+            subspacesList.innerHTML = '<div style="padding:10px; text-align:center; color:#888;">No sub-workspaces found. Create one above!</div>';
+            return;
+        }
+
+        snap.forEach(docSnap => {
+            const data = docSnap.data();
+            const div = document.createElement('div');
+            div.className = 'list-item';
+            div.style.justifyContent = 'space-between';
+            div.innerHTML = `
+                <div>
+                    <strong>${data.name}</strong>
+                    <div style="font-size: 0.7rem; color: var(--text-muted);">Sub-workspace</div>
+                </div>
+                <button class="btn-secondary btn-sm" onclick="switchWorkspace('${docSnap.id}')">Switch ➔</button>
+            `;
+            subspacesList.appendChild(div);
+        });
+    } catch (err) {
+        subspacesList.innerHTML = `<div style="color:var(--danger); padding:10px;">Load error: ${err.message}</div>`;
+    }
+}
+
+window.switchWorkspace = async function (id) {
+    showToast("Switching workspace...");
+    const docRef = doc(db, COLL_SPACES, id);
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+        enterSpace(id, snap.data());
+        showToast(`Entered ${snap.data().name} ✓`);
+    } else {
+        alert("Workspace no longer exists.");
+    }
+};
+
+async function checkForAutoMigration() {
+    // Ensure 'vivek' master account exists
+    const q = query(collection(db, COLL_SPACES), where("name", "==", "vivek"), where("password", "==", "Test123456"));
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+        console.log("Initializing master account 'vivek'...");
+        await addDoc(collection(db, COLL_SPACES), {
+            name: "vivek",
+            password: "Test123456",
+            isMaster: true,
+            createdAt: new Date(),
+            config: { regNo: true, course: true, phone: true }
+        });
+    }
+
+    // Migration for Divya Sharma, Navodya Prep, Test
+    const targets = ["Divya Sharma", "Navodya Prep", "Test"];
+    let migrationNeeded = false;
+
+    for (const targetName of targets) {
+        const tq = query(collection(db, COLL_SPACES), where("name", "==", targetName));
+        const tSnap = await getDocs(tq);
+        if (!tSnap.empty) {
+            migrationNeeded = true;
+            break;
+        }
+    }
+
+    if (migrationNeeded && confirm("Legacy workspaces (Divya Sharma, Navodya Prep, Test) detected. Merge into 'vivek' consolidated workspace now?")) {
+        performMerge(targets);
+    }
+}
+
+async function performMerge(targetNames) {
+    showToast("Starting data merge...", "warning");
+
+    try {
+        // 1. Ensure a "Consolidated Classroom" exists under vivek
+        const qVivek = query(collection(db, COLL_SPACES), where("name", "==", "vivek"));
+        const vSnap = await getDocs(qVivek);
+        const vivekId = vSnap.docs[0].id;
+
+        const qConsolidated = query(collection(db, COLL_SPACES), where("parentSpaceId", "==", vivekId), where("name", "==", "Consolidated Batch"));
+        const cSnap = await getDocs(qConsolidated);
+        let consId;
+        if (cSnap.empty) {
+            const newCons = await addDoc(collection(db, COLL_SPACES), {
+                name: "Consolidated Batch",
+                parentSpaceId: vivekId,
+                password: "Test123456",
+                createdAt: new Date(),
+                config: { regNo: true, course: true }
+            });
+            consId = newCons.id;
+        } else {
+            consId = cSnap.docs[0].id;
+        }
+
+        // 2. Loop through each target space and move users/attendance
+        for (const targetName of targetNames) {
+            const tq = query(collection(db, COLL_SPACES), where("name", "==", targetName));
+            const tSnap = await getDocs(tq);
+
+            for (const spaceDoc of tSnap.docs) {
+                const oldSpaceId = spaceDoc.id;
+
+                // Move users
+                const uq = query(collection(db, COLL_USERS), where("spaceId", "==", oldSpaceId));
+                const uSnap = await getDocs(uq);
+                for (const userDoc of uSnap.docs) {
+                    await updateDoc(doc(db, COLL_USERS, userDoc.id), { spaceId: consId });
+                }
+
+                // Move attendance
+                const aq = query(collection(db, COLL_ATTENDANCE), where("spaceId", "==", oldSpaceId));
+                const aSnap = await getDocs(aq);
+                for (const attendDoc of aSnap.docs) {
+                    await updateDoc(doc(db, COLL_ATTENDANCE, attendDoc.id), { spaceId: consId });
+                }
+
+                // Delete old space
+                await deleteDoc(doc(db, COLL_SPACES, oldSpaceId));
+            }
+        }
+        showToast("Migration complete! All data merged into 'Consolidated Batch'.", "success");
+        renderSubspaces();
+    } catch (err) {
+        console.error("Merge Error:", err);
+        showToast("Merge failed: " + err.message, "error");
+    }
+}
+
+// Event Listeners for Nav
+document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+        const mode = item.getAttribute('data-mode');
+        if (mode === 'subspaces') setMode('subspaces');
+        else if (mode === 'analytics') setMode('analytics');
+        else if (mode === 'reg') setMode('registration');
+        else if (mode === 'config') setMode('config');
+        else if (mode === 'attend') setMode('attendance');
+
+        // Auto-close sidebar on mobile
+        const sidebar = document.getElementById('mobile-sidebar');
+        if (sidebar) sidebar.classList.add('hidden');
+    });
+});
+btnCreateSubspace.addEventListener('click', createSubspace);
