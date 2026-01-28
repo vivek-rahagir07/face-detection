@@ -259,6 +259,36 @@ try {
 
 // Portal Management
 
+function setupEnterKeys() {
+    const joinInputs = [portalJoinName, portalJoinPass];
+    const createInputs = [portalCreateName, portalCreatePass];
+
+    joinInputs.forEach(input => {
+        if (input) input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') handleJoin();
+        });
+    });
+
+    createInputs.forEach(input => {
+        if (input) input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') handleCreate();
+        });
+    });
+
+    if (inputHubNewSpace) {
+        inputHubNewSpace.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') createHubSpace();
+        });
+    }
+
+    if (inputSubspaceName) {
+        inputSubspaceName.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') createSubspace();
+        });
+    }
+}
+setupEnterKeys();
+
 function showView(viewId) {
     [viewPortal, viewOperation, viewSelector].forEach(v => v ? v.classList.add('hidden') : null);
     const target = document.getElementById(viewId);
@@ -898,6 +928,7 @@ async function initSystem() {
 
 function startVideo() {
     statusBadge.innerText = "Accessing Camera...";
+    console.log("Requesting camera with constraints...");
 
     const constraints = {
         video: {
@@ -908,58 +939,85 @@ function startVideo() {
         }
     };
 
+    // Timeout for camera access
+    const cameraTimeout = setTimeout(() => {
+        if (statusBadge.innerText === "Accessing Camera...") {
+            loadingText.innerHTML = "Camera taking too long... <br><small>Check if another app is using it.</small>";
+            const retryBtn = document.createElement('button');
+            retryBtn.innerText = "Try Again";
+            retryBtn.className = "btn-primary";
+            retryBtn.onclick = () => window.location.reload();
+            loadingOverlay.appendChild(retryBtn);
+        }
+    }, 10000);
+
     navigator.mediaDevices.getUserMedia(constraints)
         .then(stream => {
+            clearTimeout(cameraTimeout);
             console.log("Camera access granted.");
             video.srcObject = stream;
-            // Wait for video to actually start playing
+
+            // Use both onloadedmetadata and a backup check
             video.onloadedmetadata = () => {
-                video.play().then(() => {
-                    console.log("Video playing.");
-                    loadingOverlay.style.display = "none";
-
-                    // Fade out 3D face after video starts
-                    const face3D = document.getElementById('face-3d-container');
-                    if (face3D) {
-                        face3D.classList.add('fade-out');
-                        setTimeout(() => face3D.style.display = 'none', 800);
-                    }
-
-                    statusBadge.innerText = "System Active";
-                    statusBadge.className = "status-badge status-ready";
-                }).catch(err => {
-                    console.error("Video Play Error:", err);
-                    loadingText.innerHTML = "Click to Start Camera";
-                    // Add a button since some browsers block auto-play
-                    const startBtn = document.createElement('button');
-                    startBtn.innerText = "Start Camera";
-                    startBtn.className = "btn-primary";
-                    startBtn.onclick = () => {
-                        video.play();
-                        loadingOverlay.style.display = "none";
-                        statusBadge.innerText = "System Active";
-                    };
-                    loadingOverlay.appendChild(startBtn);
-                });
+                playVideo();
             };
+
+            // Backup if onloadedmetadata doesn't fire (happens on some mobile browsers)
+            setTimeout(() => {
+                if (video.paused && video.srcObject) {
+                    console.log("onloadedmetadata backup triggered");
+                    playVideo();
+                }
+            }, 1000);
         })
         .catch(err => {
+            clearTimeout(cameraTimeout);
             console.error("Camera Error:", err);
-            loadingText.innerHTML = "Camera Access Denied <br><small>Please enable camera in your browser settings.</small>";
-            statusBadge.innerText = "Camera Error";
-            statusBadge.className = "status-badge status-error";
-
-            // Show overlay with error color
-            loadingOverlay.style.background = "rgba(120, 0, 0, 0.9)";
-
-            // Add a troubleshooting button
-            const helpBtn = document.createElement('button');
-            helpBtn.innerText = "How to fix?";
-            helpBtn.className = "btn-secondary";
-            helpBtn.style.marginTop = "10px";
-            helpBtn.onclick = () => alert("1. Click the lock icon in the address bar.\n2. Ensure Camera is set to 'Allow'.\n3. Refresh the page.");
-            loadingOverlay.appendChild(helpBtn);
+            handleCameraError(err);
         });
+}
+
+function playVideo() {
+    video.play().then(() => {
+        console.log("Video playing successfully.");
+        loadingOverlay.style.display = "none";
+
+        const face3D = document.getElementById('face-3d-container');
+        if (face3D) {
+            face3D.classList.add('fade-out');
+            setTimeout(() => face3D.style.display = 'none', 800);
+        }
+
+        statusBadge.innerText = "System Active";
+        statusBadge.className = "status-badge status-ready";
+    }).catch(err => {
+        console.error("Video Play Error:", err);
+        loadingText.innerHTML = "Click to Start Camera";
+        const startBtn = document.createElement('button');
+        startBtn.innerText = "Start Camera";
+        startBtn.className = "btn-primary";
+        startBtn.onclick = () => {
+            video.play();
+            loadingOverlay.style.display = "none";
+            statusBadge.innerText = "System Active";
+            startBtn.remove();
+        };
+        loadingOverlay.appendChild(startBtn);
+    });
+}
+
+function handleCameraError(err) {
+    loadingText.innerHTML = `Camera Access Issue <br><small>${err.message || 'Please enable camera in settings.'}</small>`;
+    statusBadge.innerText = "Camera Error";
+    statusBadge.className = "status-badge status-error";
+    loadingOverlay.style.background = "rgba(120, 0, 0, 0.9)";
+
+    const helpBtn = document.createElement('button');
+    helpBtn.innerText = "How to fix?";
+    helpBtn.className = "btn-secondary mobile-only";
+    helpBtn.style.marginTop = "10px";
+    helpBtn.onclick = () => alert("1. Click the lock icon in the address bar.\n2. Ensure Camera is set to 'Allow'.\n3. Refresh the page.");
+    loadingOverlay.appendChild(helpBtn);
 }
 
 
@@ -2285,6 +2343,8 @@ document.getElementById('btn-mode-attend').addEventListener('click', () => setMo
 document.getElementById('btn-mode-reg').addEventListener('click', () => setMode('registration'));
 document.getElementById('btn-mode-analytics').addEventListener('click', () => setMode('analytics'));
 document.getElementById('btn-mode-config').addEventListener('click', () => setMode('config'));
+const btnModeSubspaces = document.getElementById('btn-mode-subspaces');
+if (btnModeSubspaces) btnModeSubspaces.addEventListener('click', () => setMode('subspaces'));
 
 const mobileNavItems = document.querySelectorAll('.nav-item');
 mobileNavItems.forEach(item => {
@@ -2825,6 +2885,63 @@ async function renderClassroomHub() {
         });
     } catch (err) {
         console.error("Hub render error:", err);
+    }
+}
+
+async function renderSubspaces() {
+    if (!currentSpace) return;
+    subspacesList.innerHTML = '<div style="padding:10px; text-align:center; color:#888;">Fetching workspaces...</div>';
+
+    try {
+        const q = query(collection(db, COLL_SPACES), where("parentSpaceId", "==", currentSpace.id));
+        const snap = await getDocs(q);
+        subspacesList.innerHTML = '';
+
+        if (snap.empty) {
+            subspacesList.innerHTML = '<div style="padding:10px; text-align:center; color:#888;">No sub-workspaces created.</div>';
+            return;
+        }
+
+        snap.forEach(docSnap => {
+            const data = docSnap.data();
+            const div = document.createElement('div');
+            div.className = 'list-item list-item-new';
+            div.innerHTML = `
+                <div style="flex:1">
+                    <strong>${data.name}</strong>
+                    <div style="font-size:0.7rem; color:var(--text-muted)">Created: ${data.createdAt?.toDate ? data.createdAt.toDate().toLocaleDateString() : 'N/A'}</div>
+                </div>
+                <button class="btn-primary btn-sm" onclick="enterClassroom('${docSnap.id}')" style="width:auto; padding:4px 10px;">Enter</button>
+            `;
+            subspacesList.appendChild(div);
+        });
+    } catch (err) {
+        console.error("Subspace error:", err);
+        subspacesList.innerHTML = '<div style="padding:10px; text-align:center; color:var(--danger);">Error loading data.</div>';
+    }
+}
+
+async function createSubspace() {
+    if (!currentSpace) return;
+    const name = inputSubspaceName.value.trim();
+    if (!name) return alert("Please enter classroom name.");
+
+    btnCreateSubspace.disabled = true;
+    try {
+        await addDoc(collection(db, COLL_SPACES), {
+            name: name,
+            parentSpaceId: currentSpace.id,
+            password: currentSpace.password,
+            createdAt: new Date(),
+            config: { ...currentSpace.config }
+        });
+        inputSubspaceName.value = '';
+        showToast(`Workspace '${name}' created!`);
+        renderSubspaces();
+    } catch (e) {
+        alert("Fail: " + e.message);
+    } finally {
+        btnCreateSubspace.disabled = false;
     }
 }
 
