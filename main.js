@@ -1700,6 +1700,9 @@ function drawCustomFaceBox(ctx, box, label, isMatch, confidence, resultLabel) {
     const { x, y, width, height } = box;
     const isUnknown = resultLabel === 'unknown';
     const color = isMatch ? '#22c55e' : (isUnknown ? '#ef4444' : '#10b981');
+
+    // Formatting label: Red for Unknown, Name + % for Matches
+    const displayLabel = isUnknown ? "UNKNOWN FACE DETECTED" : (isMatch ? `${label.toUpperCase()} (${confidence}%)` : "ID: " + label.toUpperCase());
     const cornerSize = 30;
     const padding = 15;
 
@@ -1751,9 +1754,9 @@ function drawCustomFaceBox(ctx, box, label, isMatch, confidence, resultLabel) {
         ctx.lineWidth = 1;
         ctx.stroke();
 
-        ctx.font = '800 10px Inter';
+        ctx.font = '800 11px Inter';
         ctx.fillStyle = color;
-        ctx.fillText(label.toUpperCase(), baseRadius + 15, 0);
+        ctx.fillText(displayLabel, baseRadius + 15, 0);
 
         // Ring 2: ID
         ctx.rotate(-hudRotation * 1.5);
@@ -1796,7 +1799,7 @@ function drawCustomFaceBox(ctx, box, label, isMatch, confidence, resultLabel) {
         ctx.rotate(Math.PI / 2);
         ctx.font = '900 9px monospace';
         ctx.fillStyle = color;
-        const bioText = isMatch ? `BIOSEC_${label.slice(0, 3).toUpperCase()}_${Math.floor(Date.now() / 1000).toString().slice(-4)}` : "ENCRYPTION_ERROR";
+        const bioText = isUnknown ? "UNKNOWN_ACCESS_DENIED" : `BIOSEC_${label.slice(0, 3).toUpperCase()}_${Math.floor(Date.now() / 1000).toString().slice(-4)}`;
         ctx.fillText(bioText, 0, -5);
 
         ctx.restore();
@@ -1849,8 +1852,9 @@ function drawFaceMesh(ctx, landmarks, color = '#10b981') {
 
     ctx.beginPath();
     points.forEach((p, i) => {
-
-        for (let j = i + 1; j < i + 4 && j < points.length; j++) {
+        // Create a denser grid for matches
+        const lookAhead = color === '#22c55e' ? 8 : 4;
+        for (let j = i + 1; j < i + lookAhead && j < points.length; j++) {
             ctx.moveTo(p.x, p.y);
             ctx.lineTo(points[j].x, points[j].y);
         }
@@ -2020,7 +2024,7 @@ video.addEventListener('play', () => {
 
                 const box = detection.detection.box;
                 const confidence = Math.round((1 - result.distance) * 100);
-                const isAttendanceMatch = result.label !== 'unknown' && result.distance <= 0.6;
+                const isAttendanceMatch = result.label !== 'unknown' && result.distance <= 0.45;
                 const isPotentialMatch = result.label !== 'unknown' && result.distance <= 0.6;
                 const displayLabel = isPotentialMatch ? result.label : 'SEARCHING...';
 
