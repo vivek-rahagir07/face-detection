@@ -870,8 +870,8 @@ const FALLBACK_MODEL_URL = 'https://raw.githubusercontent.com/justadudewhohacks/
 async function loadModels(url) {
     const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Loading timeout (15s)")), 15000));
     try {
-        statusBadge.innerText = "Loading Models...";
-        loadingText.innerText = `Loading from ${url.includes('github') ? 'GitHub' : 'CDN'}...`;
+        if (!video.srcObject) statusBadge.innerText = "Loading Models...";
+        loadingText.innerText = `AI: Syncing from ${url.includes('github') ? 'GitHub' : 'CDN'}`;
 
         const loadPromise = Promise.all([
             faceapi.nets.tinyFaceDetector.loadFromUri(url),
@@ -882,6 +882,7 @@ async function loadModels(url) {
         await Promise.race([loadPromise, timeout]);
 
         console.log("Models Loaded successfully from", url);
+        if (isModelsLoaded) loadingOverlay.style.display = "none";
         return true;
     } catch (err) {
         console.warn(`Failed to load models from ${url}:`, err);
@@ -895,54 +896,53 @@ async function initSystem() {
     initPromise = (async () => {
         console.log("System initialization started.");
         loadingOverlay.style.display = "flex";
+        loadingText.innerText = "Initializing Hardware...";
 
-        // 15-second global timeout for initialization
-        const timeout = setTimeout(() => {
-            if (!isModelsLoaded) {
-                console.warn("System initialization timed out (15s).");
-                loadingText.innerHTML = "Taking too long? <br><small>Try refreshing or check your connection.</small>";
-                // We don't necessarily fail, but we update UI
+        // PART 1: Start Camera IMMEDIATELY (Immediate prompt)
+        const cameraPromise = startVideo();
+
+        // PART 2: Load Models in context
+        const modelPromise = (async () => {
+            if (isModelsLoaded) return true;
+
+            if (window.location.protocol === 'file:') {
+                console.warn("Running on file:// protocol. Fetch may be blocked.");
             }
-        }, 15000);
 
-        if (isModelsLoaded) {
-            console.log("Models already loaded.");
-            clearTimeout(timeout);
-            if (!video.srcObject) await startVideo();
-            else loadingOverlay.style.display = "none";
-            return true;
-        }
+            let loaded = await loadModels(MODEL_URL);
+            if (!loaded) {
+                console.log("Trying fallback model URL...");
+                loaded = await loadModels(FALLBACK_MODEL_URL);
+            }
 
-        if (window.location.protocol === 'file:') {
-            console.warn("Running on file:// protocol. Fetch may be blocked.");
-            setTimeout(() => {
-                if (!isModelsLoaded) {
-                    loadingText.innerHTML = "Stuck Loading? <br><small>Browsers block local file access. <br>Please use 'Live Server' in VS Code.</small>";
-                }
-            }, 8000);
-        }
+            if (loaded) {
+                isModelsLoaded = true;
+                return true;
+            }
+            return false;
+        })();
 
-        let loaded = await loadModels(MODEL_URL);
-        if (!loaded) {
-            console.log("Trying fallback model URL...");
-            loaded = await loadModels(FALLBACK_MODEL_URL);
-        }
+        // Wait for camera first to show stream, but models can proceed
+        const cameraStarted = await cameraPromise;
 
-        clearTimeout(timeout);
-
-        if (loaded) {
-            console.log("Models Loaded. Requesting camera access...");
-            isModelsLoaded = true;
-            loadingText.innerText = "Requesting Camera Access...";
-            await startVideo();
-            return true;
-        } else {
-            loadingText.innerHTML = "Error: Could not load AI models. <br><small>Check connection or use a local server.</small>";
-            statusBadge.innerText = "Load Error";
-            statusBadge.className = "status-badge status-error";
-            initPromise = null; // Allow retry
+        // If camera failed, we stop here
+        if (!cameraStarted && !video.srcObject) {
+            loadingText.innerHTML = "Hardware Error: Camera Access Denied.";
+            initPromise = null;
             return false;
         }
+
+        // If models still loading, update text but don't block UI if camera is up
+        const modelsLoaded = await modelPromise;
+        if (!modelsLoaded) {
+            loadingText.innerHTML = "Error: Could not load AI models.";
+            statusBadge.innerText = "AI Error";
+            return false;
+        }
+
+        console.log("System fully ready.");
+        loadingOverlay.style.display = "none";
+        return true;
     })();
 
     return initPromise;
@@ -979,14 +979,14 @@ async function startVideo() {
             setTimeout(() => {
                 if (video.paused && video.srcObject) playVideo();
             }, 1000);
-            return;
+            return true;
         } catch (err) {
             lastErr = err;
             console.warn("Constraint failed:", constraints, err);
         }
     }
 
-    handleCameraError(lastErr || new Error("Unknown camera error"));
+    return handleCameraError(lastErr || new Error("Unknown camera error"));
 }
 
 function playVideo() {
@@ -1030,6 +1030,7 @@ function handleCameraError(err) {
     helpBtn.style.marginTop = "10px";
     helpBtn.onclick = () => alert("1. Click the lock icon in the address bar.\n2. Ensure Camera is set to 'Allow'.\n3. Refresh the page.");
     loadingOverlay.appendChild(helpBtn);
+    return false;
 }
 
 
