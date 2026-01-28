@@ -86,7 +86,7 @@ let currentSpace = null;
 let labeledDescriptors = [];
 let faceMatcher = null;
 let isModelsLoaded = false;
-let isLoadingModels = false;
+let initPromise = null;
 let nameToDocId = {};
 const attendanceCooldowns = {};
 let allUsersData = [];
@@ -329,6 +329,7 @@ async function handleJoin() {
     btnPortalJoin.disabled = true;
 
     try {
+        console.log("Joining workspace:", name);
         const q = query(collection(db, COLL_SPACES), where("name", "==", name));
         const querySnapshot = await getDocs(q);
 
@@ -389,10 +390,11 @@ async function handleCreate() {
     btnPortalCreate.disabled = true;
 
     try {
+        console.log("Creating workspace:", name);
         const q = query(collection(db, COLL_SPACES), where("name", "==", name));
         const snap = await getDocs(q);
         if (!snap.empty) {
-            alert("Name already taken!");
+            alert("Workspace name already taken! Please choose another.");
             btnPortalCreate.innerText = originalText;
             btnPortalCreate.disabled = false;
             return;
@@ -401,14 +403,17 @@ async function handleCreate() {
         const docRef = await addDoc(collection(db, COLL_SPACES), {
             name: name,
             password: password,
-            isMaster: true, // All new root workspaces are masters by default
+            isMaster: true,
             createdAt: new Date(),
-            config: { regNo: true, course: true, phone: false }
+            config: { regNo: true, course: true, phone: false, voiceEnabled: true }
         });
 
-        enterSpace(docRef.id, { name, password, isMaster: true, config: { regNo: true, course: true, phone: false } });
+        console.log("Workspace created:", docRef.id);
+        enterSpace(docRef.id, { name, password, isMaster: true, config: { regNo: true, course: true, phone: false, voiceEnabled: true } });
 
     } catch (err) {
+        console.error("Workspace Creation Error:", err);
+        alert("Creation Fail: " + err.message);
         portalError.innerText = "Create Error: " + err.message;
         btnPortalCreate.innerText = originalText;
         btnPortalCreate.disabled = false;
@@ -439,11 +444,12 @@ function enterSpace(id, data) {
         face3D.style.display = 'block';
     }
 
-    initSystem();
-    setMode('attendance');
-    startDbListener();
-    updateRegistrationForm();
-    init3DFace('face-3d-container');
+    initSystem().then(() => {
+        setMode('attendance');
+        startDbListener();
+        updateRegistrationForm();
+        init3DFace('face-3d-container');
+    });
 }
 
 // QR Logic
@@ -861,20 +867,23 @@ if (btnExportHistory) {
 // 4. FACE API & CAMERA
 // ==========================================
 
-const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights/';
+const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models/';
 // Fallback URL if the primary one fails
 const FALLBACK_MODEL_URL = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights/';
 
 async function loadModels(url) {
+    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Loading timeout (15s)")), 15000));
     try {
         statusBadge.innerText = "Loading Models...";
-        loadingText.innerText = `Loading AI models from ${url.includes('github') ? 'GitHub' : 'CDN'}...`;
+        loadingText.innerText = `Loading from ${url.includes('github') ? 'GitHub' : 'CDN'}...`;
 
-        await Promise.all([
+        const loadPromise = Promise.all([
             faceapi.nets.tinyFaceDetector.loadFromUri(url),
             faceapi.nets.faceLandmark68Net.loadFromUri(url),
             faceapi.nets.faceRecognitionNet.loadFromUri(url)
         ]);
+
+        await Promise.race([loadPromise, timeout]);
 
         console.log("Models Loaded successfully from", url);
         return true;
@@ -885,52 +894,50 @@ async function loadModels(url) {
 }
 
 async function initSystem() {
-    if (isLoadingModels && !isModelsLoaded) return;
-    isLoadingModels = true;
-    loadingOverlay.style.display = "flex"; // Force show overlay if starting
+    if (initPromise) return initPromise;
 
-    if (isModelsLoaded) {
-        console.log("Models already loaded, starting video...");
-        if (!video.srcObject) startVideo();
-        else loadingOverlay.style.display = "none";
-        return;
-    }
+    initPromise = (async () => {
+        console.log("System initialization started.");
+        loadingOverlay.style.display = "flex";
 
-    // Check if we are on file:// protocol, which often breaks modules/fetch
-    if (window.location.protocol === 'file:') {
-        console.warn("Running on file:// protocol. This may cause CORS issues with module imports and fetch requests.");
-        // Try to explain to the user if it gets stuck
-        setTimeout(() => {
-            if (!isModelsLoaded) {
-                loadingText.innerHTML = "Stuck Loading? <br><small>Browsers often block local file access. <br>Try opening this folder in VS Code and using 'Live Server'.</small>";
-            }
-        }, 8000);
-    }
+        if (isModelsLoaded) {
+            console.log("Models already loaded.");
+            if (!video.srcObject) await startVideo();
+            else loadingOverlay.style.display = "none";
+            return true;
+        }
 
-    let loaded = await loadModels(MODEL_URL);
-    if (!loaded) {
-        console.log("Trying fallback model URL...");
-        loaded = await loadModels(FALLBACK_MODEL_URL);
-    }
+        if (window.location.protocol === 'file:') {
+            console.warn("Running on file:// protocol. Fetch may be blocked.");
+            setTimeout(() => {
+                if (!isModelsLoaded) {
+                    loadingText.innerHTML = "Stuck Loading? <br><small>Browsers block local file access. <br>Please use 'Live Server' in VS Code.</small>";
+                }
+            }, 8000);
+        }
 
-    if (loaded) {
-        console.log("Models Loaded. Requesting camera access...");
-        isModelsLoaded = true;
-        loadingText.innerText = "Requesting Camera Access...";
-        startVideo();
-    } else {
-        loadingText.innerHTML = "Error: Could not load AI models. <br><small>Please check your internet connection.</small>";
-        statusBadge.innerText = "Load Error";
-        statusBadge.className = "status-badge status-error";
+        let loaded = await loadModels(MODEL_URL);
+        if (!loaded) {
+            console.log("Trying fallback model URL...");
+            loaded = await loadModels(FALLBACK_MODEL_URL);
+        }
 
-        // Add a retry button to the UI
-        const retryBtn = document.createElement('button');
-        retryBtn.innerText = "Retry Loading";
-        retryBtn.className = "btn-primary";
-        retryBtn.style.marginTop = "10px";
-        retryBtn.onclick = () => window.location.reload();
-        loadingOverlay.appendChild(retryBtn);
-    }
+        if (loaded) {
+            console.log("Models Loaded. Requesting camera access...");
+            isModelsLoaded = true;
+            loadingText.innerText = "Requesting Camera Access...";
+            await startVideo();
+            return true;
+        } else {
+            loadingText.innerHTML = "Error: Could not load AI models. <br><small>Check connection or use a local server.</small>";
+            statusBadge.innerText = "Load Error";
+            statusBadge.className = "status-badge status-error";
+            initPromise = null; // Allow retry
+            return false;
+        }
+    })();
+
+    return initPromise;
 }
 
 // System initialization triggered on app load for faster startup
@@ -2863,16 +2870,21 @@ window.triggerManualConsolidation = triggerManualConsolidation;
 
 // --- Hierarchical Classroom Hub Logic ---
 
+let hubUnsubscribe = null;
+
 async function renderClassroomHub() {
     if (!currentSpace || (!currentSpace.isMaster && currentSpace.parentSpaceId)) return;
 
-    masterSpace = { ...currentSpace }; // Store master context
+    if (hubUnsubscribe) hubUnsubscribe(); // Cleanup old listener
+
+    masterSpace = { ...currentSpace };
     hubClassroomList.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">Syncing Hub...</div>';
 
-    try {
-        const q = query(collection(db, COLL_SPACES), where("parentSpaceId", "==", currentSpace.id));
-        const snap = await getDocs(q);
+    const q = query(collection(db, COLL_SPACES), where("parentSpaceId", "==", currentSpace.id));
+
+    hubUnsubscribe = onSnapshot(q, (snap) => {
         hubClassroomList.innerHTML = '';
+        console.log("Hub snapshot update received.");
 
         // Add Manual Consolidation Button for 'vivek'
         if (currentSpace.name === 'vivek') {
@@ -2923,9 +2935,10 @@ async function renderClassroomHub() {
 
             hubClassroomList.appendChild(card);
         });
-    } catch (err) {
+    }, (err) => {
         console.error("Hub render error:", err);
-    }
+        hubClassroomList.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 20px; color: var(--danger);">Sync failed. Please refresh.</div>';
+    });
 }
 
 // Classroom Management Logic
@@ -3002,13 +3015,18 @@ function deleteClassroom(id, name) {
 }
 window.deleteClassroom = deleteClassroom;
 
+let subspacesUnsubscribe = null;
+
 async function renderSubspaces() {
     if (!currentSpace) return;
+
+    if (subspacesUnsubscribe) subspacesUnsubscribe();
+
     subspacesList.innerHTML = '<div style="padding:10px; text-align:center; color:#888;">Fetching workspaces...</div>';
 
-    try {
-        const q = query(collection(db, COLL_SPACES), where("parentSpaceId", "==", currentSpace.id));
-        const snap = await getDocs(q);
+    const q = query(collection(db, COLL_SPACES), where("parentSpaceId", "==", currentSpace.id));
+
+    subspacesUnsubscribe = onSnapshot(q, (snap) => {
         subspacesList.innerHTML = '';
 
         if (snap.empty) {
@@ -3038,10 +3056,10 @@ async function renderSubspaces() {
 
             subspacesList.appendChild(div);
         });
-    } catch (err) {
+    }, (err) => {
         console.error("Subspace error:", err);
         subspacesList.innerHTML = '<div style="padding:10px; text-align:center; color:var(--danger);">Error loading data.</div>';
-    }
+    });
 }
 
 async function createSubspace() {
