@@ -112,7 +112,6 @@ const peopleSearchInput = document.getElementById('people-search');
 
 let isMagicLinkSession = false;
 let isAIPaused = false;
-const btnModeAnalytics = document.getElementById('btn-mode-analytics');
 const configGeoEnabled = document.getElementById('config-geo-enabled');
 const configGeoRadius = document.getElementById('config-geo-radius');
 const btnSetLocation = document.getElementById('btn-set-location');
@@ -2362,12 +2361,9 @@ if (configGeoRadius) {
 
 // UI Handlers
 
-document.getElementById('btn-mode-attend').addEventListener('click', () => setMode('attendance'));
-document.getElementById('btn-mode-reg').addEventListener('click', () => setMode('registration'));
-document.getElementById('btn-mode-analytics').addEventListener('click', () => setMode('analytics'));
-document.getElementById('btn-mode-config').addEventListener('click', () => setMode('config'));
-const btnModeSubspaces = document.getElementById('btn-mode-subspaces');
-if (btnModeSubspaces) btnModeSubspaces.addEventListener('click', () => setMode('subspaces'));
+// Basic Navigation Listeners (Standardized via .nav-item at bottom)
+
+// Attendance Tabs
 
 const mobileNavItems = document.querySelectorAll('.nav-item');
 mobileNavItems.forEach(item => {
@@ -2419,35 +2415,37 @@ window.addEventListener('load', async () => {
 function setMode(mode) {
     currentMode = mode;
 
-    // UI elements update
+    // UI elements update: hide all and remove active from all nav items
     [regForm, attendInfo, configForm, analyticsPanel].forEach(el => el && el.classList.add('hidden'));
-    [
-        document.getElementById('btn-mode-attend'),
-        document.getElementById('btn-mode-reg'),
-        document.getElementById('btn-mode-config'),
-        document.getElementById('btn-mode-analytics'),
-        document.getElementById('btn-mode-subspaces')
-    ].forEach(btn => btn && btn.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+
+    // Map internal mode names to data-mode values for consistency
+    const modeMapping = {
+        'registration': 'reg',
+        'config': 'config',
+        'analytics': 'analytics',
+        'attendance': 'attend'
+    };
+    const dataMode = modeMapping[mode] || mode;
+
+    // Set active class on corresponding nav items (including mobile sidebar)
+    document.querySelectorAll(`.nav-item[data-mode="${dataMode}"]`).forEach(btn => btn.classList.add('active'));
 
     if (mode === 'registration') {
         regForm.classList.remove('hidden');
-        document.getElementById('btn-mode-reg').classList.add('active');
         statusBadge.innerText = "Student Registration";
         updateRegistrationForm();
     } else if (mode === 'config') {
         configForm.classList.remove('hidden');
-        document.getElementById('btn-mode-config').classList.add('active');
         statusBadge.innerText = "Configuration";
         syncConfigToggles();
     } else if (mode === 'analytics') {
         analyticsPanel.classList.remove('hidden');
-        document.getElementById('btn-mode-analytics').classList.add('active');
         statusBadge.innerText = "Analytics & Logs";
         renderPeopleManagement();
     } else {
         isAIPaused = false;
         attendInfo.classList.remove('hidden');
-        document.getElementById('btn-mode-attend').classList.add('active');
         statusBadge.innerText = "Attendance Monitor";
     }
 }
@@ -2877,13 +2875,14 @@ function init3DFace(containerId) {
 document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', () => {
         const mode = item.getAttribute('data-mode');
+        if (!mode) return; // For icons/other nav items without data-mode
+
         if (mode === 'analytics') setMode('analytics');
         else if (mode === 'reg') setMode('registration');
         else if (mode === 'config') setMode('config');
         else if (mode === 'attend') setMode('attendance');
 
-        // Auto-close sidebar on mobile
-        const sidebar = document.getElementById('mobile-sidebar');
-        if (sidebar) sidebar.classList.add('hidden');
+        // Close sidebar and overlay on mobile
+        toggleSidebar(false);
     });
 });
