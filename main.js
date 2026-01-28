@@ -1126,11 +1126,10 @@ async function saveSpaceConfig() {
     }
 
     const examMode = document.getElementById('config-exam-mode').checked;
-    const biometricRequired = document.getElementById('config-biometric-required').checked;
 
     try {
         await updateDoc(doc(db, COLL_SPACES, currentSpace.id), {
-            config: { ...newConfig, examMode: examMode, biometricRequired: biometricRequired },
+            config: { ...newConfig, examMode: examMode },
             geofencing: {
                 enabled: geofenceEnabled,
                 radius: geofenceRadius,
@@ -1140,7 +1139,7 @@ async function saveSpaceConfig() {
         });
 
         // Update local state
-        currentSpace.config = { ...newConfig, examMode: examMode, biometricRequired: biometricRequired };
+        currentSpace.config = { ...newConfig, examMode: examMode };
         currentSpace.config.qrRefreshInterval = configQrRefresh.value;
         currentSpace.geofencing = { enabled: geofenceEnabled, radius: geofenceRadius, center: lat && lng ? { lat, lng } : null };
 
@@ -1176,12 +1175,10 @@ function syncConfigToggles() {
         document.getElementById('config-map-container').style.display = 'none';
     }
 
-    if (currentSpace.config) {
-        document.getElementById('config-exam-mode').checked = !!currentSpace.config.examMode;
-        document.getElementById('config-biometric-required').checked = !!currentSpace.config.biometricRequired;
+    if (currentSpace.config && currentSpace.config.examMode) {
+        document.getElementById('config-exam-mode').checked = true;
     } else {
         document.getElementById('config-exam-mode').checked = false;
-        document.getElementById('config-biometric-required').checked = false;
     }
 
     if (configQrRefresh) {
