@@ -595,6 +595,21 @@
         </div>
     </div>
 
+    <!-- Edit Classroom Modal -->
+    <div id="classroom-edit-modal" class="qr-modal-container hidden" role="dialog"
+        aria-labelledby="classroom-edit-title">
+        <div class="qr-modal-content">
+            <button id="btn-close-classroom-edit" class="btn-close"
+                aria-label="Close Edit Classroom Modal">&times;</button>
+            <h3 id="classroom-edit-title">Edit Classroom</h3>
+            <p>Rename <span id="edit-classroom-name-title" style="color: var(--accent);">Classroom</span></p>
+            <div class="form-group" style="margin-top: 20px;">
+                <input type="text" id="edit-classroom-name" placeholder="New Classroom Name">
+                <button id="btn-save-classroom-edit" class="btn-primary">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
 
     <div id="confirm-modal" class="qr-modal-container hidden" style="z-index: 10001;">
         <div class="qr-modal-content" style="max-width: 350px;">

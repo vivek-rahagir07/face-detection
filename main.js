@@ -159,6 +159,14 @@ const btnHubCreate = document.getElementById('btn-hub-create');
 const inputHubNewSpace = document.getElementById('hub-new-space-name');
 const btnBackToHub = document.getElementById('btn-back-to-hub');
 
+const classroomEditModal = document.getElementById('classroom-edit-modal');
+const btnCloseClassroomEdit = document.getElementById('btn-close-classroom-edit');
+const editClassroomNameInput = document.getElementById('edit-classroom-name');
+const btnSaveClassroomEdit = document.getElementById('btn-save-classroom-edit');
+const editClassroomNameTitle = document.getElementById('edit-classroom-name-title');
+
+let editingClassroomId = null;
+
 const mobileSidebar = document.getElementById('mobile-sidebar');
 const btnMobileMenu = document.getElementById('btn-mobile-menu');
 const btnCloseSidebar = document.getElementById('btn-close-sidebar');
@@ -2874,19 +2882,103 @@ async function renderClassroomHub() {
             const card = document.createElement('div');
             card.className = 'classroom-card';
             card.innerHTML = `
+                <div class="card-actions">
+                    <button class="btn-icon-action btn-edit-hub" title="Rename Classroom">✏️</button>
+                    <button class="btn-icon-action delete btn-delete-hub" title="Delete Classroom">🗑️</button>
+                </div>
                 <div>
                     <h3>${data.name}</h3>
                     <div class="card-meta">Location: Any</div>
                     <p style="font-size: 0.8rem; color: var(--text-muted);">Active Batch</p>
                 </div>
-                <button class="btn-enter" onclick="enterClassroom('${docSnap.id}')">Enter Classroom ➔</button>
+                <button class="btn-enter" id="btn-enter-${docSnap.id}">Enter Classroom ➔</button>
             `;
+
+            // Add Event Listeners instead of onclick attributes
+            card.querySelector('.btn-edit-hub').onclick = (e) => {
+                e.stopPropagation();
+                openEditClassroomModal(docSnap.id, data.name);
+            };
+            card.querySelector('.btn-delete-hub').onclick = (e) => {
+                e.stopPropagation();
+                deleteClassroom(docSnap.id, data.name);
+            };
+            card.querySelector('.btn-enter').onclick = () => {
+                enterClassroom(docSnap.id);
+            };
+
             hubClassroomList.appendChild(card);
         });
     } catch (err) {
         console.error("Hub render error:", err);
     }
 }
+
+// Classroom Management Logic
+function openEditClassroomModal(id, currentName) {
+    editingClassroomId = id;
+    editClassroomNameInput.value = currentName;
+    editClassroomNameTitle.innerText = currentName;
+    classroomEditModal.classList.remove('hidden');
+}
+window.openEditClassroomModal = openEditClassroomModal;
+
+if (btnCloseClassroomEdit) {
+    btnCloseClassroomEdit.onclick = () => classroomEditModal.classList.add('hidden');
+}
+
+async function updateClassroom() {
+    if (!editingClassroomId) return;
+    const newName = editClassroomNameInput.value.trim();
+    if (!newName) return alert("Please enter a name.");
+
+    btnSaveClassroomEdit.disabled = true;
+    btnSaveClassroomEdit.innerText = "Saving...";
+
+    try {
+        await updateDoc(doc(db, COLL_SPACES, editingClassroomId), { name: newName });
+        showToast(`Classroom renamed to: ${newName}`, "success");
+        classroomEditModal.classList.add('hidden');
+        renderClassroomHub();
+        renderSubspaces();
+
+        // If we renamed the current space, update title
+        if (currentSpace && currentSpace.id === editingClassroomId) {
+            currentSpace.name = newName;
+            currentSpaceTitle.innerText = newName;
+        }
+    } catch (e) {
+        showToast("Rename failed: " + e.message, "error");
+    } finally {
+        btnSaveClassroomEdit.disabled = false;
+        btnSaveClassroomEdit.innerText = "Save Changes";
+    }
+}
+
+if (btnSaveClassroomEdit) {
+    btnSaveClassroomEdit.onclick = updateClassroom;
+}
+
+window.deleteClassroom = function (id, name) {
+    confirmMessage.innerText = `Danger: This will permanently delete the classroom '${name}' and all its configuration. Attendance data and users will NOT be deleted but will lose their workspace link. Continue?`;
+    confirmModal.classList.remove('hidden');
+    confirmCallback = async () => {
+        showToast(`Deleting ${name}...`, "warning");
+        try {
+            await deleteDoc(doc(db, COLL_SPACES, id));
+            showToast(`Deleted classroom: ${name}`, "success");
+            renderClassroomHub();
+            renderSubspaces();
+
+            // If deleted current space, exit
+            if (currentSpace && currentSpace.id === id) {
+                btnBackToHub.click();
+            }
+        } catch (e) {
+            showToast("Delete failed: " + e.message, "error");
+        }
+    };
+};
 
 async function renderSubspaces() {
     if (!currentSpace) return;
@@ -2911,8 +3003,17 @@ async function renderSubspaces() {
                     <strong>${data.name}</strong>
                     <div style="font-size:0.7rem; color:var(--text-muted)">Created: ${data.createdAt?.toDate ? data.createdAt.toDate().toLocaleDateString() : 'N/A'}</div>
                 </div>
-                <button class="btn-primary btn-sm" onclick="enterClassroom('${docSnap.id}')" style="width:auto; padding:4px 10px;">Enter</button>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button class="btn-secondary btn-sm btn-edit-sub" style="width:auto; padding:4px; border:none; background:transparent;" title="Rename">✏️</button>
+                    <button class="btn-secondary btn-sm btn-delete-sub" style="width:auto; padding:4px; border:none; background:transparent; color:var(--danger);" title="Delete">🗑️</button>
+                    <button class="btn-primary btn-sm btn-enter-sub" style="width:auto; padding:4px 10px;">Enter</button>
+                </div>
             `;
+
+            div.querySelector('.btn-edit-sub').onclick = () => openEditClassroomModal(docSnap.id, data.name);
+            div.querySelector('.btn-delete-sub').onclick = () => deleteClassroom(docSnap.id, data.name);
+            div.querySelector('.btn-enter-sub').onclick = () => enterClassroom(docSnap.id);
+
             subspacesList.appendChild(div);
         });
     } catch (err) {
@@ -2945,7 +3046,7 @@ async function createSubspace() {
     }
 }
 
-window.enterClassroom = async function (id) {
+async function enterClassroom(id) {
     showToast("Entering classroom...");
     const docRef = doc(db, COLL_SPACES, id);
     const snap = await getDoc(docRef);
@@ -2953,7 +3054,8 @@ window.enterClassroom = async function (id) {
         const data = snap.data();
         enterSpace(id, data);
     }
-};
+}
+window.enterClassroom = enterClassroom;
 
 async function createHubSpace() {
     if (!currentSpace || (!currentSpace.isMaster && currentSpace.parentSpaceId)) return;

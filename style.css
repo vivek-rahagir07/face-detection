@@ -2589,6 +2589,51 @@ button:active,
     border-color: var(--accent);
 }
 
+.card-actions {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    display: flex;
+    gap: 8px;
+    opacity: 0;
+    transform: translateY(-5px);
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.classroom-card:hover .card-actions {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.btn-icon-action {
+    width: 35px;
+    height: 35px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+}
+
+.btn-icon-action:hover {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+    transform: scale(1.1);
+}
+
+.btn-icon-action.delete:hover {
+    background: var(--danger);
+    color: #fff;
+    border-color: var(--danger);
+}
+
 #btn-back-to-hub:hover {
     background: rgba(0, 242, 255, 0.1);
     transform: scale(1.05);
