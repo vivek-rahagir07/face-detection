@@ -419,21 +419,67 @@
                 loadingText.innerText = "Requesting Camera Access...";
                 cameraRetryUI.style.display = 'none';
 
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error("Your browser does not support camera access. Please use Chrome or Safari.");
+                }
+
+                // Standard constraints with mobile-friendly properties
+                const constraints = {
+                    video: {
+                        facingMode: 'user',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                };
+
+                let stream;
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia(constraints);
+                } catch (e) {
+                    console.warn("Initial constraints failed, retrying with generic ones...", e);
+                    // Fallback to simpler constraints if the above fails (some older or restricted browsers)
+                    stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                }
+
                 video.srcObject = stream;
-                await video.play();
+
+                // Crucial for iOS/Android: wait for play promise
+                try {
+                    await video.play();
+                } catch (playErr) {
+                    console.error("Video play failed:", playErr);
+                    // This often happens if the browser requires a user gesture
+                    throw new Error("Auto-start blocked. Please click 'Allow Camera Access' below.");
+                }
+
                 video.onloadedmetadata = () => {
                     canvas.width = video.videoWidth;
                     canvas.height = video.videoHeight;
+                    console.log("Camera initialized:", video.videoWidth, "x", video.videoHeight);
                 };
+
                 loadingOverlay.style.display = 'none';
+                feedback.innerText = "Camera Ready";
+                feedback.style.color = "#10b981";
                 return true;
             } catch (err) {
-                console.error("Camera Error:", err);
+                console.error("Camera Error Details:", err);
                 loadingSpinner.style.display = 'none';
                 loadingText.style.display = 'none';
                 cameraRetryUI.style.display = 'block';
-                feedback.innerText = "Camera Access Denied";
+
+                let userMsg = "Camera Access Required";
+                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                    userMsg = "Permission Denied. Please enable camera in settings.";
+                } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                    userMsg = "No camera found on this device.";
+                } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+                    userMsg = "Camera is already in use by another app.";
+                } else if (err.message) {
+                    userMsg = err.message;
+                }
+
+                feedback.innerText = userMsg;
                 feedback.style.color = "#ef4444";
                 return false;
             }
