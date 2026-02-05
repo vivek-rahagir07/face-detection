@@ -148,6 +148,11 @@ const qrStatus = document.getElementById('qr-status');
 const qrScanCountDisplay = document.getElementById('qr-scan-count');
 const configQrRefresh = document.getElementById('config-qr-refresh');
 const qrExpiredOverlay = document.getElementById('qr-expired-overlay');
+
+const btnToggleCamera = document.getElementById('btn-toggle-camera');
+const btnRestartCamera = document.getElementById('btn-restart-camera');
+const cameraOfflineOverlay = document.getElementById('camera-offline-overlay');
+let isCameraOff = false;
 const btnRefreshQr = document.getElementById('btn-refresh-qr');
 
 
@@ -909,6 +914,14 @@ async function initSystem() {
 // Init
 
 function startVideo() {
+    isCameraOff = false;
+    if (cameraOfflineOverlay) cameraOfflineOverlay.classList.add('hidden');
+    if (btnToggleCamera) {
+        btnToggleCamera.classList.remove('offline');
+        const statusText = btnToggleCamera.querySelector('.cam-status-text');
+        if (statusText) statusText.innerText = "CAMERA ON";
+    }
+
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         loadingText.innerHTML = `<span style="color:#ef4444; font-weight:800;">Secure Context Required</span><br><small>Camera access requires HTTPS or localhost.</small>`;
         statusBadge.innerText = "Security Error";
@@ -976,6 +989,33 @@ function startVideo() {
                 });
         });
 }
+
+function stopVideo() {
+    if (video.srcObject) {
+        video.srcObject.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
+    }
+    isCameraOff = true;
+    if (cameraOfflineOverlay) cameraOfflineOverlay.classList.remove('hidden');
+    if (btnToggleCamera) {
+        btnToggleCamera.classList.add('offline');
+        const statusText = btnToggleCamera.querySelector('.cam-status-text');
+        if (statusText) statusText.innerText = "CAMERA OFF";
+    }
+    statusBadge.innerText = "Camera Offline";
+    statusBadge.className = "status-badge status-loading";
+}
+
+function toggleCamera() {
+    if (isCameraOff) {
+        startVideo();
+    } else {
+        stopVideo();
+    }
+}
+
+if (btnToggleCamera) btnToggleCamera.addEventListener('click', toggleCamera);
+if (btnRestartCamera) btnRestartCamera.addEventListener('click', startVideo);
 
 
 // Config
@@ -1870,7 +1910,7 @@ video.addEventListener('play', () => {
     window.addEventListener('resize', () => { displaySize = updateDisplaySize(); });
 
     async function detectionLoop() {
-        if (!isModelsLoaded || !video.srcObject || video.paused || video.ended || isAIPaused || currentMode === 'registration' || document.hidden) {
+        if (!isModelsLoaded || !video.srcObject || video.paused || video.ended || isAIPaused || isCameraOff || currentMode === 'registration' || document.hidden) {
             setTimeout(detectionLoop, DETECTION_INTERVAL);
             return;
         }

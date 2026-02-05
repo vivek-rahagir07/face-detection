@@ -3006,3 +3006,87 @@ button:active,
         margin-top: 0;
     }
 }
+/* Camera Toggle Styles */
+.viewfinder-ui.bottom-row {
+    position: absolute;
+    bottom: 20px;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 0 20px;
+    pointer-events: none;
+}
+
+.cam-toggle-btn {
+    pointer-events: auto;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(0, 242, 255, 0.4);
+    border-radius: 12px;
+    padding: 8px 16px;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 0.75rem;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    z-index: 100;
+}
+
+.cam-toggle-btn:hover {
+    background: var(--accent);
+    color: #000;
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 25px rgba(0, 242, 255, 0.4);
+}
+
+.cam-toggle-btn.offline {
+    border-color: var(--danger);
+    color: var(--danger);
+}
+
+.cam-toggle-btn.offline:hover {
+    background: var(--danger);
+    color: #fff;
+    box-shadow: 0 8px 25px rgba(255, 68, 68, 0.4);
+}
+
+#camera-offline-overlay {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(10, 10, 10, 0.95) 0%, #000 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 4;
+    transition: all 0.5s ease;
+}
+
+.offline-content {
+    text-align: center;
+    animation: fade-slide-up 0.5s ease-out;
+}
+
+.offline-icon {
+    font-size: 4rem;
+    color: var(--danger);
+    margin-bottom: 20px;
+    opacity: 0.5;
+    filter: drop-shadow(0 0 10px var(--danger));
+}
+
+.offline-content h3 {
+    font-size: 1.8rem;
+    color: #fff;
+    margin-bottom: 10px;
+}
+
+.offline-content p {
+    color: var(--text-muted);
+    margin-bottom: 30px;
+}

@@ -296,6 +296,21 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="viewfinder-ui bottom-row">
+                        <button id="btn-toggle-camera" class="cam-toggle-btn" title="Toggle Camera">
+                            <span class="cam-icon">📷</span>
+                            <span class="cam-status-text">CAMERA ON</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="camera-offline-overlay" class="hidden">
+                    <div class="offline-content">
+                        <div class="offline-icon">📷</div>
+                        <h3>Camera Offline</h3>
+                        <p>Turn on to resume biometric scan</p>
+                        <button id="btn-restart-camera" class="btn-primary btn-sm">Turn Camera ON</button>
+                    </div>
                 </div>
                 <canvas id="overlay"></canvas>
                 <div id="loading-overlay" class="loading-screen">

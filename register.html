@@ -208,6 +208,26 @@
         <div class="camera-box">
             <video id="video" autoplay muted playsinline></video>
             <canvas id="overlay"></canvas>
+
+            <div id="camera-offline-overlay" class="hidden"
+                style="position: absolute; inset: 0; background: #000; display: flex; align-items: center; justify-content: center; z-index: 25;">
+                <div style="text-align: center;">
+                    <div style="font-size: 3rem; color: #ef4444; margin-bottom: 15px; opacity: 0.5;">📷</div>
+                    <h3 style="margin-bottom: 10px;">Camera Offline</h3>
+                    <button id="btn-restart-camera" class="btn-register"
+                        style="padding: 10px 20px; width: auto; font-size: 0.8rem;">Turn Camera ON</button>
+                </div>
+            </div>
+
+            <div class="viewfinder-ui"
+                style="position: absolute; bottom: 15px; left: 0; width: 100%; display: flex; justify-content: center; z-index: 30; pointer-events: none;">
+                <button id="btn-toggle-camera" class="cam-toggle-btn"
+                    style="pointer-events: auto; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); border: 2px solid #10b981; border-radius: 12px; padding: 6px 14px; color: #10b981; display: flex; align-items: center; gap: 8px; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.7rem;">
+                    <span id="cam-status-icon">📷</span>
+                    <span id="cam-status-text">CAMERA ON</span>
+                </button>
+            </div>
+
             <!-- Validity Timer -->
             <div id="validity-timer"
                 style="position:absolute; top:15px; right:15px; background:rgba(0,0,0,0.7); padding:8px 12px; border-radius:10px; border:3.5px solid #10b981; font-family:'Outfit', sans-serif; font-weight:700; color:#10b981; font-size:0.8rem; z-index:20;">
@@ -349,6 +369,12 @@
         const btnGallery = document.getElementById('btn-gallery');
         const inputGallery = document.getElementById('input-gallery');
 
+        const btnToggleCamera = document.getElementById('btn-toggle-camera');
+        const btnRestartCamera = document.getElementById('btn-restart-camera');
+        const cameraOfflineOverlay = document.getElementById('camera-offline-overlay');
+        const camStatusText = document.getElementById('cam-status-text');
+        let isCameraOff = false;
+
 
         let registrationData = null; // Temporary store for face & form data
 
@@ -461,6 +487,13 @@
                 loadingOverlay.style.display = 'none';
                 feedback.innerText = "Camera Ready";
                 feedback.style.color = "#10b981";
+
+                isCameraOff = false;
+                cameraOfflineOverlay.classList.add('hidden');
+                btnToggleCamera.style.borderColor = "#10b981";
+                btnToggleCamera.style.color = "#10b981";
+                camStatusText.innerText = "CAMERA ON";
+
                 return true;
             } catch (err) {
                 console.error("Camera Error Details:", err);
@@ -597,6 +630,12 @@
             const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
             lastDetection = detection;
 
+            if (isCameraOff) {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                return;
+            }
+
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -727,6 +766,35 @@
                 feedback.innerText = "Error processing upload";
             }
             e.target.value = '';
+        };
+
+        function stopVideo() {
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+            }
+            isCameraOff = true;
+            cameraOfflineOverlay.classList.remove('hidden');
+            btnToggleCamera.style.borderColor = "#ef4444";
+            btnToggleCamera.style.color = "#ef4444";
+            camStatusText.innerText = "CAMERA OFF";
+            feedback.innerText = "Camera Offline";
+        }
+
+        btnToggleCamera.onclick = () => {
+            if (isCameraOff) {
+                initCamera().then(ok => {
+                    if (ok && isReady) requestAnimationFrame(processFrame);
+                });
+            } else {
+                stopVideo();
+            }
+        };
+
+        btnRestartCamera.onclick = () => {
+            initCamera().then(ok => {
+                if (ok && isReady) requestAnimationFrame(processFrame);
+            });
         };
 
         async function processRegistration(name, descriptor, photoBase64) {
