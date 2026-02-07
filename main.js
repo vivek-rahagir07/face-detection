@@ -872,9 +872,6 @@ async function initSystem() {
     }
     console.log("Initializing Attendance SystemAI...");
 
-    // 1. Proactively start camera (Don't wait for models)
-    if (!video.srcObject) startVideo();
-
     // Check if we are on file:// protocol, which often breaks modules/fetch
     if (window.location.protocol === 'file:') {
         console.warn("Running on file:// protocol. This may cause CORS issues with module imports and fetch requests.");
@@ -893,9 +890,10 @@ async function initSystem() {
     }
 
     if (loaded) {
-        console.log("Models Loaded successfully.");
+        console.log("Models Loaded. Requesting camera access...");
         isModelsLoaded = true;
-        // If camera is already ready, the overlay might already be hidden by startVideo
+        loadingText.innerText = "Requesting Camera Access...";
+        startVideo();
     } else {
         loadingText.innerHTML = "Error: Could not load AI models. <br><small>Please check your internet connection.</small>";
         statusBadge.innerText = "Load Error";
@@ -929,8 +927,8 @@ function startVideo() {
     }
 
     statusBadge.innerText = "Accessing Camera...";
-    loadingText.innerText = "Requesting Camera Access...";
 
+    // Simplified constraints for better compatibility
     const constraints = {
         video: {
             facingMode: "user",
@@ -939,54 +937,71 @@ function startVideo() {
         }
     };
 
-    const handleStream = (stream) => {
-        console.log("Camera access granted.");
-        video.srcObject = stream;
-        video.onloadedmetadata = () => {
-            video.play().then(() => {
-                console.log("Video playing.");
-                loadingOverlay.style.display = "none";
-                const face3D = document.getElementById('face-3d-container');
-                if (face3D) {
-                    face3D.classList.add('fade-out');
-                    setTimeout(() => face3D.style.display = 'none', 800);
-                }
-                statusBadge.innerText = "System Active";
-                statusBadge.className = "status-badge status-ready";
-            }).catch(err => {
-                console.error("Video Play Error:", err);
-                loadingText.innerHTML = "Click to Start Camera";
-                const startBtn = document.createElement('button');
-                startBtn.innerText = "Start Camera";
-                startBtn.className = "btn-primary";
-                startBtn.style.marginTop = "15px";
-                startBtn.onclick = () => {
-                    video.play();
-                    loadingOverlay.style.display = "none";
-                };
-                loadingOverlay.appendChild(startBtn);
-            });
-        };
-    };
-
     navigator.mediaDevices.getUserMedia(constraints)
-        .then(handleStream)
-        .catch(err => {
-            console.warn("Primary constraints failed, retrying generic...", err);
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then(handleStream)
-                .catch(e => {
-                    console.error("Camera Error:", e);
-                    loadingText.innerHTML = `<span style="color:#ef4444; font-weight:800;">Camera Error</span><br><small>${e.message}</small>`;
-                    statusBadge.innerText = "Camera Error";
-                    loadingOverlay.style.background = "rgba(10, 0, 0, 0.9)";
-                    const retryBtn = document.createElement('button');
-                    retryBtn.innerText = "Retry Camera";
-                    retryBtn.className = "btn-primary";
-                    retryBtn.style.marginTop = "15px";
-                    retryBtn.onclick = () => startVideo();
-                    loadingOverlay.appendChild(retryBtn);
+        .then(stream => {
+            console.log("Camera access granted.");
+            video.srcObject = stream;
+            // Wait for video to actually start playing
+            video.onloadedmetadata = () => {
+                video.play().then(() => {
+                    console.log("Video playing.");
+                    loadingOverlay.style.display = "none";
+
+                    // Fade out 3D face after video starts
+                    const face3D = document.getElementById('face-3d-container');
+                    if (face3D) {
+                        face3D.classList.add('fade-out');
+                        setTimeout(() => face3D.style.display = 'none', 800);
+                    }
+
+                    statusBadge.innerText = "System Active";
+                    statusBadge.className = "status-badge status-ready";
+                }).catch(err => {
+                    console.error("Video Play Error:", err);
+                    loadingText.innerHTML = "Click to Start Camera";
+                    // Add a button since some browsers block auto-play
+                    const startBtn = document.createElement('button');
+                    startBtn.innerText = "Start Camera";
+                    startBtn.className = "btn-primary";
+                    startBtn.style.marginTop = "15px";
+                    startBtn.onclick = () => {
+                        video.play();
+                        loadingOverlay.style.display = "none";
+                        statusBadge.innerText = "System Active";
+                    };
+                    loadingOverlay.appendChild(startBtn);
                 });
+            };
+        })
+        .catch(err => {
+            console.error("Camera Error:", err);
+            loadingText.innerHTML = `<span style="color:#ef4444; font-weight:800;">Hardware Error</span><br><small>${err.message}</small>`;
+            statusBadge.innerText = "Camera Error";
+            statusBadge.className = "status-badge status-error";
+
+            // Show overlay with error color
+            loadingOverlay.style.background = "rgba(10, 0, 0, 0.9)";
+
+            // Add a retry button
+            const retryBtn = document.createElement('button');
+            retryBtn.innerText = "Retry Camera Access";
+            retryBtn.className = "btn-primary";
+            retryBtn.style.marginTop = "15px";
+            retryBtn.onclick = () => startVideo();
+
+            // Add a troubleshooting button
+            const helpBtn = document.createElement('button');
+            helpBtn.innerText = "Troubleshoot Guide";
+            helpBtn.className = "btn-secondary";
+            helpBtn.style.marginTop = "10px";
+            helpBtn.onclick = () => alert("1. Click the lock icon in the address bar.\n2. Ensure Camera is set to 'Allow'.\n3. Refresh the page.");
+
+            // Clear old buttons if any
+            const existingBtns = loadingOverlay.querySelectorAll('button');
+            existingBtns.forEach(b => b.remove());
+
+            loadingOverlay.appendChild(retryBtn);
+            loadingOverlay.appendChild(helpBtn);
         });
 }
 
@@ -1354,6 +1369,21 @@ function startDbListener() {
         todayCountDisplay.innerText = presentTodayCount;
         lastPresentHTML = presentAttendeesHTML;
         lastAbsentHTML = absentAttendeesHTML;
+
+        // Automatically update history if we are viewing today's records
+        if (currentHistoryDate === todayStr) {
+            // Filter allUsersData for today's records based on lastAttendance
+            const todayRecords = tempAllData.filter(u => u.lastAttendance === todayStr);
+            // Sort by name as done in loadHistoryForDate
+            todayRecords.sort((a, b) => a.name.localeCompare(b.name));
+            currentHistoryRecords = todayRecords;
+            renderHistoryTable(todayRecords);
+
+            const btnExportHistoryPdf = document.getElementById('btn-export-history-pdf');
+            const showBtns = todayRecords.length > 0 ? 'block' : 'none';
+            btnExportHistory.style.display = showBtns;
+            if (btnExportHistoryPdf) btnExportHistoryPdf.style.display = showBtns;
+        }
 
         // Render based on active tab
         renderAttendanceList();
@@ -2356,7 +2386,6 @@ if (btnExportPdf) btnExportPdf.addEventListener('click', exportToPDF);
 const btnExportHistoryPdf = document.getElementById('btn-export-history-pdf');
 if (btnExportHistoryPdf) btnExportHistoryPdf.addEventListener('click', exportHistoryToPDF);
 
-// Magic Link Event Listeners
 // Magic Link Event Listeners
 const btnGenerateMagic = document.getElementById('btn-generate-magic');
 const btnProjectMagic = document.getElementById('btn-project-magic');

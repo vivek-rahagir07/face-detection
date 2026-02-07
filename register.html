@@ -524,9 +524,6 @@
 
         async function startPortal() {
             try {
-                // 1. Proactively start camera first (don't wait for Firestore or models)
-                const cameraPromise = initCamera();
-
                 if (!spaceId || isNaN(expiryTime)) {
                     showError("Invalid Parameters", "The registration link you used is missing critical identification tokens.");
                     return;
@@ -539,13 +536,26 @@
 
                 startTimer();
 
-                // 2. Load Models in background
-                const modelsPromise = (async () => {
-                    const loadWithRetry = async (url) => {
-                        // Wait for faceapi to be defined (in case of slow CDN)
-                        for (let i = 0; i < 50 && !window.faceapi; i++) await new Promise(r => setTimeout(r, 200));
-                        if (!window.faceapi) throw new Error("AI Library failed to load. Please refresh.");
+                // Config
+                const spaceRef = doc(db, 'spaces', spaceId);
+                const spaceSnap = await getDoc(spaceRef);
 
+                if (!spaceSnap.exists()) {
+                    showError("Workspace Suspended", "The workspace associated with this link is no longer available.");
+                    return;
+                }
+                workspaceConfig = spaceSnap.data();
+                document.getElementById('space-name-display').innerText = workspaceConfig.name || "Workspace";
+
+
+
+                setupDynamicFields(workspaceConfig.config || {});
+
+                // Camera & AI
+                feedback.innerText = "Initializing Hardware & AI...";
+
+                const modelsPromise = (async () => {
+                    const loadModel = async (url) => {
                         try {
                             await Promise.all([
                                 faceapi.nets.tinyFaceDetector.loadFromUri(url),
@@ -557,38 +567,19 @@
                             return false;
                         }
                     };
-                    let ok = await loadWithRetry(MODEL_URL);
-                    if (!ok) ok = await loadWithRetry(FALLBACK_MODEL_URL);
+                    let ok = await loadModel(MODEL_URL);
+                    if (!ok) ok = await loadModel(FALLBACK_MODEL_URL);
                     if (!ok) throw new Error("Could not load AI models from any source.");
                     return true;
                 })();
 
-                // 3. Load Workspace Config in background
-                const configPromise = (async () => {
-                    const spaceRef = doc(db, 'spaces', spaceId);
-                    const spaceSnap = await getDoc(spaceRef);
-                    if (!spaceSnap.exists()) {
-                        throw new Error("Workspace Suspended: The workspace is no longer available.");
-                    }
-                    return spaceSnap.data();
-                })();
+                // Initialize camera
+                const cameraOk = await initCamera();
 
-                // 4. Wait for camera access prompt (User sees this immediately)
-                const cameraOk = await cameraPromise;
+                // Then wait for models
+                await modelsPromise;
 
-                // 5. Wait for everything else
-                let workspaceConfigData;
-                try {
-                    [workspaceConfigData] = await Promise.all([configPromise, modelsPromise, signInAnonymously(auth)]);
-                } catch (e) {
-                    showError("System Error", e.message);
-                    return;
-                }
-
-                workspaceConfig = workspaceConfigData;
-                document.getElementById('space-name-display').innerText = workspaceConfig.name || "Workspace";
-                setupDynamicFields(workspaceConfig.config || {});
-
+                await signInAnonymously(auth);
                 feedback.innerText = cameraOk ? "Ready to scan face" : "Camera Access Required";
                 feedback.style.color = cameraOk ? "#10b981" : "#ef4444";
                 isReady = true;
@@ -753,8 +744,14 @@
                 const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
 
                 if (detection) {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 150; canvas.height = 150;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, 150, 150);
+                    const uploadedPhotoBase64 = canvas.toDataURL('image/jpeg', 0.8);
+
                     feedback.innerText = "Saving profile...";
-                    await processRegistration(name, detection.descriptor, photoBase64);
+                    await processRegistration(name, detection.descriptor, uploadedPhotoBase64);
                 } else {
                     alert("No face detected in the uploaded photo. Please try another one.");
                     feedback.innerText = "No face detected in upload";
