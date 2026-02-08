@@ -1,0 +1,14 @@
+Vivek Yadav aka Rahagir, is a self-driven full-stack developer and product thinker who believes in building real systems under real constraints. His work sits at the intersection of web engineering, AI in the browser, and human-centric design.
+
+Cognito Attend was built as part of an intense 72-hour challenge, with a clear self-imposed rule: no machine-side servers for AI inference, no shortcuts, no black-box APIs.
+
+The result is a fully browser-native biometric system that proves how far modern web technologies can go when pushed to their limits.
+
+Rahagir’s development philosophy is simple:
+"If it can run on a browser, it should respect the user, protect their data, and scale without fear."
+
+He focuses on:
+> Building privacy-first systems
+> Exploring client-side AI feasibility
+> Designing products that are technically bold yet practically usable
+> Learning by shipping, not by theorizing

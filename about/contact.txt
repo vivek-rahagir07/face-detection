@@ -1,0 +1,13 @@
+SYSTEM: Contact Portal
+STATUS: Ready for connection
+SUPPORT: support@cognitoattend.com
+
+RESOURCES:
+> Documentation: docs.cognitoattend.com
+> GitHub: github.com/cognito-attend
+> Discord: discord.gg/cognito-community
+
+DEVELOPMENT TEAM:
+> Lead Architect: Vivek R.
+> UI/UX Design: Cyber-Studio
+> AI Core: Neural-Attend Engine

@@ -1,0 +1,11 @@
+SYSTEM FEATURES:
+[01] Face Recognition : Real-time landmark evaluation (MediaPipe-style).
+[02] Privacy Protocol : 100% on-device biometric vectorization.
+[03] Frame Stability  : Multi-cycle verification for high accuracy.
+[04] Workspaces       : Isolated data environments for institutions.
+[05] Dynamic QR       : Anti-proxy, time-bound attendance tokens.
+[06] Geofencing       : Location-aware boundary validation (Leaflet).
+[07] Identity Suite   : Digital ID cards with encrypted metadata.
+[08] Cross-Platform   : PWA-native support across all digital devices.
+[09] Live Analytics   : Instant synchronization and report generation.
+[10] Lean Architecture: Zero backend ML dependencies; high scalability.

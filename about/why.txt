@@ -1,0 +1,8 @@
+Cognito Attend is not just an attendance system.
+It is an experiment, a statement, and a proof of capability.
+
+A proof that AI doesn’t always need heavy servers.
+A proof that students & indie developers can build enterprise-grade systems.
+A proof that innovation is more about intent than infrastructure.
+
+This project reflects a mindset where limitations are treated as design inputs, not blockers.

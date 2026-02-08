@@ -1,0 +1,15 @@
+SYSTEM: CognitoAttend v.1.0.0
+STATUS: Operational
+DESCRIPTION: Next-Gen Biometric Attendance & Monitoring System powered by advanced AI and Face-API technology.
+
+ENGINEERING STACK:
+> Frontend: HTML5, Vanilla CSS3, Javascript (ES6+)
+> Biometrics: Face-API.js, TensorFlow.js
+> Real-time: Firebase Firestore & Auth
+> Visuals: Three.js, Spline 3D HUD
+
+CORE FEATURES:
+> AI-Powered Face Recognition
+> Tactical 3D HUD Interface
+> High-Precision Geofencing
+> Intelligent Proctoring System

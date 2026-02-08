@@ -704,16 +704,84 @@
     </div>
 
 
-    <script type="module" src="main.js?v=master_matrix_v2"></script>
+
     <div style="position: fixed; bottom: 5px; right: 5px; font-size: 10px; color: #333; pointer-events: none;">v.1925
     </div>
 
     <div class="bottom-strip" role="contentinfo">
-
         <div class="footer-center">
-            <img src="folder/cognito attend.png" alt="CognitoAttend Global Logo" class="footer-brand-logo"
-                loading="lazy">
-            <span class="footer-brand-name">CognitoAttend</span>
+            <button id="btn-about" class="btn-about-trigger" aria-label="Open About Modal">
+                <span class="btn-about-icon">?</span> ABOUT
+            </button>
+
+            <div class="footer-brand-group">
+                <img src="folder/cognito attend.png" alt="CognitoAttend Global Logo" class="footer-brand-logo"
+                    loading="lazy">
+                <span class="footer-brand-name">CognitoAttend</span>
+            </div>
+
+            <button id="btn-contact" class="btn-about-trigger" aria-label="Open Contact Modal">
+                <span class="btn-about-icon">@</span> CONTACT
+            </button>
         </div>
     </div>
+
+    <!-- About Terminal Modal -->
+    <div id="about-modal" class="qr-modal-container hidden" role="dialog" aria-labelledby="about-title">
+        <div class="terminal-container">
+            <div class="terminal-header">
+                <div class="terminal-controls">
+                    <span class="dot red"></span>
+                    <span class="dot yellow"></span>
+                    <span class="dot green"></span>
+                </div>
+                <div class="terminal-title" id="about-title">cognito_attend --info</div>
+                <button id="btn-close-about" class="terminal-close" aria-label="Close Modal">&times;</button>
+            </div>
+            <div class="terminal-body" id="about-modal-body">
+                <div class="terminal-line"><span class="prompt">guest@cognito:~$</span> <span class="command">cat
+                        about/content.txt</span></div>
+                <div id="about-terminal-content" class="terminal-content">
+                    <p class="glow-text">Loading system information...</p>
+                </div>
+                <!-- Interactive Input Line -->
+                <div class="input-line">
+                    <span class="prompt">guest@cognito:~$</span>
+                    <span id="about-input" class="terminal-input" contenteditable="true" spellcheck="false"
+                        data-placeholder="Type 'help' for commands..."></span>
+                    <span class="cursor">_</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Terminal Modal -->
+    <div id="contact-modal" class="qr-modal-container hidden" role="dialog" aria-labelledby="contact-title">
+        <div class="terminal-container">
+            <div class="terminal-header">
+                <div class="terminal-controls">
+                    <span class="dot red"></span>
+                    <span class="dot yellow"></span>
+                    <span class="dot green"></span>
+                </div>
+                <div class="terminal-title" id="contact-title">cognito_contact --active</div>
+                <button id="btn-close-contact" class="terminal-close" aria-label="Close Modal">&times;</button>
+            </div>
+            <div class="terminal-body" id="contact-modal-body">
+                <div class="terminal-line"><span class="prompt">guest@cognito:~$</span> <span class="command">cat
+                        about/contact.txt</span></div>
+                <div id="contact-terminal-content" class="terminal-content">
+                    <p class="glow-text">Requesting contact portal...</p>
+                </div>
+                <!-- Interactive Input Line -->
+                <div class="input-line">
+                    <span class="prompt">guest@cognito:~$</span>
+                    <span id="contact-input" class="terminal-input" contenteditable="true" spellcheck="false"
+                        data-placeholder="Type 'help' for commands..."></span>
+                    <span class="cursor">_</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="main.js?v=master_matrix_v2"></script>
 </body>

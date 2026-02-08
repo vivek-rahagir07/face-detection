@@ -98,6 +98,7 @@ const idCardModal = document.getElementById('id-card-modal');
 const btnCloseIdCard = document.getElementById('btn-close-id-card');
 const idCardScene = document.getElementById('id-card-scene');
 const btnSaveWallet = document.getElementById('btn-save-wallet');
+let terminalHistory = [];
 const idCardPhoto = document.getElementById('id-card-photo');
 const idCardName = document.getElementById('id-card-name');
 const idCardReg = document.getElementById('id-card-reg');
@@ -147,6 +148,8 @@ const qrTimerDisplay = document.getElementById('qr-timer');
 const qrStatus = document.getElementById('qr-status');
 const qrScanCountDisplay = document.getElementById('qr-scan-count');
 const configQrRefresh = document.getElementById('config-qr-refresh');
+const aboutModal = document.getElementById('about-modal');
+const contactModal = document.getElementById('contact-modal');
 const qrExpiredOverlay = document.getElementById('qr-expired-overlay');
 
 const btnToggleCamera = document.getElementById('btn-toggle-camera');
@@ -206,6 +209,10 @@ const sideNavItems = document.querySelectorAll('#mobile-sidebar .nav-item[data-m
 const sideBtnQr = document.getElementById('side-btn-qr');
 const sideBtnHistory = document.getElementById('side-btn-history');
 const sideBtnExport = document.getElementById('side-btn-export');
+const btnAbout = document.getElementById('btn-about');
+const btnCloseAbout = document.getElementById('btn-close-about');
+const btnContact = document.getElementById('btn-contact');
+const btnCloseContact = document.getElementById('btn-close-contact');
 
 let confirmCallback = null;
 
@@ -665,6 +672,228 @@ if (btnCopyQrLink) {
         });
     });
 }
+
+if (btnCloseContact) {
+    btnCloseContact.addEventListener('click', () => {
+        isAIPaused = false;
+        contactModal.classList.add('hidden');
+    });
+}
+
+
+async function typeText(element, text, speed = 30) {
+    const words = text.split(' ');
+    element.innerText = '';
+    for (let word of words) {
+        element.innerText += word + ' ';
+        const terminalBody = element.closest('.terminal-body');
+        if (terminalBody) terminalBody.scrollTop = terminalBody.scrollHeight;
+        await new Promise(r => setTimeout(r, speed));
+    }
+}
+
+// Terminal System Logic
+async function processTerminalCommand(e, contentId) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        const inputEl = e.target;
+        const command = inputEl.innerText.trim().toLowerCase();
+        const contentDiv = document.getElementById(contentId);
+
+        if (!command) return;
+
+        // Add user command to history
+        const historyLine = document.createElement('div');
+        historyLine.className = 'terminal-line';
+        historyLine.innerHTML = `<span class="prompt">guest@cognito:~$</span> <span class="command">${command}</span>`;
+        contentDiv.appendChild(historyLine);
+        terminalHistory.push(command);
+
+        // Show Loading State
+        const loadingLine = document.createElement('div');
+        loadingLine.className = 'status-online';
+        loadingLine.style.margin = '5px 0';
+        loadingLine.innerText = "Processing...";
+        contentDiv.appendChild(loadingLine);
+
+        await new Promise(r => setTimeout(r, 400)); // Brief pause for realism
+
+        let responseText = "";
+        let isError = false;
+
+        if (command === 'help') {
+            responseText = `Available Commands:
+- about author  : Learn about Rahagir
+- why cognito   : The philosophy behind the system
+- help          : Show this list
+- clear         : Wipe terminal clean
+- mission       : Our core purpose
+- vision        : Our long-term goals
+- privacy       : Data sovereignty statement
+- history       : View command history
+- features      : Key system capabilities
+- cat about.txt : System specifications
+- cat contact.txt: Support information`;
+        } else if (command === 'clear') {
+            contentDiv.innerHTML = '';
+            inputEl.innerText = '';
+            return;
+        } else if (command === 'mission') {
+            try {
+                const res = await fetch('about/mission.txt');
+                responseText = await res.text();
+            } catch (err) { responseText = "Error fetching mission info."; isError = true; }
+        } else if (command === 'vision') {
+            try {
+                const res = await fetch('about/vision.txt');
+                responseText = await res.text();
+            } catch (err) { responseText = "Error fetching vision info."; isError = true; }
+        } else if (command === 'privacy') {
+            try {
+                const res = await fetch('about/privacy.txt');
+                responseText = await res.text();
+            } catch (err) { responseText = "Error reading privacy statement."; isError = true; }
+        } else if (command === 'history') {
+            responseText = terminalHistory.length > 0 ? terminalHistory.join('\n') : "No command history found.";
+        } else if (command === 'features') {
+            try {
+                const res = await fetch('about/features.txt');
+                responseText = await res.text();
+            } catch (err) { responseText = "Error fetching features list."; isError = true; }
+        } else if (command === 'about author') {
+            try {
+                const res = await fetch('about/author.txt');
+                responseText = await res.text();
+            } catch (err) { responseText = "Error fetching author info."; isError = true; }
+        } else if (command === 'why cognito' || command === 'why cognito attend?') {
+            try {
+                const res = await fetch('about/why.txt');
+                responseText = await res.text();
+            } catch (err) { responseText = "Error fetching philosophy info."; isError = true; }
+        } else if (command === 'cat about.txt') {
+            try {
+                const res = await fetch('about/content.txt');
+                responseText = await res.text();
+            } catch (err) { responseText = "Error reading about.txt"; isError = true; }
+        } else if (command === 'cat contact.txt') {
+            try {
+                const res = await fetch('about/contact.txt');
+                responseText = await res.text();
+            } catch (err) { responseText = "Error reading contact.txt"; isError = true; }
+        } else {
+            responseText = `Command not found: ${command}. Type 'help' for available options.`;
+            isError = true;
+        }
+
+        // Remove loading state
+        contentDiv.removeChild(loadingLine);
+
+        const responseLine = document.createElement('div');
+        responseLine.className = isError ? 'status-error' : 'glow-text';
+        responseLine.style.whiteSpace = 'pre-wrap';
+        responseLine.style.margin = '10px 0';
+        contentDiv.appendChild(responseLine);
+
+        inputEl.innerText = '';
+
+        if (isError) {
+            responseLine.innerText = responseText;
+        } else {
+            await typeText(responseLine, responseText);
+        }
+
+        const terminalBody = inputEl.closest('.terminal-body');
+        if (terminalBody) terminalBody.scrollTop = terminalBody.scrollHeight;
+    }
+}
+
+// Global Terminal Event Delegation
+document.addEventListener('keydown', (e) => {
+    if (e.target.classList.contains('terminal-input')) {
+        const contentId = e.target.id === 'about-input' ? 'about-terminal-content' : 'contact-terminal-content';
+        processTerminalCommand(e, contentId);
+    }
+});
+
+document.addEventListener('click', (e) => {
+    const terminalBody = e.target.closest('.terminal-body');
+    if (terminalBody) {
+        const input = terminalBody.querySelector('.terminal-input');
+        if (input) input.focus();
+    }
+});
+
+// Modal Triggers
+if (document.getElementById('btn-about')) {
+    document.getElementById('btn-about').addEventListener('click', async () => {
+        isAIPaused = true;
+        document.getElementById('about-modal').classList.remove('hidden');
+        setTimeout(() => {
+            const input = document.getElementById('about-input');
+            if (input) input.focus();
+        }, 150);
+
+        const contentDiv = document.getElementById('about-terminal-content');
+        if (contentDiv && contentDiv.children.length <= 1) {
+            try {
+                const response = await fetch('about/content.txt');
+                const text = await response.text();
+                contentDiv.innerHTML = text.split('\n').map(line => `<p>${line}</p>`).join('');
+            } catch (e) { contentDiv.innerHTML = '<p class="status-error">Error loading system info.</p>'; }
+        }
+    });
+}
+
+if (document.getElementById('btn-contact')) {
+    document.getElementById('btn-contact').addEventListener('click', async () => {
+        isAIPaused = true;
+        document.getElementById('contact-modal').classList.remove('hidden');
+        setTimeout(() => {
+            const input = document.getElementById('contact-input');
+            if (input) input.focus();
+        }, 150);
+
+        const contentDiv = document.getElementById('contact-terminal-content');
+        if (contentDiv && contentDiv.children.length <= 1) {
+            try {
+                const response = await fetch('about/contact.txt');
+                const text = await response.text();
+                contentDiv.innerHTML = text.split('\n').map(line => `<p>${line}</p>`).join('');
+            } catch (e) { contentDiv.innerHTML = '<p class="status-error">Error loading contact portal.</p>'; }
+        }
+    });
+}
+// Close modals when clicking outside
+window.addEventListener('click', (e) => {
+    if (e.target === aboutModal) {
+        isAIPaused = false;
+        aboutModal.classList.add('hidden');
+    }
+    if (e.target === contactModal) {
+        isAIPaused = false;
+        contactModal.classList.add('hidden');
+    }
+    if (e.target === qrModal) {
+        isAIPaused = false;
+        qrModal.classList.add('hidden');
+        stopQRRotation();
+    }
+    if (e.target === historyModal) {
+        historyModal.classList.add('hidden');
+    }
+    if (e.target === editModal) {
+        editModal.classList.add('hidden');
+    }
+    if (e.target === profileModal) {
+        profileModal.classList.add('hidden');
+    }
+    if (e.target === magicQrModal) {
+        magicQrModal.classList.add('hidden');
+    }
+    if (e.target === idCardModal) {
+        idCardModal.classList.add('hidden');
+    }
+});
 
 // Attendance Tab Switching
 if (tabPresent && tabAbsent) {
