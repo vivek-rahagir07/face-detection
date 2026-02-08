@@ -304,7 +304,7 @@ const lastSpoken = {};
 
 // Terminal State
 let terminalHistoryIndex = -1;
-const COMMANDS = ['help', 'about author', 'why cognito', 'clear', 'mission', 'vision', 'privacy', 'history', 'features', 'faqs', 'cat about.txt', 'cat contact.txt', 'ls', 'system', 'whoami'];
+const COMMANDS = ['help', 'about author', 'why cognito', 'clear', 'mission', 'vision', 'privacy', 'history', 'features', 'faqs', 'cat about.txt', 'cat contact.txt', 'ls', 'whoami'];
 
 // Synthetic Audio Engine
 class TerminalAudio {
@@ -998,7 +998,6 @@ async function processTerminalCommand(e, contentId) {
 - faqs          : Frequently Asked Questions
 - cat [file]    : Read file contents (e.g., cat about.txt)
 - ls            : List available files
-- system        : Show holographic system stats
 - whoami        : Current session identity`;
         } else if (command === 'clear') {
             contentDiv.innerHTML = '';
@@ -1018,26 +1017,6 @@ vision.txt`;
 ACCESS_LEVEL: Unauthorized (Public)
 IP: 127.0.0.1 (Masked)
 STATUS: Viewing Project Documentation`;
-        } else if (command === 'system' || command === 'neofetch') {
-            useHtml = true;
-            const cpu = Math.floor(Math.random() * 20 + 10);
-            const mem = Math.floor(Math.random() * 15 + 45);
-            responseText = `
-                <div class="terminal-system-stats">
-                    <span class="stat-label">OS</span><span class="stat-value">Cognito_HUD v2.0-PRO</span>
-                    <span class="stat-label">KERNEL</span><span class="stat-value">Browser_Native_AI</span>
-                    <span class="stat-label">UPTIME</span><span class="stat-value">${Math.floor(performance.now() / 1000)}s</span>
-                    
-                    <span class="stat-label">CPU_LOAD</span>
-                    <div class="progress-container"><div class="progress-fill" style="width: ${cpu}%"></div></div>
-                    <span class="stat-value">${cpu}%</span>
-
-                    <span class="stat-label">MEM_USAGE</span>
-                    <div class="progress-container"><div class="progress-fill" style="width: ${mem}%"></div></div>
-                    <span class="stat-value">${mem}%</span>
-
-                    <span class="stat-label">AI_MODULE</span><span class="stat-value">${isModelsLoaded ? 'STATE: OPTIMAL' : 'STATE: LOAD_ERROR'}</span>
-                </div>`;
         } else if (command === 'mission' || command.includes('mission')) {
             try {
                 const res = await fetch('about/mission.txt');
@@ -1218,8 +1197,10 @@ function setupTerminalControls(modalId, redId, yellowId, greenId, closeBtnId) {
     if (document.getElementById(closeBtnId)) document.getElementById(closeBtnId).onclick = closeModal;
 
     if (document.getElementById(yellowId)) {
-        container.classList.toggle('minimized');
-    };
+        document.getElementById(yellowId).onclick = () => {
+            container.classList.toggle('minimized');
+        };
+    }
 
     document.getElementById(greenId).onclick = () => {
         container.classList.toggle('maximized');
