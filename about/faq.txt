@@ -1,0 +1,45 @@
+Frequently Asked Questions (FAQ) – CognitoAttend
+
+1. What is CognitoAttend?
+CognitoAttend is a smart digital attendance management system designed to track presence accurately using QR-based check-ins, real-time monitoring, and automated reports.
+
+2. How does QR attendance work?
+An admin generates a time-limited QR code. Users scan it using their device, enter basic details, and their attendance is marked instantly. The QR refreshes automatically to prevent misuse.
+
+3. Can students or users fake attendance?
+No. CognitoAttend uses dynamic QR refresh, session validation, and optional location/device checks to minimize proxy or duplicate attendance.
+
+4. Is registration mandatory for marking attendance?
+Not always. CognitoAttend supports both:
+- Registered users (with Reg No / Course)
+- Unregistered or visitor entries (e.g., library, events)
+
+5. Can attendance be edited later?
+Yes. Authorized admins can edit user details, correct entries, or delete records with proper access control.
+
+6. Does CognitoAttend generate reports?
+Absolutely. You can generate:
+- Daily / date-wise attendance
+- Master reports
+- CSV and PDF exports
+These are useful for audits, records, and compliance.
+
+7. Is CognitoAttend suitable for colleges only?
+No. It can be used for:
+- Colleges & schools
+- Libraries
+- Corporates & offices
+- Events & workshops
+- Training institutes
+
+8. Can I track attendance history of an individual?
+Yes. Each user has a detailed attendance history, showing dates, time, and presence status.
+
+9. Does it work on mobile and desktop?
+Yes. CognitoAttend is device-friendly and works smoothly on mobiles, tablets, laptops, and large screens.
+
+10. Is internet required?
+Yes. An active internet connection is required for real-time sync, QR refresh, and report generation.
+
+11. How secure is the data?
+CognitoAttend follows secure data handling practices, role-based access, and controlled visibility to ensure privacy and integrity.
