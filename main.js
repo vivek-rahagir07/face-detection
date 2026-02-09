@@ -304,7 +304,7 @@ const lastSpoken = {};
 
 // Terminal State
 let terminalHistoryIndex = -1;
-const COMMANDS = ['help', 'about author', 'why cognito', 'clear', 'mission', 'vision', 'privacy', 'history', 'features', 'faqs', 'cat about.txt', 'cat contact.txt', 'ls', 'whoami'];
+const COMMANDS = ['help', 'about developer', 'why cognito', 'clear', 'mission', 'vision', 'privacy', 'history', 'features', 'faqs', 'documentation', 'cat about.txt', 'cat contact.txt', 'ls', 'whoami'];
 
 // Synthetic Audio Engine
 class TerminalAudio {
@@ -356,6 +356,58 @@ class TerminalAudio {
 }
 
 const termAudio = new TerminalAudio();
+
+// Ambience Engine for Global Immersion
+class AmbienceEngine {
+    constructor() {
+        this.ctx = null;
+        this.osc = null;
+        this.gain = null;
+        this.filter = null;
+        this.active = false;
+    }
+
+    init() {
+        if (this.ctx) return;
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        this.gain = this.ctx.createGain();
+        this.filter = this.ctx.createBiquadFilter();
+
+        this.gain.gain.setValueAtTime(0, this.ctx.currentTime);
+        this.filter.type = 'lowpass';
+        this.filter.frequency.setValueAtTime(150, this.ctx.currentTime);
+        this.filter.Q.setValueAtTime(5, this.ctx.currentTime);
+
+        this.gain.connect(this.filter);
+        this.filter.connect(this.ctx.destination);
+    }
+
+    start() {
+        if (this.active) return;
+        this.init();
+        this.osc = this.ctx.createOscillator();
+        this.osc.type = 'sawtooth';
+        this.osc.frequency.setValueAtTime(55, this.ctx.currentTime); // Low A hum
+
+        this.osc.connect(this.gain);
+        this.gain.gain.linearRampToValueAtTime(0.02, this.ctx.currentTime + 2);
+
+        this.osc.start();
+        this.active = true;
+    }
+
+    stop() {
+        if (!this.active) return;
+        this.gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 1);
+        setTimeout(() => {
+            if (this.osc) this.osc.stop();
+            this.active = false;
+        }, 1200);
+    }
+}
+
+const ambience = new AmbienceEngine();
+
 
 
 let configLeafletMap = null;
@@ -443,6 +495,9 @@ try {
 // Portal Management
 
 function showView(viewId) {
+    document.body.classList.add('glitch-active');
+    setTimeout(() => document.body.classList.remove('glitch-active'), 250);
+
     [viewPortal, viewOperation].forEach(v => v ? v.classList.add('hidden') : null);
     const target = document.getElementById(viewId);
     if (target) target.classList.remove('hidden');
@@ -543,7 +598,7 @@ function enterSpace(id, data) {
     currentSpaceTitle.innerText = currentSpace.name;
     portalError.innerText = "";
     showView('view-operation');
-
+    ambience.start();
 
     const face3D = document.getElementById('face-3d-container');
     if (face3D) {
@@ -695,6 +750,7 @@ btnPortalJoin.addEventListener('click', handleJoin);
 btnPortalCreate.addEventListener('click', handleCreate);
 btnExitWorkspace.addEventListener('click', () => {
     stopQRRotation();
+    ambience.stop();
     currentSpace = null;
     showView('view-portal');
 
@@ -818,15 +874,15 @@ if (btnCloseContact) {
 
 
 async function typeText(element, text, speed = 20) {
-    // Regex for URLs and tags: [[accent]], {{pink}}, <<gold>>, ((blue)), **green**
-    const combinedRegex = /(https?:\/\/[^\s]+|discord\.gg\/[^\s]+|github\.com\/[^\s]+|linkedin\.com\/[^\s]+|\[\[.*?\]\]|\{\{.*?\}\}|<<.*?>>|\(\(.*?\)\)|\*\*.*?\*\*)/g;
+    // Regex for URLs, markdown links, and tags
+    const combinedRegex = /(https?:\/\/[^\s]+|discord\.gg\/[^\s]+|github\.com\/[^\s]+|linkedin\.com\/[^\s]+|\[\[.*?\]\]|\{\{.*?\}\}|<<.*?>>|\(\(.*?\)\)|\*\*.*?\*\*|\[.*?\]\(.*?\))/g;
     const parts = text.split(combinedRegex);
     element.innerHTML = '';
 
     for (let part of parts) {
-        if (!part) continue;
+        if (!part || !isAIPaused) continue;
 
-        if (part.match(/https?:\/\/[^\s]+|discord\.gg\/[^\s]+|github\.com\/[^\s]+|linkedin\.com\/[^\s]+/)) {
+        if (part.match(/^(https?:\/\/[^\s]+|discord\.gg\/[^\s]+|github\.com\/[^\s]+|linkedin\.com\/[^\s]+)$/)) {
             const link = document.createElement('a');
             link.href = part.startsWith('http') ? part : 'https://' + part;
             link.target = '_blank';
@@ -835,7 +891,37 @@ async function typeText(element, text, speed = 20) {
             link.style.textDecoration = 'none';
             link.style.borderBottom = '1px dashed var(--accent)';
 
+            if (part.toLowerCase().endsWith('.pdf') || part.toLowerCase().endsWith('.zip')) {
+                link.setAttribute('download', 'CognitoAttend_Documentation.pdf');
+            }
+
             for (let char of part) {
+                if (!isAIPaused) break;
+                link.textContent += char;
+                element.appendChild(link);
+                const terminalBody = element.closest('.terminal-body');
+                if (terminalBody) terminalBody.scrollTop = terminalBody.scrollHeight;
+                await new Promise(r => setTimeout(r, speed));
+            }
+        } else if (part.startsWith('[') && part.includes('](') && part.endsWith(')')) {
+            // Markdown Link [text](url)
+            const label = part.match(/\[(.*?)\]/)[1];
+            const url = part.match(/\((.*?)\)/)[1];
+
+            const link = document.createElement('a');
+            link.href = url;
+            link.target = '_blank';
+            link.className = 'terminal-link';
+            link.style.color = 'var(--accent)';
+            link.style.textDecoration = 'none';
+            link.style.borderBottom = '1px dashed var(--accent)';
+
+            if (url.toLowerCase().endsWith('.pdf') || url.toLowerCase().endsWith('.zip')) {
+                link.setAttribute('download', 'CognitoAttend_Documentation.pdf');
+            }
+
+            for (let char of label) {
+                if (!isAIPaused) break;
                 link.textContent += char;
                 element.appendChild(link);
                 const terminalBody = element.closest('.terminal-body');
@@ -859,6 +945,7 @@ async function typeText(element, text, speed = 20) {
             await typeSpan(element, cleanText, 'hl-green', speed);
         } else {
             for (let char of part) {
+                if (!isAIPaused) break;
                 if (char === '\n') termAudio.playLineStrike();
                 element.innerHTML += char === '\n' ? '<br>' : char;
                 const terminalBody = element.closest('.terminal-body');
@@ -874,6 +961,7 @@ async function typeSpan(element, text, className, speed) {
     span.className = className;
     element.appendChild(span);
     for (let char of text) {
+        if (!isAIPaused) break;
         span.textContent += char;
         const terminalBody = element.closest('.terminal-body');
         if (terminalBody) terminalBody.scrollTop = terminalBody.scrollHeight;
@@ -897,6 +985,7 @@ async function bootTerminal(contentId) {
     ];
 
     for (const line of lines) {
+        if (!isAIPaused) break;
         const p = document.createElement('div');
         p.className = 'boot-line';
         p.innerText = line;
@@ -986,7 +1075,7 @@ async function processTerminalCommand(e, contentId) {
 
         if (command === 'help') {
             responseText = `AVAILABLE COMMANDS:
-- about author  : Learn about Vivek (Rahagir)
+- about developer : Learn about Vivek (Rahagir)
 - why cognito   : System development philosophy
 - help          : Display this command list
 - clear         : Wipe terminal clean
@@ -996,6 +1085,7 @@ async function processTerminalCommand(e, contentId) {
 - history       : View recent commands
 - features      : Core capabilities
 - faqs          : Frequently Asked Questions
+- documentation : Download system documentation PDF
 - cat [file]    : Read file contents (e.g., cat about.txt)
 - ls            : List available files
 - whoami        : Current session identity`;
@@ -1039,11 +1129,13 @@ STATUS: Viewing Project Documentation`;
                 const res = await fetch('about/features.txt');
                 responseText = await res.text();
             } catch (err) { responseText = "Error fetching features list."; isError = true; }
-        } else if (command === 'about author') {
+        } else if (command === 'documentation') {
+            responseText = "SYSTEM_DOCS: [[CognitoAttend Documentation v1.0]]\\n<<Download Link:>> [Download Manual (PDF)](folder/documentation.pdf)\\n\\n(Note: The manual will be downloaded to your device.)";
+        } else if (command === 'about developer') {
             try {
-                const res = await fetch('about/author.txt');
+                const res = await fetch('about/developer.txt');
                 responseText = await res.text();
-            } catch (err) { responseText = "Error fetching author info."; isError = true; }
+            } catch (err) { responseText = "Error fetching developer info."; isError = true; }
         } else if (command === 'why cognito' || command === 'why cognito attend?') {
             try {
                 const res = await fetch('about/why.txt');
@@ -3568,3 +3660,13 @@ function init3DFace(containerId) {
         renderer3D.setSize(container.offsetWidth, container.offsetHeight);
     });
 }
+// Dynamic Glow Trail
+document.addEventListener('mousemove', (e) => {
+    if (Math.random() > 0.15) return; // Rate limiting
+    const p = document.createElement('div');
+    p.className = 'mouse-trail-particle';
+    p.style.left = e.clientX + 'px';
+    p.style.top = e.clientY + 'px';
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 800);
+});
