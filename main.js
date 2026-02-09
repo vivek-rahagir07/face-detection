@@ -873,7 +873,7 @@ if (btnCloseContact) {
 }
 
 
-async function typeText(element, text, speed = 20) {
+async function typeText(element, text, speed = 18) {
     // Regex for URLs, markdown links, and tags
     const combinedRegex = /(https?:\/\/[^\s]+|discord\.gg\/[^\s]+|github\.com\/[^\s]+|linkedin\.com\/[^\s]+|\[\[.*?\]\]|\{\{.*?\}\}|<<.*?>>|\(\(.*?\)\)|\*\*.*?\*\*|\[.*?\]\(.*?\))/g;
     const parts = text.split(combinedRegex);
@@ -1130,7 +1130,8 @@ STATUS: Viewing Project Documentation`;
                 responseText = await res.text();
             } catch (err) { responseText = "Error fetching features list."; isError = true; }
         } else if (command === 'documentation') {
-            responseText = "SYSTEM_DOCS: [[CognitoAttend Documentation v1.0]]\\n<<Download Link:>> [Download Manual (PDF)](folder/documentation.pdf)\\n\\n(Note: The manual will be downloaded to your device.)";
+            window.open('folder/documentation.pdf', '_blank');
+            responseText = "OPENING_SYSTEM_DOCS: [[CognitoAttend Documentation v1.0]]\nLaunching document viewer...\n\n(If it didn't open, please check your popup blocker.)";
         } else if (command === 'about developer') {
             try {
                 const res = await fetch('about/developer.txt');
