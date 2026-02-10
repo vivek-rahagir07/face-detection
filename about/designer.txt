@@ -1,0 +1,11 @@
+[[Shreya Chaudhary]], the **Lead UI/UX Designer** behind Cognito Attend. Shreya is a visual storyteller and interface architect who believes that complex technology should feel intuitive, not intimidating.
+
+Her design philosophy for [[Cognito Attend]] centers on "Cognitive Harmony" – a balance between the raw, high-contrast aesthetic of a cyberpunk terminal and the seamless flow of modern user interfaces.
+
+"Design isn't just about how it looks; it's about how the system communicates with the human. In Cognito Attend, every glitch, every glow, and every transition is designed to create an immersive, responsive experience that honors the user's focus."
+
+Key design pillars:
+- **Cyber-Premium Aesthetics**: High-contrast, glowing accents, and holographic transitions.
+- **Context-Aware Layouts**: Interfaces that adapt to the task at hand, whether it's biometric scanning or data analysis.
+- **Precision Typography**: Ensuring legibility within a dense, technical environment.
+- **Human-Centric Feedback**: Using motion and sound to provide immediate, clear system status.

@@ -304,7 +304,7 @@ const lastSpoken = {};
 
 // Term State
 let terminalHistoryIndex = -1;
-const COMMANDS = ['help', 'about developer', 'why cognito', 'clear', 'mission', 'vision', 'privacy', 'history', 'features', 'faqs', 'documentation', 'cat about.txt', 'cat contact.txt', 'ls', 'whoami'];
+const COMMANDS = ['help', 'about developer', 'about designer', 'why cognito', 'clear', 'mission', 'vision', 'privacy', 'history', 'features', 'faqs', 'documentation', 'cat about.txt', 'cat contact.txt', 'ls', 'whoami'];
 
 // Term Audio
 class TerminalAudio {
@@ -1075,7 +1075,8 @@ async function processTerminalCommand(e, contentId) {
         if (command === 'help') {
             responseText = `AVAILABLE COMMANDS:
 - about developer : Learn about Vivek (Rahagir)
-- why cognito   : System development philosophy
+- about designer  : Learn about the Lead UI/UX Designer
+- why cognito    : System development philosophy
 - help          : Display this command list
 - clear         : Wipe terminal clean
 - mission       : Our purpose
@@ -1095,6 +1096,7 @@ async function processTerminalCommand(e, contentId) {
         } else if (command === 'ls') {
             responseText = `about.txt
 contact.txt
+designer.txt
 faq.txt
 features.txt
 mission.txt
@@ -1133,9 +1135,34 @@ STATUS: Viewing Project Documentation`;
             responseText = "OPENING_SYSTEM_DOCS: [[CognitoAttend Documentation v1.0]]\nLaunching document viewer...\n\n(If it didn't open, please check your popup blocker.)";
         } else if (command === 'about developer') {
             try {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'developer-photo-wrapper';
+
+                const img = document.createElement('img');
+                img.src = 'folder/image.png';
+                img.className = 'developer-photo';
+
+                wrapper.appendChild(img);
+                contentDiv.appendChild(wrapper);
+
                 const res = await fetch('about/developer.txt');
                 responseText = await res.text();
             } catch (err) { responseText = "Error fetching developer info."; isError = true; }
+        } else if (command === 'about designer') {
+            try {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'developer-photo-wrapper';
+
+                const img = document.createElement('img');
+                img.src = 'folder/ui ux .png';
+                img.className = 'developer-photo';
+
+                wrapper.appendChild(img);
+                contentDiv.appendChild(wrapper);
+
+                const res = await fetch('about/designer.txt');
+                responseText = await res.text();
+            } catch (err) { responseText = "Error fetching designer info."; isError = true; }
         } else if (command === 'why cognito' || command === 'why cognito attend?') {
             try {
                 const res = await fetch('about/why.txt');
